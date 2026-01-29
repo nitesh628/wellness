@@ -4,6 +4,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronRight } from 'lucide-react';
+import  img1 from "../../../public/supplement-bottle-blue.png";
+import  img2  from "../../../public/supplement-bottle-blue.png";
+import  img3 from "../../../public/supplement-bottle-blue.png";
+import  img4 from "../../../public/supplement-bottle-blue.png";
+import img5 from "../../../public/supplement-jar-blue.png";
+
+ 
+//
+
 
 // Sample data for Science Featured Collection
 const featuredProducts = [
@@ -12,40 +21,40 @@ const featuredProducts = [
         name: "Bone Essentials",
         price: "675.00",
         originalPrice: "900.00",
-        image: "/supplement-bottle-blue.png",
-        hoverImage: "/supplement-bottle-blue.png",
+        image: img1,
+        hoverImage: img1,
     },
     {
         id: 2,
         name: "Fat Metabolism Boost",
         price: "2,016.00",
         originalPrice: "2,689.00",
-        image: "/supplement-bottle-blue.png",
-        hoverImage: "/supplement-bottle-blue.png",
+        image: img2,
+        hoverImage: img2,
     },
     {
         id: 3,
         name: "Fatty Liver Revive",
         price: "1,874.00",
         originalPrice: "2,499.00",
-        image: "/supplement-bottle-blue.png",
-        hoverImage: "/supplement-bottle-blue.png",
+        image: img3,
+        hoverImage: img3,
     },
     {
         id: 4,
         name: "Fertility Boost",
         price: "2,340.00",
         originalPrice: null,
-        image: "/supplement-bottle-blue.png",
-        hoverImage: "/supplement-bottle-blue.png",
+        image: img4,
+        hoverImage: img4,
     },
     {
         id: 5,
         name: "Forever Gut",
         price: "1,477.00",
         originalPrice: "1,970.00",
-        image: "/supplement-jar-blue.png",
-        hoverImage: "/supplement-jar-blue.png",
+        image: img5,
+        hoverImage: img5,
     },
 ];
 

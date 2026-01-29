@@ -5,11 +5,18 @@ import React from "react";
 import ScienceFeatured from "./science-featured";
 import EcosystemSection from "@/components/home/ecosystem-section";
 
+import img1 from "../../../public/sciencelab.png";
+import img2 from "../../../public/supplement-bottle-blue.png";
+import img3 from "../../../public/supplement-jar-blue.png";
+import img4 from "../../../public/science-based-plant-based-wellness.png"
+import img5 from "../../../public/natural-science.png"
+
 type ScienceSection = {
   number: string;
   title: string;
   description: string;
-  imageSrc: string;
+  
+  imageSrc: any;
   imageAlt: string;
 };
 
@@ -20,7 +27,7 @@ const sections: ScienceSection[] = [
     description:
       "Today's fast-paced world makes it challenging for many to maintain proper nutrition due to nutrient-depleted soils reducing the quality of fruits and vegetables. Alongside the demands of work and life, irregular eating habits, processed foods, and preservative-heavy diets lead to serious micronutrient deficiencies. These nutritional gaps, intensified by chronic stress, hasten aging and compromise gut health, increasing risks for metabolic disorders.",
     imageSrc:
-      "/science-lab.png",
+      img1,
     imageAlt: "Modern nutritional challenges",
   },
   {
@@ -29,7 +36,7 @@ const sections: ScienceSection[] = [
     description:
       "Wellness aims to solve these health challenges with scientifically formulated, plant-based supplements. Our Fatty Liver Revive supports liver detoxification, reduces fat accumulation, and improves metabolic function—key for those with fatty liver concerns. GlycoGuard enhances insulin sensitivity, regulates glucose metabolism, and guards against oxidative stress, ideal for managing metabolic syndrome.",
     imageSrc:
-      "/supplement-bottle-blue.png",
+      img2,
     imageAlt: "Health focused commitment",
   },
   {
@@ -38,7 +45,7 @@ const sections: ScienceSection[] = [
     description:
       "For gut health, Forever Gut provides an advanced prebiotic and probiotic blend with Akkermansia muciniphila, a key strain for gut barrier integrity and longevity. Complete Gut Fibre supports digestion, regularity, and inflammation reduction, improving overall gut health. Our Longevity Pro aids cellular repair and energy throughout the day, while NMN Pro boosts NAD+ levels, combating age-related decline and enhancing physical and cognitive performance.",
     imageSrc:
-      "/supplement-jar-blue.png",
+      img3,
     imageAlt: "Gut health and longevity",
   },
   {
@@ -47,7 +54,7 @@ const sections: ScienceSection[] = [
     description:
       "NutriRevive nourishes skin and hair from within, increasing hydration, reducing fine lines, and strengthening hair and nails. Height Boost aids in healthy growth for children by supporting bone development and nutrient absorption. Fertility Boost and Fertility Pro enhance sperm and egg quality, benefiting reproductive health.",
     imageSrc:
-      "/natural-science.png",
+      img4,
     imageAlt: "Skin, growth and reproductive health",
   },
   {
@@ -56,7 +63,7 @@ const sections: ScienceSection[] = [
     description:
       "Every Wellness product is plant-based, scientifically developed, and crafted to address the nutritional gaps of modern lifestyles. Wellness provides solutions to empower individuals in overcoming today’s nutritional challenges for a healthier tomorrow.",
     imageSrc:
-      "/natural-science.png",
+     img5,
     imageAlt: "Science based wellness",
   },
 ];
@@ -90,7 +97,10 @@ const Science = () => {
         </div>
 
         {/* Content Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center animate-in fade-in slide-in-from-bottom-4 duration-500 key={activeIndex}">
+        <div
+  key={activeIndex}
+  className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center animate-in fade-in slide-in-from-bottom-4 duration-500"
+>
           <div className="max-w-xl order-2 lg:order-1">
             <h2 className="text-4xl sm:text-5xl font-extrabold leading-[1.05] text-blue-900 whitespace-pre-line">
               {activeSection.title}
@@ -115,7 +125,7 @@ const Science = () => {
           </div>
         </div>
       </div>
-      {/* <ScienceFeatured /> */}
+       <ScienceFeatured /> 
       <EcosystemSection />
     </main>
   );

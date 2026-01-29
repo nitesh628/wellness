@@ -4,10 +4,12 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Facebook, Instagram, Youtube, ArrowRight } from "lucide-react";
+ 
+import img from "../../../public/Hero.png";
 
 // Placeholder for  Image - reusing the one from public if available
 // If using Next.js public folder, strings are best.
-const TESTED_BY_IMAGE = "/Hero.png";
+const TESTED_BY_IMAGE = img;
 
 const Footer = () => {
   return (
