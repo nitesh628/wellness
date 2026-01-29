@@ -6,112 +6,143 @@ import Product from '../models/productsModel.js';
 
 dotenv.config();
 
-
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
-
-// // const extractMultipleProductDetails = async (base64Images) => {
-//   try {
-//     const prompt = `
-// You are a product expert. Given multiple product images, extract structured product details for each image in a JSON array.
-
-// Each product detail must contain:
-// - Product Name  
-// - Category  
-// - Price (with currency)  
-// - Original Price  
-// - Stock Quantity  
-// - Short Description  
-// - Weight/Size  
-// - Long Description  
-// - Expiry Date  
-// - Ingredients  
-// - Benefits (one per line)  
-// - Dosage Instructions  
-// - Manufacturer  
-
-// Return a JSON array ONLY with no extra explanation.
-
-// Example Output:
-// [
-//   {
-//     "Product Name": "Vitamin C Supplement",
-//     "Category": "Supplements",
-//     "Price": "₹49.99",
-//     "Original Price": "₹79.99",
-//     "Stock Quantity": "150",
-//     "Short Description": "Boost your immunity with Vitamin C",
-//     "Weight/Size": "2.2 lbs",
-//     "Long Description": "A powerful Vitamin C supplement to strengthen your immune system and improve overall health.",
-//     "Expiry Date": "2025-12-31",
-//     "Ingredients": "Ascorbic Acid, Filler, Capsule Shell",
-//     "Benefits": "- Boosts immunity\n- Helps skin health\n- Reduces oxidative stress",
-//     "Dosage Instructions": "Take one capsule daily after meal.",
-//     "Manufacturer": "HealthPlus Labs"
-//   }
-// ]
-
-// Here are the images in base64 format:
-// ${base64Images.map((img, idx) => `Image ${idx + 1}: ${img}`).join('\n\n')}
-// `;
-
-//     const response = await openai.chat.completions.create({
-//       model: "gpt-4",
-//       input: [
-//         { role: "system", content: "You are an expert at extracting structured product details from images." },
-//         { role: "user", content: prompt }
-//       ]
-//     });
-
-//     const rawOutput = response.output_text;
-
-//     const jsonMatch = parseJsonString(rawOutput)
-
-//     if (!jsonMatch) {
-//       throw new Error('No valid JSON array found in OpenAI response');
-//     }
-
-//     return JSON.parse(jsonMatch);
-//   } catch (error) {
-//     console.error('Failed to extract multiple product details:', error.message);
-//     return null;
-//   }
-// // };
-
-// export const productGenerate= async (req, res) => {
-//   if (!req.files || req.files.length === 0) {
-//     return res.status(400).json({ error: "At least one image is required" });
-//   }
-
-//   const base64Images = req.files.map(file => file.buffer.toString('base64'));
-
-//   const productDetailsArray = await extractMultipleProductDetails(base64Images);
-
-//   if (!productDetailsArray) {
-//     return res.status(500).json({ error: "Failed to extract product details" });
-//   }
-
-//   res.status(200).json({ products: productDetailsArray });
-// };
-
 // CREATE - Create a new product
 export const createProduct = async (req, res) => {
   try {
-    const productData = { ...req.body };
+    // Parse and sanitize all fields from FormData
+    const name = req.body.name;
+    let slug = req.body.slug;
+    if (!slug && name) {
+      slug = name.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+    }
+    const category = req.body.category;
+    const shortDescription = req.body.shortDescription;
+    const longDescription = req.body.longDescription;
+    const expiryDate = req.body.expiryDate;
+    const manufacturer = req.body.manufacturer;
 
-    const product = await Product.create(productData);
-    if (!product) {
-      res.status(401).json({
-        message: "Somthing went Wrong while Creating Product"
-      })
+
+    // Robustly parse price fields (support both bracket and object notation)
+    let price = {};
+    if (req.body.price && typeof req.body.price === 'object') {
+      price = {
+        amount: Number(req.body.price.amount || req.body['price[amount]'] || 0),
+        currency: req.body.price.currency || req.body['price[currency]'] || 'Rs',
+        mrp: Number(req.body.price.mrp || req.body['price[mrp]'] || req.body.originalPrice || 0),
+      };
+    } else {
+      price = {
+        amount: Number(req.body['price[amount]'] || req.body.price || 0),
+        currency: req.body['price[currency]'] || req.body.currency || 'Rs',
+        mrp: Number(req.body['price[mrp]'] || req.body.originalPrice || 0),
+      };
     }
 
-    res.status(201).json({
-      success: true,
-      message: 'Product created successfully',
-      data: product
-    });
+    // Parse stock as number
+    const stockQuantity = Number(req.body.stockQuantity || req.body.stock || 0);
+
+    // Robustly parse weightSize fields (support both bracket and object notation)
+    let weightSize = {};
+    if (req.body.weightSize && typeof req.body.weightSize === 'object') {
+      weightSize = {
+        value: Number(req.body.weightSize.value || req.body['weightSize[value]'] || req.body.weight || 0),
+        unit: req.body.weightSize.unit || req.body['weightSize[unit]'] || 'g',
+      };
+    } else {
+      weightSize = {
+        value: Number(req.body['weightSize[value]'] || req.body.weight || 0),
+        unit: req.body['weightSize[unit]'] || 'g',
+      };
+    }
+
+    // Parse benefits and ingredients
+
+    let benefits = req.body.benefits || [];
+    if (typeof benefits === 'string') {
+      benefits = benefits.split(/\n|,/).map(b => b.trim()).filter(Boolean);
+    }
+    let ingredients = req.body.ingredients || [];
+    if (typeof ingredients === 'string') {
+      ingredients = ingredients.split(/\n|,/).map(i => i.trim()).filter(Boolean);
+    }
+
+    // Parse images (if sent as array or single string)
+    let images = req.body.images || req.body['images[]'] || [];
+    if (typeof images === 'string') {
+      images = [images];
+    }
+
+    // Parse dosageInstructions
+    const dosageInstructions = req.body.dosageInstructions || req.body.dosage || '';
+
+    // Build product data for backend schema
+    const productData = {
+      name,
+      slug,
+      category,
+      price,
+      stockQuantity,
+      shortDescription,
+      longDescription,
+      benefits,
+      ingredients,
+      dosageInstructions,
+      weightSize,
+      expiryDate,
+      manufacturer,
+      images,
+    };
+
+
+    // Validate required fields (add more detailed checks)
+    const missingFields = [];
+    if (!name) missingFields.push('name');
+    if (!slug) missingFields.push('slug');
+    if (!category) missingFields.push('category');
+    if (!price.amount) missingFields.push('price.amount');
+    if (!stockQuantity && stockQuantity !== 0) missingFields.push('stockQuantity');
+    if (!shortDescription) missingFields.push('shortDescription');
+    if (!longDescription) missingFields.push('longDescription');
+    if (!weightSize.value && weightSize.value !== 0) missingFields.push('weightSize.value');
+    if (!weightSize.unit) missingFields.push('weightSize.unit');
+    if (!expiryDate) missingFields.push('expiryDate');
+    if (!Array.isArray(ingredients) || ingredients.length === 0) missingFields.push('ingredients');
+    if (!Array.isArray(benefits) || benefits.length === 0) missingFields.push('benefits');
+    if (!dosageInstructions) missingFields.push('dosageInstructions');
+    if (!manufacturer) missingFields.push('manufacturer');
+    if (!Array.isArray(images) || images.length === 0) missingFields.push('images');
+
+    if (missingFields.length > 0) {
+      // console.error('[Backend] Product creation failed. Missing/invalid fields:', missingFields);
+      return res.status(400).json({
+        success: false,
+        message: 'Missing or invalid required fields',
+        missingFields,
+        received: productData
+      });
+    }
+
+    try {
+      const product = await Product.create(productData);
+      if (!product) {
+        return res.status(401).json({
+          message: "Something went Wrong while Creating Product"
+        });
+      }
+      res.status(201).json({
+        success: true,
+        message: 'Product created successfully',
+        data: product
+      });
+    } catch (err) {
+      // console.error('[Backend] Mongoose/Product.create error:', err);
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to create product (DB error)',
+        error: err.message,
+        received: productData
+      });
+    }
   } catch (error) {
     res.status(400).json({
       success: false,

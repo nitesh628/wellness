@@ -81,7 +81,7 @@ const productSchema = new mongoose.Schema({
 
   //doctor prescription
   genericName: { type: String },
-  
+
   dosageForm: { // E.g., 500 mg, 100 units/ml
     value: { type: String },
     unit: { type: String }

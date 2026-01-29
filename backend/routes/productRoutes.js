@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { createProduct, deleteProduct, getAllProducts, getProductById, getProductBySlug, getProductsByCategory, updateProduct, updateStock } from "../controllers/productsController.js";
 import { upload } from "../config/s3Config.js";
+import formParser from "../config/formParser.js";
 
-const router = Router()
+const router = Router();
 
-// router.get("/productGenerate",upload.array('images', 4),productGenerate)
-
-router.post('/', createProduct);
+router.post('/', formParser.none(), createProduct);
 router.get('/', getAllProducts);
 
 

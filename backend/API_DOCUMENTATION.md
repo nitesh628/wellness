@@ -348,6 +348,38 @@ Toggle influencer active/inactive status.
 
 ## Products
 
+### Product Model Fields
+
+The Product model contains the following fields:
+
+| Field                  | Type     | Required | Unique | Description                                                           |
+| ---------------------- | -------- | -------- | ------ | --------------------------------------------------------------------- |
+| name                   | String   | Yes      | No     | Name of the product.                                                  |
+| slug                   | String   | Yes      | Yes    | URL-friendly unique identifier for the product. Used in product URLs. |
+| category               | String   | Yes      | No     | Category to which the product belongs.                                |
+| price.amount           | Number   | Yes      | No     | Price of the product.                                                 |
+| price.currency         | String   | No       | No     | Currency for the price (default: 'Rs').                               |
+| price.mrp              | Number   | No       | No     | Maximum retail price.                                                 |
+| stockQuantity          | Number   | Yes      | No     | Number of items in stock.                                             |
+| shortDescription       | String   | Yes      | No     | Short description of the product.                                     |
+| weightSize.value       | Number   | No       | No     | Weight or size value.                                                 |
+| weightSize.unit        | String   | No       | No     | Unit for weight/size (e.g., mg, ml, g).                               |
+| longDescription        | String   | Yes      | No     | Detailed description of the product.                                  |
+| expiryDate             | Date     | Yes      | No     | Expiry date of the product.                                           |
+| ingredients            | [String] | No       | No     | List of ingredients.                                                  |
+| benefits               | [String] | No       | No     | List of product benefits.                                             |
+| dosageInstructions     | String   | Yes      | No     | Dosage instructions for the product.                                  |
+| manufacturer           | String   | Yes      | No     | Name of the manufacturer.                                             |
+| images                 | [String] | No       | No     | Array of image URLs.                                                  |
+| genericName            | String   | No       | No     | Generic name (for prescription products).                             |
+| dosageForm.value       | String   | No       | No     | Dosage form value (e.g., '500').                                      |
+| dosageForm.unit        | String   | No       | No     | Dosage form unit (e.g., 'mg', 'units/ml').                            |
+| isPrescriptionRequired | Boolean  | No       | No     | Whether a doctor's prescription is required (default: true).          |
+| sideEffects            | [String] | No       | No     | List of possible side effects.                                        |
+| contraindications      | [String] | No       | No     | List of contraindications.                                            |
+
+---
+
 ### Create Product
 
 **POST** `/v1/products`
