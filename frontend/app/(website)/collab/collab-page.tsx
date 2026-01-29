@@ -1,341 +1,336 @@
 "use client";
 
-import React, { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { ChevronDown, SlidersHorizontal, ChevronUp, Heart } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import CollabFeatured from './collab-featured';
-import Image1 from '../../../public/1.jpg';
-import Image3 from '../../../public/3.jpg';
-import Image4 from '../../../public/4.jpg';
+import React, { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { ChevronDown, SlidersHorizontal, ChevronUp, Heart } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import CollabFeatured from "./collab-featured";
+import Image1 from "../../../public/1.jpg";
+import Image3 from "../../../public/3.jpg";
+import Image4 from "../../../public/4.jpg";
 
 // Hero Section Component
 const Hero = () => {
-    return (
-        <div className="relative w-full overflow-hidden bg-gradient-to-r from-blue-50 to-white dark:from-slate-900 dark:to-slate-950">
-            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-12 md:py-20 lg:py-24">
-                <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+  return (
+    <div className="relative w-full overflow-hidden bg-gradient-to-r from-blue-50 to-white dark:from-slate-900 dark:to-slate-950">
+      <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-12 md:py-20 lg:py-24">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+          {/* Text Left */}
+          <div className="flex-1 text-center lg:text-left z-10 w-full lg:w-auto">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-blue-900 tracking-tight leading-tight mb-6">
+              Built by <br />
+              <span className="text-blue-600">Science.</span> <br />
+              Tested by <br />
+              <span className="text-blue-600">.</span>
+            </h1>
+          </div>
 
-                    {/* Text Left */}
-                    <div className="flex-1 text-center lg:text-left z-10 w-full lg:w-auto">
-                        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-blue-900 tracking-tight leading-tight mb-6">
-                            Built by <br />
-                            <span className="text-blue-600">Science.</span> <br />
-                            Tested by <br />
-                            <span className="text-blue-600">.</span>
-                        </h1>
-                    </div>
-
-                    {/* Image Center */}
-                    <div className="flex-1 relative flex justify-center z-0 w-full lg:w-auto">
-                        <div className="relative w-[300px] h-[400px] md:w-[400px] md:h-[500px] lg:w-[500px] lg:h-[600px]">
-                            <Image
-                                src={Image1}
-                                alt=" "
-                                fill
-                                className="object-contain"
-                                priority
-                            />
-                        </div>
-                    </div>
-
-                    {/* Text Right */}
-                    <div className="flex-1 text-center lg:text-left z-10 flex flex-col items-center lg:items-start w-full lg:w-auto">
-                        <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6 max-w-md leading-snug">
-                            From cellular repair to gut balance. The 4-step foundation of daily longevity.
-                        </h2>
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 rounded-full shadow-lg">
-                            Explore Our Products
-                        </Button>
-                    </div>
-                </div>
+          {/* Image Center */}
+          <div className="flex-1 relative flex justify-center z-0 w-full lg:w-auto">
+            <div className="relative w-[300px] h-[400px] md:w-[400px] md:h-[500px] lg:w-[500px] lg:h-[600px]">
+              <Image
+                src={Image1}
+                alt=" "
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
+          </div>
 
-            {/* Bottom Bar */}
-            <div className="w-full bg-blue-600 py-4">
-                <div className="container mx-auto px-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                        {['Longevity Pro', 'ForeverGut', 'Superfoods Blend', 'Complete Gut Fibre'].map((item) => (
-                            <div key={item} className="text-white font-bold text-lg md:text-xl">
-                                {item}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+          {/* Text Right */}
+          <div className="flex-1 text-center lg:text-left z-10 flex flex-col items-center lg:items-start w-full lg:w-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100 mb-6 max-w-md leading-snug">
+              From cellular repair to gut balance. The 4-step foundation of
+              daily longevity.
+            </h2>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-8 py-6 rounded-full shadow-lg">
+              Explore Our Products
+            </Button>
+          </div>
         </div>
-    );
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="w-full bg-blue-600 py-4">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            {[
+              "Longevity Pro",
+              "ForeverGut",
+              "Superfoods Blend",
+              "Complete Gut Fibre",
+            ].map((item) => (
+              <div
+                key={item}
+                className="text-white font-bold text-lg md:text-xl"
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // Filter & Grid Section
+
+import { useEffect } from "react";
+
 const ProductGrid = () => {
-    const [isSortOpen, setIsSortOpen] = useState(false);
-    const [sortBy, setSortBy] = useState("featured");
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("featured");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    const searchParams = useSearchParams();
-    const categoryFilter = searchParams.get('category');
+  const searchParams = useSearchParams();
+  const categoryFilter = searchParams.get("category");
 
-    // Sample Products
-    const initialProducts = [
-        {
-            id: 1,
-            name: "Forever Gut",
-            slug: "forever-gut",
-            price: "1,477.00",
-            original: "1,970.00",
-            image: Image1,
-            images: [Image1, Image3, Image4],
-            date: "2024-01-15",
-            category: "antioxidant",
-            description: "Advanced probiotic support for a healthy gut microbiome."
-        },
-        {
-            id: 2,
-            name: "Longevity Pro",
-            slug: "longevity-pro",
-            price: "2,774.00",
-            original: "3,699.00",
-            image: "/supplement-bottle-blue.png",
-            images: ["/supplement-bottle-blue.png", "/supplement-jar-blue.png"],
-            date: "2024-02-01",
-            category: "cellular",
-            description: "Supports cellular energy and healthy aging."
-        },
-        {
-            id: 3,
-            name: "Complete Gut Fibre",
-            slug: "complete-gut-fibre",
-            price: "974.00",
-            original: "1,299.00",
-            image: "/supplement-jar-blue.png",
-            images: ["/supplement-jar-blue.png"],
-            date: "2023-11-20",
-            category: "digestive",
-            description: "Essential fiber blend for digestive regularity."
-        },
-        {
-            id: 4,
-            name: "Complete Superfoods Blend",
-            slug: "complete-superfoods-blend",
-            price: "1,499.00",
-            original: "1,999.00",
-            image: "/supplement-jar-blue.png",
-            images: ["/supplement-jar-blue.png"],
-            date: "2023-12-10",
-            category: "cellular",
-            description: "Powerful antioxidant blend from natural superfoods."
-        },
-        {
-            id: 5,
-            name: "Cellular Wellness Superfood",
-            slug: "cellular-wellness-superfood",
-            category: "antioxidant",
-            price: "2,499.00",
-            original: "3,299.00",
-            image: "/supplement-jar-blue.png",
-            images: ["/supplement-jar-blue.png", "/supplement-bottle-blue.png", "/supplement-jar-blue.png"],
-            date: "2024-03-10",
-            description: "Advanced greens-based nutrition for cellular defense and vitality.",
-            details: {
-                positioning: "Supporting Cellular Wellness with Greens-Based Nutrition",
-                categories: [
-                    "Greens & Algae (Spirulina, Chlorella)",
-                    "Fruits & Berries (Amla, Acai)",
-                    "Functional Mushrooms (Lion's Mane, Reishi)",
-                    "Adaptogens (Ashwagandha, Maca)",
-                    "Plant Proteins, Prebiotics & Fibers"
-                ]
-            }
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch("/api/products/public");
+        const data = await res.json();
+        if (data.success) {
+          setProducts(data.data);
+        } else {
+          setError(data.message || "Failed to fetch products");
         }
-    ];
-
-    const sortOptions = [
-        { label: "Featured", value: "featured" },
-        { label: "Best selling", value: "best-selling" },
-        { label: "Alphabetically, A-Z", value: "title-ascending" },
-        { label: "Alphabetically, Z-A", value: "title-descending" },
-        { label: "Price, low to high", value: "price-ascending" },
-        { label: "Price, high to low", value: "price-descending" },
-        { label: "Date, old to new", value: "created-ascending" },
-        { label: "Date, new to old", value: "created-descending" },
-    ];
-
-    const categoryNames: { [key: string]: string } = {
-        'antioxidant': 'Advanced Antioxidant Formulations',
-        'glutathione': 'Glutathione-Based Wellness',
-        'brightening': 'Skin Brightening & Pigmentation',
-        'anti-aging': 'Anti-Aging & Radiance',
-        'liver-detox': 'Liver Detox Support',
-        'immunity': 'Immunity-Boosting Nutraceuticals',
-        'vitality': 'Heart, Brain & Eye Health',
-        'cellular': 'Cellular Defense Protection',
-        'fssai': 'FSSAI-Compliant Products',
-        'premium': 'Premium Ingredient Sourcing',
-        'gut': 'Gut Health Solutions',
-        'nutraceutical': 'Nutraceutical Development'
+      } catch (err) {
+        setError("Failed to fetch products");
+      }
+      setLoading(false);
     };
+    fetchProducts();
+  }, []);
 
-    const displayTitle = categoryFilter
-        ? categoryNames[categoryFilter] ||
-        categoryFilter.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
-        : "All Products";
+  const sortOptions = [
+    { label: "Featured", value: "featured" },
+    { label: "Best selling", value: "best-selling" },
+    { label: "Alphabetically, A-Z", value: "title-ascending" },
+    { label: "Alphabetically, Z-A", value: "title-descending" },
+    { label: "Price, low to high", value: "price-ascending" },
+    { label: "Price, high to low", value: "price-descending" },
+    { label: "Date, old to new", value: "created-ascending" },
+    { label: "Date, new to old", value: "created-descending" },
+  ];
 
-    const getSortedProducts = () => {
-        let filtered = [...initialProducts];
+  const categoryNames: { [key: string]: string } = {
+    antioxidant: "Advanced Antioxidant Formulations",
+    glutathione: "Glutathione-Based Wellness",
+    brightening: "Skin Brightening & Pigmentation",
+    "anti-aging": "Anti-Aging & Radiance",
+    "liver-detox": "Liver Detox Support",
+    immunity: "Immunity-Boosting Nutraceuticals",
+    vitality: "Heart, Brain & Eye Health",
+    cellular: "Cellular Defense Protection",
+    fssai: "FSSAI-Compliant Products",
+    premium: "Premium Ingredient Sourcing",
+    gut: "Gut Health Solutions",
+    nutraceutical: "Nutraceutical Development",
+  };
 
-        if (categoryFilter) {
-            filtered = filtered.filter(p => p.category === categoryFilter);
-        }
+  const displayTitle = categoryFilter
+    ? categoryNames[categoryFilter] ||
+      categoryFilter
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ")
+    : "All Products";
 
-        switch (sortBy) {
-            case "title-ascending":
-                return filtered.sort((a, b) => a.name.localeCompare(b.name));
-            case "title-descending":
-                return filtered.sort((a, b) => b.name.localeCompare(a.name));
-            case "price-ascending":
-                return filtered.sort((a, b) => parseFloat(a.price.replace(/,/g, '')) - parseFloat(b.price.replace(/,/g, '')));
-            case "price-descending":
-                return filtered.sort((a, b) => parseFloat(b.price.replace(/,/g, '')) - parseFloat(a.price.replace(/,/g, '')));
-            case "created-ascending":
-                return filtered.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-            case "created-descending":
-                return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            case "best-selling":
-            case "featured":
-            default:
-                return filtered;
-        }
-    };
+  const getSortedProducts = () => {
+    let filtered = [...products];
+    if (categoryFilter) {
+      filtered = filtered.filter((p) => p.category === categoryFilter);
+    }
+    switch (sortBy) {
+      case "title-ascending":
+        return filtered.sort((a, b) => a.name.localeCompare(b.name));
+      case "title-descending":
+        return filtered.sort((a, b) => b.name.localeCompare(a.name));
+      case "price-ascending":
+        return filtered.sort(
+          (a, b) => (a.price?.amount || 0) - (b.price?.amount || 0),
+        );
+      case "price-descending":
+        return filtered.sort(
+          (a, b) => (b.price?.amount || 0) - (a.price?.amount || 0),
+        );
+      case "created-ascending":
+        return filtered.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        );
+      case "created-descending":
+        return filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      case "best-selling":
+      case "featured":
+      default:
+        return filtered;
+    }
+  };
+  const sortedProducts = getSortedProducts();
+  const currentSortLabel = sortOptions.find((o) => o.value === sortBy)?.label;
 
-    const products = getSortedProducts();
-    const currentSortLabel = sortOptions.find(o => o.value === sortBy)?.label;
-
+  if (loading) {
     return (
-        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-12">
-
-            {/* Category Title */}
-            <div className="mb-8">
-                <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-2">
-                    {displayTitle}
-                </h2>
-                <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
-            </div>
-
-            {/* Top Bar */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
-                <div className="flex items-center gap-2 text-slate-500">
-                    <SlidersHorizontal className="w-5 h-5" />
-                    <span className="font-medium">Filters</span>
-                </div>
-
-                <div className="relative">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-800">Sort by:</span>
-                        <span className="text-sm text-slate-600">{currentSortLabel}</span>
-                        <button
-                            onClick={() => setIsSortOpen(!isSortOpen)}
-                            className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
-                        >
-                            <ChevronDown className={`w-4 h-4 text-slate-600 transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                    </div>
-
-                    {/* Dropdown Menu */}
-                    {isSortOpen && (
-                        <>
-                            <div
-                                className="fixed inset-0 z-40"
-                                onClick={() => setIsSortOpen(false)}
-                            />
-                            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-100 py-2 z-50">
-                                {sortOptions.map((option) => (
-                                    <button
-                                        key={option.value}
-                                        onClick={() => {
-                                            setSortBy(option.value);
-                                            setIsSortOpen(false);
-                                        }}
-                                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-slate-50
-                                            ${sortBy === option.value ? 'font-bold text-blue-600' : 'text-slate-600'}`}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div>
-
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* Sidebar Filters */}
-                <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
-                    {/* In Stock Toggle */}
-                    <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                        <span className="font-medium text-slate-700">In stock only</span>
-                        <Switch />
-                    </div>
-
-                    {/* Price Filter Accordion Mock */}
-                    <div className="pb-4 border-b border-slate-100">
-                        <button className="flex items-center justify-between w-full py-2 font-medium text-slate-700">
-                            <span>Price</span>
-                            <ChevronDown className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Product Grid */}
-                <div className="flex-1">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {products.map((product) => (
-                            <Link key={product.id} href={`/product/${product.slug}`} className="group cursor-pointer">
-                                <div className="relative aspect-square bg-[#f5f5f5] rounded-xl overflow-hidden mb-4 border border-transparent group-hover:border-blue-100 transition-colors">
-                                    <Image
-                                        src={product.image}
-                                        alt={product.name}
-                                        fill
-                                        className="object-contain p-8 transition-transform duration-300 group-hover:scale-105"
-                                    />
-                                    {/* Quote Overlay Mock - simplistic */}
-                                    <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-lg text-[10px] font-medium shadow-sm max-w-[100px]">
-                                        &quot;The Gut of a Champion...&quot;
-                                    </div>
-                                </div>
-
-                                <h3 className="font-bold text-blue-900 text-center mb-1 group-hover:text-blue-600 transition-colors line-clamp-1 px-2">{product.name}</h3>
-                                <div className="flex items-center justify-center gap-2 text-sm mb-2">
-                                    <span className="text-blue-600 font-semibold">Rs. {product.price}</span>
-                                    <span className="text-slate-400 line-through text-xs">Rs. {product.original}</span>
-                                </div>
-                                {product.description && (
-                                    <p className="text-[10px] text-slate-500 text-center px-4 line-clamp-2 italic mb-2">
-                                        {product.description}
-                                    </p>
-                                )}
-                            </Link>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className="py-20 text-center text-blue-600 font-bold text-xl">
+        Loading products...
+      </div>
     );
+  }
+  if (error) {
+    return (
+      <div className="py-20 text-center text-red-600 font-bold text-xl">
+        {error}
+      </div>
+    );
+  }
+  return (
+    <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-12">
+      {/* Category Title */}
+      <div className="mb-8">
+        <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-2">
+          {displayTitle}
+        </h2>
+        <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
+      </div>
+      {/* Top Bar */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
+        <div className="flex items-center gap-2 text-slate-500">
+          <SlidersHorizontal className="w-5 h-5" />
+          <span className="font-medium">Filters</span>
+        </div>
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-slate-800">Sort by:</span>
+            <span className="text-sm text-slate-600">{currentSortLabel}</span>
+            <button
+              onClick={() => setIsSortOpen(!isSortOpen)}
+              className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+            >
+              <ChevronDown
+                className={`w-4 h-4 text-slate-600 transition-transform duration-200 ${isSortOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+          </div>
+          {/* Dropdown Menu */}
+          {isSortOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setIsSortOpen(false)}
+              />
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-slate-100 py-2 z-50">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSortBy(option.value);
+                      setIsSortOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-slate-50
+                                            ${sortBy === option.value ? "font-bold text-blue-600" : "text-slate-600"}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Sidebar Filters */}
+        <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
+          {/* In Stock Toggle */}
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <span className="font-medium text-slate-700">In stock only</span>
+            <Switch />
+          </div>
+          {/* Price Filter Accordion Mock */}
+          <div className="pb-4 border-b border-slate-100">
+            <button className="flex items-center justify-between w-full py-2 font-medium text-slate-700">
+              <span>Price</span>
+              <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        {/* Product Grid */}
+        <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {sortedProducts.map((product) => (
+              <Link
+                key={product._id}
+                href={`/product/${product.slug}`}
+                className="group cursor-pointer"
+              >
+                <div className="relative aspect-square bg-[#f5f5f5] rounded-xl overflow-hidden mb-4 border border-transparent group-hover:border-blue-100 transition-colors">
+                  {/* Use the first image or a placeholder */}
+                  <Image
+                    src={
+                      product.images && product.images.length > 0
+                        ? product.images[0]
+                        : "/placeholder.png"
+                    }
+                    alt={product.name}
+                    fill
+                    className="object-contain p-8 transition-transform duration-300 group-hover:scale-105"
+                  />
+                  {/* Quote Overlay Mock - simplistic */}
+                  <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-lg text-[10px] font-medium shadow-sm max-w-[100px]">
+                    &quot;The Gut of a Champion...&quot;
+                  </div>
+                </div>
+                <h3 className="font-bold text-blue-900 text-center mb-1 group-hover:text-blue-600 transition-colors line-clamp-1 px-2">
+                  {product.name}
+                </h3>
+                <div className="flex items-center justify-center gap-2 text-sm mb-2">
+                  <span className="text-blue-600 font-semibold">
+                    Rs. {product.price?.amount}
+                  </span>
+                  {product.price?.mrp && (
+                    <span className="text-slate-400 line-through text-xs">
+                      Rs. {product.price.mrp}
+                    </span>
+                  )}
+                </div>
+                {product.shortDescription && (
+                  <p className="text-[10px] text-slate-500 text-center px-4 line-clamp-2 italic mb-2">
+                    {product.shortDescription}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 // Main Page Component
 const CollabPage = () => {
-    return (
-        <div className="min-h-screen bg-white">
-            <Hero />
-            <ProductGrid />
-            <div className="pb-20">
-                <CollabFeatured />
-            </div>
-        </div>
-    );
+  return (
+    <div className="min-h-screen bg-white">
+      <Hero />
+      <ProductGrid />
+      <div className="pb-20">
+        <CollabFeatured />
+      </div>
+    </div>
+  );
 };
 
 export default CollabPage;

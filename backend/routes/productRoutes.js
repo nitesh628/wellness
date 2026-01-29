@@ -8,6 +8,7 @@ const router = Router();
 router.post('/', formParser.none(), createProduct);
 router.get('/', getAllProducts);
 
+router.get('/public',getAllProductsForPublic)
 
 router.get('/category/:category', getProductsByCategory);
 router.get('/slug/:slug', getProductBySlug);

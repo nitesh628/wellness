@@ -216,6 +216,23 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
+// This api for public use to displat all the data
+export const getAllProductsForPublic = async (req, res) => {
+  try {
+    const products = await Product.find({});
+    res.status(200).json({
+      success: true,
+      data: products
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch products',
+      error: error.message
+    });
+  }
+};
+
 // READ - Get single product by ID
 export const getProductById = async (req, res) => {
   try {
