@@ -262,7 +262,7 @@ const AddProduct = () => {
 
       // Handle array conversion for benefits if it's a string in current local state (it appears to be array in interface, so clean it)
       const benefitsString = Array.isArray(formData.benefits)
-        ? formData.benefits.join("\\n")
+        ? formData.benefits.join("\n")
         : formData.benefits;
       productFormData.append("benefits", benefitsString);
 

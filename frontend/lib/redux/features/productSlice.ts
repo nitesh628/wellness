@@ -123,7 +123,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 const productSlice = createSlice({
   name: "products",
@@ -131,7 +131,7 @@ const productSlice = createSlice({
   reducers: {
     setProductData: (
       state,
-      action: PayloadAction<{ data: Product[]; total: number }>
+      action: PayloadAction<{ data: Product[]; total: number }>,
     ) => {
       state.data = action.payload.data;
       state.pagination.total = action.payload.total;
@@ -153,14 +153,14 @@ const productSlice = createSlice({
     },
     setFilters: (
       state,
-      action: PayloadAction<Partial<ProductState["filters"]>>
+      action: PayloadAction<Partial<ProductState["filters"]>>,
     ) => {
       state.filters = { ...state.filters, ...action.payload };
       state.pagination.page = 1;
     },
     setPagination: (
       state,
-      action: PayloadAction<Partial<ProductState["pagination"]>>
+      action: PayloadAction<Partial<ProductState["pagination"]>>,
     ) => {
       state.pagination = { ...state.pagination, ...action.payload };
     },
@@ -218,75 +218,78 @@ const handleApiError = (error: unknown) => {
 };
 export const fetchProductsData =
   () =>
-    async (dispatch: AppDispatch, getState: () => { products: ProductState }) => {
-      dispatch(setProductLoading());
-      try {
-        const { filters, pagination } = getState().products;
-        const queryParams = new URLSearchParams();
+  async (dispatch: AppDispatch, getState: () => { products: ProductState }) => {
+    dispatch(setProductLoading());
+    try {
+      const { filters, pagination } = getState().products;
+      const queryParams = new URLSearchParams();
 
-        queryParams.append("page", pagination.page.toString());
-        queryParams.append("limit", pagination.limit.toString());
+      queryParams.append("page", pagination.page.toString());
+      queryParams.append("limit", pagination.limit.toString());
 
-        if (filters.category && filters.category !== "All") {
-          queryParams.append("category", filters.category);
-        }
-        if (filters.status && filters.status !== "All") {
-          queryParams.append("status", filters.status);
-        }
-        if (filters.search) {
-          queryParams.append("search", filters.search);
-        }
-        const response = await api.get(`/products?${queryParams}`);
-
-        if (response.data?.success && Array.isArray(response.data.data)) {
-          const mappedProducts = response.data.data.map((product: ApiProduct) =>
-            mapApiProductToProduct(product)
-          );
-
-          dispatch(
-            setProductData({
-              data: mappedProducts,
-              total:
-                response.data.pagination?.totalProducts ||
-                response.data.data.length,
-            })
-          );
-        } else {
-          throw new Error(response.data?.message || "Failed to fetch products");
-        }
-        return true;
-      } catch (error: unknown) {
-        const errorMessage = handleApiError(error);
-        dispatch(setProductError(errorMessage));
-        return false;
+      if (filters.category && filters.category !== "All") {
+        queryParams.append("category", filters.category);
       }
+      if (filters.status && filters.status !== "All") {
+        queryParams.append("status", filters.status);
+      }
+      if (filters.search) {
+        queryParams.append("search", filters.search);
+      }
+      const response = await api.get(`/products?${queryParams}`);
+
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        const mappedProducts = response.data.data.map((product: ApiProduct) =>
+          mapApiProductToProduct(product),
+        );
+
+        dispatch(
+          setProductData({
+            data: mappedProducts,
+            total:
+              response.data.pagination?.totalProducts ||
+              response.data.data.length,
+          }),
+        );
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch products");
+      }
+      return true;
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setProductError(errorMessage));
       return false;
-    };
+    }
+    return false;
+  };
 
 export const fetchProductBySlug =
-  (slug: string) =>
-    async (dispatch: AppDispatch) => {
-      dispatch(setProductLoading());
-      try {
-        const response = await api.get(`/products/slug/${slug}`);
+  (slug: string) => async (dispatch: AppDispatch) => {
+    dispatch(setProductLoading());
+    try {
+      const response = await api.get(`/products/slug/${slug}`);
 
-        if (response.data?.success) {
-          dispatch(setSelectedProduct(mapApiProductToProduct(response.data.data)));
-          return true;
-        } else {
-          throw new Error(response.data?.message || "Failed to fetch product");
-        }
-      } catch (error: unknown) {
-        const errorMessage = handleApiError(error);
-        dispatch(setProductError(errorMessage));
-        return false;
+      if (response.data?.success) {
+        dispatch(
+          setSelectedProduct(mapApiProductToProduct(response.data.data)),
+        );
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch product");
       }
-    };
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setProductError(errorMessage));
+      return false;
+    }
+  };
 
 export const createProduct =
   (newProduct: FormData) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.post(`/products/`, newProduct);
+      // Ensure this endpoint matches your backend route (e.g., http://localhost:5000/products if not using a proxy)
+      // If using a proxy or relative path, /products is correct
+      const response = await api.post(`/products`, newProduct);
 
       if (response.data?.success) {
         dispatch(fetchProductsData());
@@ -305,24 +308,24 @@ export const createProduct =
   };
 export const updateProduct =
   (productId: string, updatedData: FormData) =>
-    async (dispatch: AppDispatch) => {
-      try {
-        const response = await api.put(
-          `/products/updateProduct/${productId}`,
-          updatedData
-        );
-        if (response.data?.success) {
-          dispatch(fetchProductsData());
-          return true;
-        } else {
-          throw new Error(response.data?.message || "Failed to update product");
-        }
-      } catch (error: unknown) {
-        const errorMessage = handleApiError(error);
-        dispatch(setProductError(errorMessage));
-        return false;
+  async (dispatch: AppDispatch) => {
+    try {
+      const response = await api.put(
+        `/products/updateProduct/${productId}`,
+        updatedData,
+      );
+      if (response.data?.success) {
+        dispatch(fetchProductsData());
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to update product");
       }
-    };
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setProductError(errorMessage));
+      return false;
+    }
+  };
 export const deleteProduct =
   (productId: string) => async (dispatch: AppDispatch) => {
     try {
@@ -339,10 +342,16 @@ export const deleteProduct =
       return false;
     }
   };
-export const selectProductsData = (state: { products: ProductState }) => state.products.data;
-export const selectProductsLoading = (state: { products: ProductState }) => state.products.isLoading;
-export const selectProductsError = (state: { products: ProductState }) => state.products.error;
-export const selectSelectedProduct = (state: { products: ProductState }) => state.products.selectedProduct;
-export const selectProductsFilters = (state: { products: ProductState }) => state.products.filters;
-export const selectProductsPagination = (state: { products: ProductState }) => state.products.pagination;
+export const selectProductsData = (state: { products: ProductState }) =>
+  state.products.data;
+export const selectProductsLoading = (state: { products: ProductState }) =>
+  state.products.isLoading;
+export const selectProductsError = (state: { products: ProductState }) =>
+  state.products.error;
+export const selectSelectedProduct = (state: { products: ProductState }) =>
+  state.products.selectedProduct;
+export const selectProductsFilters = (state: { products: ProductState }) =>
+  state.products.filters;
+export const selectProductsPagination = (state: { products: ProductState }) =>
+  state.products.pagination;
 export default productSlice.reducer;

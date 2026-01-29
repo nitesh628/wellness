@@ -115,7 +115,7 @@ const ProductsPage = () => {
   const [selectedProduct, setSelectedProduct] =
     useState<ProductWithImages | null>(null);
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>(
-    {}
+    {},
   );
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [urlInput, setUrlInput] = useState("");
@@ -181,10 +181,10 @@ const ProductsPage = () => {
   const updateImage = (
     id: string,
     field: keyof ProductImage,
-    value: string
+    value: string,
   ) => {
     setProductImages((prev) =>
-      prev.map((img) => (img.id === id ? { ...img, [field]: value } : img))
+      prev.map((img) => (img.id === id ? { ...img, [field]: value } : img)),
     );
   };
 
@@ -305,7 +305,7 @@ const ProductsPage = () => {
         formData.append("metaDescription", newProduct.metaDescription);
 
       const success = (await dispatch(
-        createProduct(formData)
+        createProduct(formData),
       )) as unknown as boolean;
       if (success) {
         setShowAddModal(false);
@@ -392,7 +392,7 @@ const ProductsPage = () => {
         formData.append("metaDescription", newProduct.metaDescription);
 
       const success = (await dispatch(
-        updateProduct(selectedProduct._id, formData)
+        updateProduct(selectedProduct._id, formData),
       )) as unknown as boolean;
       if (success) {
         setShowEditModal(false);
@@ -409,7 +409,7 @@ const ProductsPage = () => {
       if (!selectedProduct) return;
 
       const success = (await dispatch(
-        deleteProduct(selectedProduct._id)
+        deleteProduct(selectedProduct._id),
       )) as unknown as boolean;
       if (success) {
         setShowDeleteModal(false);
@@ -517,8 +517,8 @@ const ProductsPage = () => {
                   <TooltipTrigger asChild>
                     <Button
                       onClick={() =>
-                      (window.location.href =
-                        "/dashboard/products/addProduct")
+                        (window.location.href =
+                          "/dashboard/products/addProduct")
                       }
                       className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                     >
@@ -578,7 +578,7 @@ const ProductsPage = () => {
                       <p className="text-2xl font-bold text-foreground">
                         {
                           (products || []).filter(
-                            (p) => p.status === "inactive"
+                            (p) => p.status === "inactive",
                           ).length
                         }
                       </p>
@@ -599,7 +599,7 @@ const ProductsPage = () => {
                         {(products || [])
                           .reduce(
                             (sum, p) => sum + p.price.amount * p.stockQuantity,
-                            0
+                            0,
                           )
                           .toFixed(2)}
                       </p>
@@ -931,7 +931,7 @@ const ProductsPage = () => {
                           <div className="flex items-center gap-1">
                             {Array.from(
                               { length: totalPages },
-                              (_, i) => i + 1
+                              (_, i) => i + 1,
                             ).map((page) => (
                               <Button
                                 key={page}
@@ -953,7 +953,7 @@ const ProductsPage = () => {
                             size="sm"
                             onClick={() =>
                               handlePageChange(
-                                Math.min(pagination.page + 1, totalPages)
+                                Math.min(pagination.page + 1, totalPages),
                               )
                             }
                             disabled={pagination.page === totalPages}
@@ -1328,7 +1328,7 @@ const ProductsPage = () => {
                                   updateImage(
                                     image.id,
                                     "caption",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                                 className="text-sm"
@@ -1680,15 +1680,15 @@ const ProductsPage = () => {
                         <div className="flex gap-2">
                           {(selectedProduct?.productImages?.length || 0) <
                             5 && (
-                              <Button
-                                onClick={addImageFromFile}
-                                size="sm"
-                                variant="outline"
-                              >
-                                <Upload className="w-4 h-4 mr-1" />
-                                Upload More
-                              </Button>
-                            )}
+                            <Button
+                              onClick={addImageFromFile}
+                              size="sm"
+                              variant="outline"
+                            >
+                              <Upload className="w-4 h-4 mr-1" />
+                              Upload More
+                            </Button>
+                          )}
                         </div>
                       </div>
                       <input
@@ -1734,7 +1734,7 @@ const ProductsPage = () => {
                                       if (selectedProduct.productImages) {
                                         const updatedImages =
                                           selectedProduct.productImages.filter(
-                                            (img) => img.id !== image.id
+                                            (img) => img.id !== image.id,
                                           );
                                         setSelectedProduct({
                                           ...selectedProduct,
@@ -1759,7 +1759,7 @@ const ProductsPage = () => {
                                           (img) =>
                                             img.id === image.id
                                               ? { ...img, alt: e.target.value }
-                                              : img
+                                              : img,
                                         );
                                       setSelectedProduct({
                                         ...selectedProduct,
@@ -1779,10 +1779,10 @@ const ProductsPage = () => {
                                           (img) =>
                                             img.id === image.id
                                               ? {
-                                                ...img,
-                                                caption: e.target.value,
-                                              }
-                                              : img
+                                                  ...img,
+                                                  caption: e.target.value,
+                                                }
+                                              : img,
                                         );
                                       setSelectedProduct({
                                         ...selectedProduct,
