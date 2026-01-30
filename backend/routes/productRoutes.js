@@ -4,7 +4,9 @@ import { upload } from "../config/s3Config.js";
 import formParser from "../config/formParser.js";
 
 const router = Router();
+
 router.post('/', formParser.none(), createProduct);
+
 router.get('/', getAllProducts);
 
 router.get('/public', getAllProductsForPublic)

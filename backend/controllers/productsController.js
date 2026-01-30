@@ -222,7 +222,7 @@ export const getAllProductsForPublic = async (req, res) => {
     const products = await Product.find({});
     res.status(200).json({
       success: true,
-      data: products  
+      data: products
     });
   } catch (error) {
     res.status(500).json({
