@@ -1,6 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+type Product = {
+  _id: string;
+  name: string;
+  slug: string;
+  category: string;
+  price: {
+    amount: number;
+    currency: string;
+    mrp?: number;
+  };
+  stockQuantity: number;
+  shortDescription?: string;
+  description?: string;
+  date?: string;
+  images: string[];
+};
+
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -79,18 +97,16 @@ const Hero = () => {
 };
 
 // Filter & Grid Section
-
-import { useEffect } from "react";
-
-const ProductGrid = () => {
+const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const searchParams = useSearchParams();
-  const categoryFilter = searchParams.get("category");
+  // ✅ Use categorySlug prop first, then fall back to searchParams
+  const categoryFilter = categorySlug || searchParams.get("category");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -151,28 +167,25 @@ const ProductGrid = () => {
     if (categoryFilter) {
       filtered = filtered.filter((p) => p.category === categoryFilter);
     }
+
     switch (sortBy) {
       case "title-ascending":
         return filtered.sort((a, b) => a.name.localeCompare(b.name));
       case "title-descending":
         return filtered.sort((a, b) => b.name.localeCompare(a.name));
       case "price-ascending":
-        return filtered.sort(
-          (a, b) => (a.price?.amount || 0) - (b.price?.amount || 0),
-        );
+        return filtered.sort((a, b) => a.price.amount - b.price.amount);
       case "price-descending":
-        return filtered.sort(
-          (a, b) => (b.price?.amount || 0) - (a.price?.amount || 0),
-        );
+        return filtered.sort((a, b) => b.price.amount - a.price.amount);
       case "created-ascending":
         return filtered.sort(
           (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            new Date(a.date ?? "").getTime() - new Date(b.date ?? "").getTime(),
         );
       case "created-descending":
         return filtered.sort(
           (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            new Date(b.date ?? "").getTime() - new Date(a.date ?? "").getTime(),
         );
       case "best-selling":
       case "featured":
@@ -180,6 +193,7 @@ const ProductGrid = () => {
         return filtered;
     }
   };
+
   const sortedProducts = getSortedProducts();
   const currentSortLabel = sortOptions.find((o) => o.value === sortBy)?.label;
 
@@ -206,12 +220,14 @@ const ProductGrid = () => {
         </h2>
         <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
       </div>
+
       {/* Top Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2 text-slate-500">
           <SlidersHorizontal className="w-5 h-5" />
           <span className="font-medium">Filters</span>
         </div>
+
         <div className="relative">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-slate-800">Sort by:</span>
@@ -225,6 +241,7 @@ const ProductGrid = () => {
               />
             </button>
           </div>
+
           {/* Dropdown Menu */}
           {isSortOpen && (
             <>
@@ -251,6 +268,7 @@ const ProductGrid = () => {
           )}
         </div>
       </div>
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Filters */}
         <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
@@ -259,6 +277,7 @@ const ProductGrid = () => {
             <span className="font-medium text-slate-700">In stock only</span>
             <Switch />
           </div>
+
           {/* Price Filter Accordion Mock */}
           <div className="pb-4 border-b border-slate-100">
             <button className="flex items-center justify-between w-full py-2 font-medium text-slate-700">
@@ -267,6 +286,7 @@ const ProductGrid = () => {
             </button>
           </div>
         </div>
+
         {/* Product Grid */}
         <div className="flex-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -277,38 +297,38 @@ const ProductGrid = () => {
                 className="group cursor-pointer"
               >
                 <div className="relative aspect-square bg-[#f5f5f5] rounded-xl overflow-hidden mb-4 border border-transparent group-hover:border-blue-100 transition-colors">
-                  {/* Use the first image or a placeholder */}
-                  <Image
-                    src={
-                      product.images && product.images.length > 0
-                        ? product.images[0]
-                        : "/placeholder.png"
-                    }
-                    alt={product.name}
-                    fill
-                    className="object-contain p-8 transition-transform duration-300 group-hover:scale-105"
-                  />
+                  {product.images && product.images.length > 0 ? (
+                    <Image
+                      src={product.images[0]}
+                      alt={product.name}
+                      fill
+                      className="object-contain p-8 transition-transform duration-300 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                      No Image
+                    </div>
+                  )}
                   {/* Quote Overlay Mock - simplistic */}
                   <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-lg text-[10px] font-medium shadow-sm max-w-[100px]">
                     &quot;The Gut of a Champion...&quot;
                   </div>
                 </div>
+
                 <h3 className="font-bold text-blue-900 text-center mb-1 group-hover:text-blue-600 transition-colors line-clamp-1 px-2">
                   {product.name}
                 </h3>
                 <div className="flex items-center justify-center gap-2 text-sm mb-2">
                   <span className="text-blue-600 font-semibold">
-                    Rs. {product.price?.amount}
+                    Rs. {product.price.amount}
                   </span>
-                  {product.price?.mrp && (
-                    <span className="text-slate-400 line-through text-xs">
-                      Rs. {product.price.mrp}
-                    </span>
-                  )}
+                  <span className="text-slate-400 line-through text-xs">
+                    {product.price.mrp && <>Rs. {product.price.mrp}</>}
+                  </span>
                 </div>
-                {product.shortDescription && (
+                {product.description && (
                   <p className="text-[10px] text-slate-500 text-center px-4 line-clamp-2 italic mb-2">
-                    {product.shortDescription}
+                    {product.description}
                   </p>
                 )}
               </Link>
@@ -321,11 +341,12 @@ const ProductGrid = () => {
 };
 
 // Main Page Component
-const CollabPage = () => {
+// ✅ Accept categorySlug prop and pass it down
+const CollabPage = ({ categorySlug }: { categorySlug?: string }) => {
   return (
     <div className="min-h-screen bg-white">
       <Hero />
-      <ProductGrid />
+      <ProductGrid categorySlug={categorySlug} />
       <div className="pb-20">
         <CollabFeatured />
       </div>

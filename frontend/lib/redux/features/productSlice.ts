@@ -310,10 +310,7 @@ export const updateProduct =
   (productId: string, updatedData: FormData) =>
   async (dispatch: AppDispatch) => {
     try {
-      const response = await api.put(
-        `/products/updateProduct/${productId}`,
-        updatedData,
-      );
+      const response = await api.put(`/v1/products/${productId}`, updatedData);
       if (response.data?.success) {
         dispatch(fetchProductsData());
         return true;
@@ -329,7 +326,7 @@ export const updateProduct =
 export const deleteProduct =
   (productId: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.delete(`/products/deleteProduct/${productId}`);
+      const response = await api.delete(`/v1/products/${productId}`);
       if (response.data?.success) {
         dispatch(fetchProductsData());
         return true;
