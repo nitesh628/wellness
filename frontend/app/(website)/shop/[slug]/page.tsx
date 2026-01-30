@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function ShopCategoryPage({ params }: { params: { slug: string } }) {
-    return <CollabPage categorySlug={params.slug} />;
+    return <CollabPage />;
 }

@@ -154,13 +154,14 @@ export const loginUser =
   (email: string, password: string) => async (dispatch: AppDispatch) => {
     dispatch(setAuthLoading());
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`,
-        {
-          email,
-          password,
-        },
-      );
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL ||
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        "http://localhost:5000";
+      const response = await axios.post(`${apiUrl}/v1/auth/login`, {
+        email,
+        password,
+      });
 
       if (
         response.data?.success ||

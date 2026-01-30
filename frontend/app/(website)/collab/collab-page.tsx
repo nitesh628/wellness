@@ -1,34 +1,29 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-
-type Product = {
-  _id: string;
-  name: string;
-  slug: string;
-  category: string;
-  price: {
-    amount: number;
-    currency: string;
-    mrp?: number;
-  };
-  stockQuantity: number;
-  shortDescription?: string;
-  description?: string;
-  date?: string;
-  images: string[];
-};
-
+import React, { useState, useEffect, useMemo } from "react";
+import { fetchProducts as fetchProductsApi } from "../../lib/apiProducts";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ChevronDown, SlidersHorizontal, ChevronUp, Heart } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import CollabFeatured from "./collab-featured";
 import Image1 from "../../../public/1.jpg";
-import Image3 from "../../../public/3.jpg";
-import Image4 from "../../../public/4.jpg";
+
+interface Product {
+  _id: string;
+  slug: string;
+  name: string;
+  images: string[];
+  price?: {
+    amount: number;
+    mrp?: number;
+  };
+  shortDescription?: string;
+  category?: string;
+  createdAt: string;
+}
 
 // Hero Section Component
 const Hero = () => {
@@ -51,7 +46,7 @@ const Hero = () => {
             <div className="relative w-[300px] h-[400px] md:w-[400px] md:h-[500px] lg:w-[500px] lg:h-[600px]">
               <Image
                 src={Image1}
-                alt=" "
+                alt="Wellness Fuel product display"
                 fill
                 className="object-contain"
                 priority
@@ -97,24 +92,23 @@ const Hero = () => {
 };
 
 // Filter & Grid Section
-const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
+
+const ProductGrid = () => {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [sortBy, setSortBy] = useState("featured");
-
-  const searchParams = useSearchParams();
-  // ✅ Use categorySlug prop first, then fall back to searchParams
-  const categoryFilter = categorySlug || searchParams.get("category");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const searchParams = useSearchParams();
+  const categoryFilter = searchParams.get("category");
 
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       setError("");
       try {
-        const res = await fetch("/api/products/public");
-        const data = await res.json();
+        const data = await fetchProductsApi();
         if (data.success) {
           setProducts(data.data);
         } else {
@@ -162,39 +156,39 @@ const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
         .join(" ")
     : "All Products";
 
-  const getSortedProducts = () => {
+  const sortedProducts = useMemo(() => {
     let filtered = [...products];
     if (categoryFilter) {
       filtered = filtered.filter((p) => p.category === categoryFilter);
     }
-
+    // Return a new sorted array to avoid mutation
     switch (sortBy) {
       case "title-ascending":
-        return filtered.sort((a, b) => a.name.localeCompare(b.name));
+        return [...filtered].sort((a, b) => a.name.localeCompare(b.name));
       case "title-descending":
-        return filtered.sort((a, b) => b.name.localeCompare(a.name));
+        return [...filtered].sort((a, b) => b.name.localeCompare(a.name));
       case "price-ascending":
-        return filtered.sort((a, b) => a.price.amount - b.price.amount);
+        return [...filtered].sort(
+          (a, b) => (a.price?.amount || 0) - (b.price?.amount || 0),
+        );
       case "price-descending":
-        return filtered.sort((a, b) => b.price.amount - a.price.amount);
+        return [...filtered].sort(
+          (a, b) => (b.price?.amount || 0) - (a.price?.amount || 0),
+        );
       case "created-ascending":
-        return filtered.sort(
+        return [...filtered].sort(
           (a, b) =>
-            new Date(a.date ?? "").getTime() - new Date(b.date ?? "").getTime(),
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         );
       case "created-descending":
-        return filtered.sort(
+        return [...filtered].sort(
           (a, b) =>
-            new Date(b.date ?? "").getTime() - new Date(a.date ?? "").getTime(),
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
-      case "best-selling":
-      case "featured":
       default:
         return filtered;
     }
-  };
-
-  const sortedProducts = getSortedProducts();
+  }, [products, categoryFilter, sortBy]);
   const currentSortLabel = sortOptions.find((o) => o.value === sortBy)?.label;
 
   if (loading) {
@@ -220,14 +214,12 @@ const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
         </h2>
         <div className="h-1 w-20 bg-blue-600 rounded-full"></div>
       </div>
-
       {/* Top Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2 text-slate-500">
           <SlidersHorizontal className="w-5 h-5" />
           <span className="font-medium">Filters</span>
         </div>
-
         <div className="relative">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-slate-800">Sort by:</span>
@@ -241,7 +233,6 @@ const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
               />
             </button>
           </div>
-
           {/* Dropdown Menu */}
           {isSortOpen && (
             <>
@@ -268,7 +259,6 @@ const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
           )}
         </div>
       </div>
-
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar Filters */}
         <div className="w-full lg:w-64 flex-shrink-0 space-y-6">
@@ -277,7 +267,6 @@ const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
             <span className="font-medium text-slate-700">In stock only</span>
             <Switch />
           </div>
-
           {/* Price Filter Accordion Mock */}
           <div className="pb-4 border-b border-slate-100">
             <button className="flex items-center justify-between w-full py-2 font-medium text-slate-700">
@@ -286,7 +275,6 @@ const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
             </button>
           </div>
         </div>
-
         {/* Product Grid */}
         <div className="flex-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -297,38 +285,38 @@ const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
                 className="group cursor-pointer"
               >
                 <div className="relative aspect-square bg-[#f5f5f5] rounded-xl overflow-hidden mb-4 border border-transparent group-hover:border-blue-100 transition-colors">
-                  {product.images && product.images.length > 0 ? (
-                    <Image
-                      src={product.images[0]}
-                      alt={product.name}
-                      fill
-                      className="object-contain p-8 transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
-                      No Image
-                    </div>
-                  )}
+                  {/* Use the first image or a placeholder */}
+                  <Image
+                    src={
+                      product.images && product.images.length > 0
+                        ? product.images[0]
+                        : "/placeholder.png"
+                    }
+                    alt={product.name}
+                    fill
+                    className="object-contain p-8 transition-transform duration-300 group-hover:scale-105"
+                  />
                   {/* Quote Overlay Mock - simplistic */}
                   <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-lg text-[10px] font-medium shadow-sm max-w-[100px]">
                     &quot;The Gut of a Champion...&quot;
                   </div>
                 </div>
-
                 <h3 className="font-bold text-blue-900 text-center mb-1 group-hover:text-blue-600 transition-colors line-clamp-1 px-2">
                   {product.name}
                 </h3>
                 <div className="flex items-center justify-center gap-2 text-sm mb-2">
                   <span className="text-blue-600 font-semibold">
-                    Rs. {product.price.amount}
+                    Rs. {product.price?.amount}
                   </span>
-                  <span className="text-slate-400 line-through text-xs">
-                    {product.price.mrp && <>Rs. {product.price.mrp}</>}
-                  </span>
+                  {product.price?.mrp && (
+                    <span className="text-slate-400 line-through text-xs">
+                      Rs. {product.price.mrp}
+                    </span>
+                  )}
                 </div>
-                {product.description && (
+                {product.shortDescription && (
                   <p className="text-[10px] text-slate-500 text-center px-4 line-clamp-2 italic mb-2">
-                    {product.description}
+                    {product.shortDescription}
                   </p>
                 )}
               </Link>
@@ -341,12 +329,11 @@ const ProductGrid = ({ categorySlug }: { categorySlug?: string }) => {
 };
 
 // Main Page Component
-// ✅ Accept categorySlug prop and pass it down
-const CollabPage = ({ categorySlug }: { categorySlug?: string }) => {
+const CollabPage = () => {
   return (
     <div className="min-h-screen bg-white">
       <Hero />
-      <ProductGrid categorySlug={categorySlug} />
+      <ProductGrid />
       <div className="pb-20">
         <CollabFeatured />
       </div>

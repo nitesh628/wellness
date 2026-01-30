@@ -247,7 +247,6 @@ const AddProduct = () => {
     handleInputChange("benefits", benefits);
   };
 
-  // Save or update product (add or edit)
   const saveProduct = async () => {
     setIsProcessing(true);
     try {
@@ -289,34 +288,18 @@ const AddProduct = () => {
 
       // Append images
       if (selectedImages.length > 0) {
+        selectedImages.forEach((file) => {});
+
+        // Using the imagePreviews which are base64 string
         imagePreviews.forEach((preview) => {
           productFormData.append("images[]", preview);
         });
       }
 
-      // If editing, send PUT request, else POST
-      if (editProductId) {
-        // Edit mode: PUT /v1/products/:id
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/products/${editProductId}`,
-          {
-            method: "PUT",
-            body: productFormData,
-            credentials: "include",
-          },
-        );
-        if (res.ok) {
-          router.push("/dashboard/products");
-        } else {
-          const data = await res.json();
-          throw new Error(data.message || "Failed to update product");
-        }
-      } else {
-        // Add mode: POST
-        const result = await dispatch(createProduct(productFormData));
-        if (isFulfilled(result)) {
-          router.push("/dashboard/products");
-        }
+      const result = await dispatch(createProduct(productFormData));
+
+      if (isFulfilled(result)) {
+        router.push("/dashboard/products");
       }
     } catch (error) {
       console.error("Error saving product:", error);
@@ -346,37 +329,6 @@ const AddProduct = () => {
       confidence: 0,
     });
     setIsEditing(false);
-  };
-
-  // --- Edit mode state ---
-  const [editProductId, setEditProductId] = useState<string | null>(null);
-
-  // Handler to load product for editing (for demo, you may want to pass product data as props or via router)
-  const handleEdit = (product: any) => {
-    setEditProductId(product._id);
-    setFormData({
-      name: product.name,
-      category: product.category,
-      price: product.price.amount.toString(),
-      originalPrice: product.price.mrp?.toString() || "",
-      stock: product.stockQuantity.toString(),
-      shortDescription: product.shortDescription,
-      longDescription: product.longDescription,
-      benefits: Array.isArray(product.benefits) ? product.benefits : [],
-      ingredients: Array.isArray(product.ingredients)
-        ? product.ingredients.join(", ")
-        : product.ingredients,
-      dosage: product.dosageInstructions,
-      weight: product.weightSize?.value
-        ? `${product.weightSize.value}${product.weightSize.unit}`
-        : "",
-      expiryDate: product.expiryDate ? product.expiryDate.split("T")[0] : "",
-      manufacturer: product.manufacturer,
-      confidence: 100,
-    });
-    setImagePreviews(product.images || []);
-    setSelectedImages([]); // Images are already base64 or URLs
-    setIsEditing(true);
   };
 
   return (
@@ -587,12 +539,12 @@ const AddProduct = () => {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {editProductId ? "Updating..." : "Saving..."}
+                      Saving...
                     </>
                   ) : (
                     <>
                       <Check className="w-4 h-4 mr-2" />
-                      {editProductId ? "Update Product" : "Save Product"}
+                      Save Product
                     </>
                   )}
                 </Button>

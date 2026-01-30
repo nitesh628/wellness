@@ -19,6 +19,7 @@ import {
   Heart,
   Truck
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import LOGO_URL from '../../../public/logo.jpeg';
 
 const Header = () => {
@@ -94,7 +95,7 @@ const Header = () => {
   return (
     <>
       {/* Top Announcement Bar */}
-      <div className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 text-white py-2.5 overflow-hidden relative z-50">
+      <div className="w-full bg-gradient-to-r from-blue-700 via-blue-600 to-blue-700 text-white py-2.5 overflow-hidden relative z-50 shadow-sm">
         <div className="flex items-center justify-center gap-8 animate-marquee whitespace-nowrap text-xs md:text-sm font-bold tracking-wide">
           {Array(10).fill("Up to 40% off Sitewide").map((text, i) => (
             <div key={i} className="flex items-center gap-8">
@@ -105,7 +106,7 @@ const Header = () => {
         </div>
       </div>
 
-      <header className="w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-blue-100 dark:border-slate-800 shadow-sm sticky top-0 z-40">
+      <header className="w-full bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200/60 dark:border-slate-800 shadow-sm sticky top-0 z-40 transition-all duration-300">
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12">
           <div className="flex items-center justify-between h-20 md:h-24">
 
@@ -142,18 +143,21 @@ const Header = () => {
                 <div key={item.href} className="relative group">
                   <Link
                     href={item.href}
-                    className={`flex items-center gap-1 text-[16px] font-bold transition-colors duration-200 py-4 ${isActive(item.href)
+                    className={`flex items-center gap-1.5 text-[15px] font-bold transition-all duration-300 py-4 tracking-wide ${isActive(item.href)
                       ? "text-blue-600"
-                      : "text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500"
+                      : "text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400"
                       }`}
                   >
                     {item.label}
-                    {item.hasDropdown && <ChevronDown className="w-4 h-4 mt-0.5 stroke-[2.5] transition-transform duration-200 group-hover:rotate-180" />}
+                    {item.hasDropdown && <ChevronDown className="w-3.5 h-3.5 mt-0.5 stroke-[3] transition-transform duration-300 group-hover:-rotate-180" />}
+                    
+                    {/* Hover Underline Animation */}
+                    <span className={`absolute bottom-2 left-0 w-full h-0.5 bg-blue-600 transform origin-left transition-transform duration-300 ${isActive(item.href) ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`} />
                   </Link>
 
                   {/* Shop Mega Menu */}
                   {item.hasDropdown && item.label === "Shop" && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-[900px] bg-white dark:bg-slate-900 shadow-2xl rounded-2xl border border-blue-100 dark:border-slate-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 lg:group-hover:translate-x-[-50%] z-50 overflow-hidden">
+                    <div className="absolute top-[calc(100%-10px)] left-1/2 -translate-x-1/2 w-[900px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-blue-900/10 rounded-3xl border border-slate-100 dark:border-slate-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 lg:group-hover:translate-x-[-50%] z-50 overflow-hidden ring-1 ring-black/5">
                       <div className="flex">
                         {/* Section 1: Nutraceutical Products */}
                         <div className="w-2/3 p-8 border-r border-slate-100 dark:border-slate-800">
@@ -225,17 +229,17 @@ const Header = () => {
             {/* Icons / Actions */}
             <div className="hidden md:flex items-center gap-6">
               {/* Search */}
-              <button className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500 transition-colors">
+              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 <Search className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
-              </button>
+              </motion.button>
 
               {/* Logged In User Actions */}
               {isClient && user && (
                 <>
-                  <Link href="/wishlist" className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500 transition-colors">
+                  <Link href="/wishlist" className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                     <Heart className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
                   </Link>
-                  <Link href="/track-order" className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500 transition-colors">
+                  <Link href="/track-order" className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                     <Truck className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
                   </Link>
                 </>
@@ -250,21 +254,30 @@ const Header = () => {
                 >
                   <Link
                     href={getDashboardLink()}
-                    className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500 transition-colors block py-2"
+                    className="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
                   >
-                    <User className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                      <User className="w-4 h-4 md:w-5 md:h-5 stroke-[2]" />
+                    </div>
+                    <span className="text-sm font-bold hidden lg:block">
+                      Hi, {user.name?.split(' ')[0] || user.user?.name?.split(' ')[0] || 'User'}
+                    </span>
                   </Link>
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300 hidden lg:block">
-                    Hi, {user.name?.split(' ')[0] || user.user?.name?.split(' ')[0] || 'User'}
-                  </span>
 
                   {/* User Dropdown */}
-                  {isUserMenuOpen && (
-                    <div className="absolute top-full right-0 w-48 bg-white dark:bg-slate-900 shadow-xl rounded-xl border border-blue-100 dark:border-slate-800 z-50 overflow-hidden">
+                  <AnimatePresence>
+                    {isUserMenuOpen && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-900 shadow-2xl shadow-blue-900/10 rounded-2xl border border-slate-100 dark:border-slate-800 z-50 overflow-hidden ring-1 ring-black/5"
+                      >
                       <div className="p-2 flex flex-col gap-1">
                         <Link
                           href={getDashboardLink()}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800/50 hover:text-blue-600 rounded-lg transition-colors"
+                          className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-slate-800/50 hover:text-blue-600 rounded-xl transition-colors"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           <LayoutDashboard className="w-4 h-4" />
@@ -272,27 +285,28 @@ const Header = () => {
                         </Link>
                         <button
                           onClick={handleLogout}
-                          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors w-full text-left"
+                          className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors w-full text-left"
                         >
                           <LogOut className="w-4 h-4" />
                           <span>Logout</span>
                         </button>
                       </div>
-                    </div>
-                  )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               ) : (
-                <Link href="/login" className="text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500 transition-colors">
+                <Link href="/login" className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   <User className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
                 </Link>
               )}
 
               {/* Cart */}
-              <Link href="/cart" className="relative text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-500 transition-colors">
+              <Link href="/cart" className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group">
                 <span className="sr-only">Cart</span>
                 <ShoppingCart className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5]" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  <span className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 group-hover:scale-110 transition-transform">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
@@ -301,16 +315,16 @@ const Header = () => {
 
             {/* Mobile Menu Button */}
             <div className="xl:hidden flex items-center gap-4">
-              <Link href="/cart" className="md:hidden relative text-slate-700 dark:text-slate-300">
+              <Link href="/cart" className="md:hidden relative p-2 text-slate-700 dark:text-slate-300">
                 <ShoppingCart className="w-5 h-5" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  <span className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
               </Link>
               <button
-                className="p-2 text-slate-700 dark:text-slate-300 hover:text-blue-600"
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 transition-colors"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
                 {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -320,16 +334,23 @@ const Header = () => {
         </div>
 
         {/* Mobile Navigation Menu */}
-        {isMobileMenuOpen && (
-          <div className="xl:hidden border-t border-blue-100 dark:border-slate-800 bg-white dark:bg-slate-900 absolute w-full left-0 shadow-lg h-[calc(100vh-80px)] overflow-y-auto">
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "calc(100vh - 80px)" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="xl:hidden border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 absolute w-full left-0 shadow-xl overflow-y-auto z-30"
+            >
             <nav className="flex flex-col p-6 space-y-6">
               {navigationItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex justify-between items-center text-xl font-bold ${isActive(item.href)
+                  className={`flex justify-between items-center text-lg font-bold p-2 rounded-xl transition-colors ${isActive(item.href)
                     ? "text-blue-600"
-                    : "text-slate-800 dark:text-slate-200"
+                    : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900"
                     }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -337,12 +358,12 @@ const Header = () => {
                   {item.hasDropdown && <ChevronDown className="w-5 h-5" />}
                 </Link>
               ))}
-              <div className="border-t border-blue-100 dark:border-slate-800 pt-6 mt-2 space-y-4">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mt-2 space-y-4">
                 {user ? (
                   <div className="flex flex-col gap-4">
                     <Link
                       href={getDashboardLink()}
-                      className="flex items-center gap-3 text-lg font-medium text-slate-700 dark:text-slate-300"
+                      className="flex items-center gap-3 text-lg font-semibold text-slate-700 dark:text-slate-300 p-2 hover:bg-slate-50 rounded-xl"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <User className="w-6 h-6" />
@@ -350,7 +371,7 @@ const Header = () => {
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 text-lg font-medium text-red-600 dark:text-red-400 text-left w-full"
+                      className="flex items-center gap-3 text-lg font-semibold text-red-600 dark:text-red-400 text-left w-full p-2 hover:bg-red-50 rounded-xl"
                     >
                       <LogOut className="w-6 h-6" />
                       <span>Logout</span>
@@ -358,21 +379,22 @@ const Header = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-4">
-                    <Link href="/login" className="flex items-center gap-3 text-lg font-medium text-slate-700 dark:text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Link href="/login" className="flex items-center gap-3 text-lg font-semibold text-slate-700 dark:text-slate-300 p-2 hover:bg-slate-50 rounded-xl" onClick={() => setIsMobileMenuOpen(false)}>
                       <User className="w-6 h-6" />
                       <span>Login</span>
                     </Link>
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 text-lg font-medium text-slate-700 dark:text-slate-300">
+                <div className="flex items-center gap-3 text-lg font-semibold text-slate-700 dark:text-slate-300 p-2 hover:bg-slate-50 rounded-xl cursor-pointer">
                   <Search className="w-6 h-6" />
                   <span>Search</span>
                 </div>
               </div>
             </nav>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
     </>
   );

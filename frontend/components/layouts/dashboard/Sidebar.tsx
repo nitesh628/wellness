@@ -3,6 +3,8 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import img1 from '../../../public/logo.png'
+
 import {
   LayoutDashboard,
   Users,
@@ -30,9 +32,10 @@ import Image from 'next/image'
 interface SidebarProps {
   isCollapsed: boolean
   setIsCollapsed: (collapsed: boolean) => void
+  imageSrc?: any;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed, imageSrc }) => {
   const pathname = usePathname()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const router = useRouter()
@@ -90,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           {!isCollapsed && (
             <div className="flex items-center justify-center flex-1">
               <Image 
-                src="/logo.png" 
+               src={imageSrc || img1} 
                 alt="HealthCare" 
                 width={100} 
                 height={40} 
@@ -101,8 +104,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed }) => {
           {isCollapsed && (
             <div className="flex items-center justify-center flex-1">
               <Image 
-                src="/logo.png" 
+                src={imageSrc || img1}
                 alt="HealthCare" 
+                width={32}
                 height={32} 
                 className="object-contain" 
               />

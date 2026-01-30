@@ -5,7 +5,9 @@ import Image from "next/image";
 import { StaticImageData } from "next/image";
 import Image1 from "../../public/about-anatomy.png";
 import Image2 from "../../public/about-doctors.png";
-import Image3 from "../../public/natural-science.png";
+import Image3 from "../../public/natural-plants-science.png";
+
+import { motion, AnimatePresence } from "framer-motion";
 
 type AboutStep = {
   number: string;
@@ -61,20 +63,27 @@ const AboutScrollSection = () => {
   const active = steps[activeIndex];
 
   return (
-    <section className="bg-white dark:bg-slate-950 overflow-hidden">
-      <div ref={scrollRef} className="max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 py-16">
-        <div className="flex items-center gap-3 mb-10">
-          <div className="w-10 h-[2px] bg-blue-900" />
-          <div className="flex items-center gap-3">
+    <section className="bg-white dark:bg-slate-950 overflow-hidden relative py-20 lg:py-32">
+      {/* Background Decoration */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-50/50 rounded-full blur-3xl" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-indigo-50/50 rounded-full blur-3xl" />
+      </div>
+
+      <div ref={scrollRef} className="max-w-[1400px] mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-16">
+          <div className="hidden sm:block w-16 h-[2px] bg-blue-600" />
+          <div className="flex flex-wrap items-center gap-2">
             {steps.map((step, idx) => (
               <button
                 key={step.number}
                 type="button"
                 onClick={() => setActiveIndex(idx)}
-                className={`text-xs font-semibold tracking-[0.2em] px-2 py-1 transition-colors ${idx === activeIndex
-                  ? "text-blue-900"
-                  : "text-slate-400 hover:text-blue-900"
-                  }`}
+                className={`relative px-4 py-2 text-sm font-bold tracking-widest transition-all duration-300 rounded-full ${
+                  idx === activeIndex
+                    ? "text-white bg-blue-600 shadow-lg shadow-blue-200"
+                    : "text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+                }`}
                 aria-pressed={idx === activeIndex}
               >
                 {step.number}
@@ -83,56 +92,85 @@ const AboutScrollSection = () => {
           </div>
         </div>
 
-        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center ${active.panelBgClassName || ""}`}>
-          <div className="order-2 lg:order-1">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-blue-900 leading-[1.05] mb-6">
-              {active.title}
-            </h2>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeIndex}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className={`grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center ${active.panelBgClassName || ""}`}
+          >
+            <div className="order-2 lg:order-1">
+              <motion.h2 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-blue-900 dark:text-white leading-[1.1] mb-8 tracking-tight"
+              >
+                {active.title}
+              </motion.h2>
 
-            <p className="text-sm sm:text-base md:text-[15px] text-slate-600 leading-relaxed max-w-xl">
-              {active.description}
-            </p>
-          </div>
-
-          <div className="order-1 lg:order-2">
-            <div
-              className={`relative w-full aspect-[16/10] overflow-hidden ${active.imageBgClassName || "bg-slate-100"
-                }`}
-            >
-              {!imageError[activeIndex] ? (
-                <Image
-                  src={active.imageSrc}
-                  alt={active.imageAlt}
-                  fill
-                  className="object-contain"
-                  onError={() =>
-                    setImageError((prev) => ({ ...prev, [activeIndex]: true }))
-                  }
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-400 font-semibold">
-                  {active.title}
-                </div>
-              )}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                className="relative pl-6 border-l-4 border-blue-100 dark:border-blue-900"
+              >
+                <p className="text-lg text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
+                  {active.description}
+                </p>
+              </motion.div>
             </div>
-          </div>
-        </div>
 
-        <div className="mt-16 pt-12 border-t border-slate-200">
-          <div className="max-w-3xl">
-            <div className="text-xs font-semibold tracking-[0.2em] text-blue-900 mb-4">
+            <div className="order-1 lg:order-2">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className={`relative w-full aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/10 ${active.imageBgClassName || "bg-slate-50"}`}
+              >
+                {!imageError[activeIndex] ? (
+                  <Image
+                    src={active.imageSrc}
+                    alt={active.imageAlt}
+                    fill
+                    className="object-contain p-8 hover:scale-105 transition-transform duration-700"
+                    onError={() =>
+                      setImageError((prev) => ({ ...prev, [activeIndex]: true }))
+                    }
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-slate-400 font-semibold">
+                    {active.title}
+                  </div>
+                )}
+              </motion.div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="mt-24 pt-16 border-t border-slate-100 dark:border-slate-800"
+        >
+          <div className="max-w-4xl">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 text-green-700 text-xs font-bold tracking-widest uppercase mb-6">
               Plant-Based and Free from Artificial Additives
             </div>
 
-            <h3 className="text-4xl md:text-5xl font-extrabold text-blue-900 leading-[1.05] mb-6">
+            <h3 className="text-3xl md:text-4xl lg:text-5xl font-bold text-blue-900 dark:text-white leading-tight mb-6">
               Commitment to Quality
             </h3>
 
-            <p className="text-sm sm:text-base md:text-[15px] text-slate-600 leading-relaxed">
+            <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
               Wellness remains steadfast in its commitment to enhancing lives by delivering the best of what nature and science can offer. Their meticulous approach guarantees products that meet the highest standards of safety, efficacy, and quality. Wellness's dedication to excellence underscores its mission to use natural ingredients to empower and support the health journeys of all who seek their products.
             </p>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

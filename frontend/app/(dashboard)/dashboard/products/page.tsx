@@ -342,57 +342,43 @@ const ProductsPage = () => {
     try {
       if (!selectedProduct) return;
 
-      const formData = new FormData();
-      // Direct Fields
-      formData.append("name", newProduct.name);
-      formData.append("category", newProduct.category);
-      formData.append("shortDescription", newProduct.shortDescription);
-      formData.append("longDescription", newProduct.longDescription);
-      formData.append("description", newProduct.longDescription);
-      formData.append("stockQuantity", newProduct.stockQuantity);
-      formData.append("expiryDate", newProduct.expiryDate);
-      formData.append("manufacturer", newProduct.manufacturer);
-      formData.append("dosageInstructions", newProduct.dosageInstructions);
-
-      // Nested Objects
-      formData.append("price[amount]", newProduct.price.amount);
-      formData.append("price[currency]", newProduct.price.currency);
-      if (newProduct.price.mrp)
-        formData.append("price[mrp]", newProduct.price.mrp);
-
-      formData.append("weightSize[value]", newProduct.weightSize.value);
-      formData.append("weightSize[unit]", newProduct.weightSize.unit);
-
-      // Arrays
-      const ingredientsArray = newProduct.ingredients
-        .split(",")
-        .map((i) => i.trim())
-        .filter(Boolean);
-      ingredientsArray.forEach((ing) => formData.append("ingredients", ing));
-
-      const benefitsArray = newProduct.benefits
-        .split("\n")
-        .map((b) => b.trim())
-        .filter(Boolean);
-      benefitsArray.forEach((ben) => formData.append("benefits", ben));
-
-      // Images
-      productImages.forEach((img, index) => {
-        formData.append(`images[${index}]`, img.url);
-      });
-      if (productImages.length > 0) {
-        formData.append("imageUrl", productImages[0].url);
-      }
-
-      // Optional
-      if (newProduct.slug) formData.append("slug", newProduct.slug);
-      if (newProduct.metaTitle)
-        formData.append("metaTitle", newProduct.metaTitle);
-      if (newProduct.metaDescription)
-        formData.append("metaDescription", newProduct.metaDescription);
+      // Build plain object for update
+      const updatedProduct = {
+        name: newProduct.name,
+        category: newProduct.category,
+        shortDescription: newProduct.shortDescription,
+        longDescription: newProduct.longDescription,
+        description: newProduct.longDescription,
+        stockQuantity: Number(newProduct.stockQuantity),
+        expiryDate: newProduct.expiryDate,
+        manufacturer: newProduct.manufacturer,
+        dosageInstructions: newProduct.dosageInstructions,
+        price: {
+          amount: Number(newProduct.price.amount),
+          currency: newProduct.price.currency,
+          mrp: newProduct.price.mrp ? Number(newProduct.price.mrp) : undefined,
+        },
+        weightSize: {
+          value: Number(newProduct.weightSize.value),
+          unit: newProduct.weightSize.unit,
+        },
+        ingredients: newProduct.ingredients
+          .split(",")
+          .map((i) => i.trim())
+          .filter(Boolean),
+        benefits: newProduct.benefits
+          .split("\n")
+          .map((b) => b.trim())
+          .filter(Boolean),
+        images: productImages.map((img) => img.url),
+        imageUrl: productImages[0]?.url || "",
+        slug: newProduct.slug,
+        metaTitle: newProduct.metaTitle,
+        metaDescription: newProduct.metaDescription,
+      };
 
       const success = (await dispatch(
-        updateProduct(selectedProduct._id, formData),
+        updateProduct(selectedProduct._id, updatedProduct),
       )) as unknown as boolean;
       if (success) {
         setShowEditModal(false);

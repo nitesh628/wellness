@@ -1,62 +1,75 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronRight } from "lucide-react";
-import ProductBottle from "../../../public/supplement-bottle-blue.png";
-import ProductJar from "../../../public/supplement-jar-blue.png";
 
-// Data for Featured Collection
-const featuredProducts = [
-  {
-    id: 1,
-    name: "Bone Essentials",
-    slug: "bone-essentials",
-    price: "675.00",
-    originalPrice: "900.00",
-    image: ProductBottle,
-    hoverImage: ProductBottle,
-  },
-  {
-    id: 2,
-    name: "Complete Gut Fibre",
-    slug: "complete-gut-fibre",
-    price: "974.00",
-    originalPrice: "1,299.00",
-    image: ProductJar,
-    hoverImage: ProductJar,
-  },
-  {
-    id: 3,
-    name: "Fat Metabolism Boost",
-    slug: "fat-metabolism-boost",
-    price: "2,016.00",
-    originalPrice: "2,689.00",
-    image: ProductBottle,
-    hoverImage: ProductBottle,
-  },
-  {
-    id: 4,
-    name: "Fatty Liver Revive",
-    slug: "fatty-liver-revive",
-    price: "1,874.00",
-    originalPrice: "2,499.00",
-    image: ProductBottle,
-    hoverImage: ProductBottle,
-  },
-  {
-    id: 5,
-    name: "Fertility Boost",
-    slug: "fertility-boost",
-    price: "2,340.00",
-    originalPrice: null,
-    image: ProductBottle,
-    hoverImage: ProductBottle,
-  },
-];
+// Define the Product interface based on expected API response
+interface Product {
+  _id: string;
+  slug: string;
+  name: string;
+  images: string[];
+  price?: {
+    amount: number;
+    mrp?: number;
+  };
+}
 
 const CollabFeatured = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        // The API endpoint is /v1/products/public on the backend.
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const res = await fetch(`${apiUrl}/v1/products/public`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch products");
+        }
+        const data = await res.json();
+        if (data.success) {
+          // Take the first 5 products for the featured collection
+          setProducts(data.data.slice(0, 5));
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedProducts();
+  }, []);
+
+  if (loading) {
+    // Optional: Render a loading skeleton here
+    return (
+      <section className="py-16 bg-white dark:bg-slate-950">
+        <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12">
+          <div className="h-10 bg-gray-200 rounded w-1/3 mb-12 animate-pulse"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-square bg-gray-200 rounded-xl mb-4"></div>
+                <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) {
+    return null; // Don't render the section if there are no products
+  }
+
   return (
     <section className="py-16 bg-white dark:bg-slate-950 overflow-hidden">
       <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12">
@@ -66,7 +79,7 @@ const CollabFeatured = () => {
             Featured collection
           </h2>
           <Link
-            href="/products"
+            href="/collab"
             className="flex items-center gap-1 text-slate-500 hover:text-blue-600 transition-colors"
           >
             <span className="text-sm font-medium">View all</span>
@@ -78,9 +91,9 @@ const CollabFeatured = () => {
 
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {featuredProducts.map((product) => (
+          {products.map((product) => (
             <Link
-              key={product.id}
+              key={product._id}
               href={`/product/${product.slug}`}
               className="flex flex-col items-center group cursor-pointer block"
             >
@@ -88,19 +101,11 @@ const CollabFeatured = () => {
               <div className="relative w-full aspect-square mb-4 overflow-hidden rounded-xl bg-slate-50 border border-transparent group-hover:border-blue-100 transition-colors">
                 <div className="absolute inset-0 flex items-center justify-center p-4">
                   <div className="relative w-full h-full">
-                    {/* Default Image */}
                     <Image
-                      src={product.image}
+                      src={product.images?.[0] || "/placeholder.png"}
                       alt={product.name}
                       fill
-                      className="object-contain transition-opacity duration-300 group-hover:opacity-0"
-                    />
-                    {/* Hover Image */}
-                    <Image
-                      src={product.hoverImage}
-                      alt={product.name}
-                      fill
-                      className="object-contain absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                      className="object-contain transition-transform duration-300 group-hover:scale-105"
                     />
                   </div>
                 </div>
@@ -120,16 +125,17 @@ const CollabFeatured = () => {
               </h3>
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-blue-600 font-semibold">
-                  Rs. {product.price}
+                  Rs. {product.price?.amount}
                 </span>
-                {product.originalPrice && (
+                {product.price?.mrp && (
                   <span className="text-slate-400 line-through text-xs">
-                    Rs. {product.originalPrice}
+                    Rs. {product.price.mrp}
                   </span>
                 )}
               </div>
             </Link>
           ))}
+          ``
         </div>
       </div>
     </section>

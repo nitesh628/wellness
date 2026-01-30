@@ -104,7 +104,10 @@ const initialState: ProductState = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL:
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    "http://localhost:5000",
   withCredentials: true,
 });
 api.interceptors.request.use(
@@ -236,7 +239,7 @@ export const fetchProductsData =
       if (filters.search) {
         queryParams.append("search", filters.search);
       }
-      const response = await api.get(`/products?${queryParams}`);
+      const response = await api.get(`/v1/products?${queryParams}`);
 
       if (response.data?.success && Array.isArray(response.data.data)) {
         const mappedProducts = response.data.data.map((product: ApiProduct) =>
@@ -267,12 +270,10 @@ export const fetchProductBySlug =
   (slug: string) => async (dispatch: AppDispatch) => {
     dispatch(setProductLoading());
     try {
-      const response = await api.get(`/products/slug/${slug}`);
-
-      if (response.data?.success) {
-        dispatch(
-          setSelectedProduct(mapApiProductToProduct(response.data.data)),
-        );
+      const response = await api.get(`/v1/products/slug/${slug}`);
+      if (response.data?.success && response.data.data) {
+        const mappedProduct = mapApiProductToProduct(response.data.data);
+        dispatch(setSelectedProduct(mappedProduct));
         return true;
       } else {
         throw new Error(response.data?.message || "Failed to fetch product");
@@ -284,13 +285,11 @@ export const fetchProductBySlug =
     }
   };
 
+// If you need a createProduct function (since there was a reference to newProduct), you can add:
 export const createProduct =
-  (newProduct: FormData) => async (dispatch: AppDispatch) => {
+  (newProduct: any) => async (dispatch: AppDispatch) => {
     try {
-      // Ensure this endpoint matches your backend route (e.g., http://localhost:5000/products if not using a proxy)
-      // If using a proxy or relative path, /products is correct
-      const response = await api.post(`/products`, newProduct);
-
+      const response = await api.post(`/v1/products`, newProduct);
       if (response.data?.success) {
         dispatch(fetchProductsData());
         return true;
@@ -307,10 +306,11 @@ export const createProduct =
     }
   };
 export const updateProduct =
-  (productId: string, updatedData: FormData) =>
-  async (dispatch: AppDispatch) => {
+  (productId: string, updatedData: any) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.put(`/v1/products/${productId}`, updatedData);
+      const response = await api.put(`/v1/products/${productId}`, updatedData, {
+        headers: { "Content-Type": "application/json" },
+      });
       if (response.data?.success) {
         dispatch(fetchProductsData());
         return true;
@@ -326,7 +326,7 @@ export const updateProduct =
 export const deleteProduct =
   (productId: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.delete(`/v1/products/${productId}`);
+      const response = await api.delete(`/products/deleteProduct/${productId}`);
       if (response.data?.success) {
         dispatch(fetchProductsData());
         return true;
