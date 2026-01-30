@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
@@ -332,10 +333,15 @@ const AddProduct = () => {
   };
 
   return (
-    <div className="mx-auto p-0 space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="mx-auto p-4 sm:p-6 space-y-8 max-w-7xl"
+    >
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="outline" size="icon" onClick={() => router.back()}>
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-muted transition-colors">
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <div>
@@ -348,10 +354,10 @@ const AddProduct = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
         {/* Image Upload Section */}
-        <Card>
-          <CardHeader>
+        <Card className="border-muted/40 shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden bg-card/50 backdrop-blur-sm">
+          <CardHeader className="bg-muted/5 border-b border-border/50 pb-4">
             <CardTitle className="flex items-center gap-2">
               <Camera className="w-5 h-5" />
               Product Image
@@ -360,49 +366,58 @@ const AddProduct = () => {
               Upload a clear image of your product for AI analysis
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-6 space-y-6">
             {imagePreviews.length === 0 ? (
-              <div
-                className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer"
+              <motion.div
+                whileHover={{ scale: 1.01, borderColor: "hsl(var(--primary))" }}
+                whileTap={{ scale: 0.99 }}
+                className="border-2 border-dashed border-muted-foreground/25 rounded-2xl p-12 text-center hover:bg-accent/50 transition-all cursor-pointer group bg-background/50"
                 onClick={handleCameraClick}
               >
-                <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                  <Upload className="w-10 h-10 text-primary/60 group-hover:text-primary transition-colors" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">
                   Upload Product Images
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  Click here or drag and drop up to 5 product images for better
+                  Drag & drop up to 5 product images for better
                   AI analysis
                 </p>
                 <Button onClick={handleCameraClick}>
-                  <Camera className="w-4 h-4 mr-2" />
+                  <Upload className="w-4 h-4 mr-2" />
                   Choose Images (Max 5)
                 </Button>
-              </div>
+              </motion.div>
             ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative group">
+                    <motion.div
+                      key={index} 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="relative group rounded-xl overflow-hidden border border-border shadow-sm aspect-square"
+                    >
                       <Image
                         src={preview}
                         alt={`Product preview ${index + 1}`}
                         width={200}
                         height={150}
-                        className="w-full h-32 object-cover rounded-lg"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       />
                       <div className="absolute top-1 left-1 bg-black/50 text-white text-xs px-2 py-1 rounded">
                         {index + 1}
                       </div>
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="destructive"
-                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
                         onClick={() => removeImage(index)}
                       >
                         <X className="w-3 h-3" />
                       </Button>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
 
@@ -439,10 +454,10 @@ const AddProduct = () => {
                 </div>
 
                 {!aiData && (
-                  <Button
+                  <Button 
                     onClick={processImagesWithAI}
                     disabled={isProcessing}
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/20 transition-all duration-300 h-12 text-base font-medium rounded-xl"
                     size="lg"
                   >
                     {isProcessing ? (
@@ -473,13 +488,20 @@ const AddProduct = () => {
         </Card>
 
         {/* AI Analysis Results */}
+        <AnimatePresence>
         {aiData && (
-          <Card>
-            <CardHeader>
+          <motion.div
+            initial={{ opacity: 0, x: 20, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -20, scale: 0.95 }}
+            className="h-full"
+          >
+          <Card className="border-indigo-100 dark:border-indigo-900/50 shadow-lg overflow-hidden h-full flex flex-col bg-card/50 backdrop-blur-sm">
+            <CardHeader className="bg-indigo-50/50 dark:bg-indigo-950/20 border-b border-indigo-100 dark:border-indigo-900/50 pb-4">
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 text-indigo-500" />
                 AI Analysis Results
-                <Badge variant="secondary" className="ml-auto">
+                <Badge variant="secondary" className="ml-auto bg-white/50 dark:bg-black/20 backdrop-blur-sm">
                   {aiData.confidence}% Confidence
                 </Badge>
               </CardTitle>
@@ -487,8 +509,8 @@ const AddProduct = () => {
                 AI has extracted the following product information
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="p-6 space-y-6 flex-1">
+              <div className="grid grid-cols-2 gap-4 bg-muted/30 p-5 rounded-xl border border-border/50">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">Category:</span>
@@ -512,8 +534,8 @@ const AddProduct = () => {
               </div>
 
               <div className="pt-4 border-t">
-                <h4 className="font-semibold mb-2">Benefits:</h4>
-                <div className="flex flex-wrap gap-2">
+                <h4 className="font-semibold mb-3 flex items-center gap-2"><Sparkles className="w-3 h-3 text-indigo-500" /> Key Benefits</h4>
+                <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2">
                   {aiData.benefits.map((benefit, index) => (
                     <Badge key={index} variant="outline" className="text-xs">
                       {benefit}
@@ -522,7 +544,7 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-3 mt-auto pt-4">
                 <Button
                   onClick={() => setIsEditing(true)}
                   className="flex-1"
@@ -533,7 +555,7 @@ const AddProduct = () => {
                 </Button>
                 <Button
                   onClick={saveProduct}
-                  disabled={isProcessing}
+                  disabled={isProcessing || isEditing}
                   className="flex-1"
                 >
                   {isProcessing ? (
@@ -551,13 +573,22 @@ const AddProduct = () => {
               </div>
             </CardContent>
           </Card>
+          </motion.div>
         )}
+        </AnimatePresence>
       </div>
 
       {/* Editable Form */}
+      <AnimatePresence>
       {isEditing && (
-        <Card>
-          <CardHeader>
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 40 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+        <Card className="border-primary/20 shadow-xl ring-1 ring-primary/5 bg-card/80 backdrop-blur-sm">
+          <CardHeader className="border-b border-border/50 bg-muted/5 pb-4">
             <CardTitle className="flex items-center gap-2">
               <Edit3 className="w-5 h-5" />
               Customize Product Data
@@ -566,26 +597,27 @@ const AddProduct = () => {
               Review and modify the AI-generated product information
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2 text-primary">
                   Basic Information
                 </h3>
 
                 <div>
-                  <Label htmlFor="name">Product Name</Label>
+                  <Label htmlFor="name" className="mb-1.5 block">Product Name</Label>
                   <Input
                     id="name"
                     value={formData.name}
+                    className="focus-visible:ring-primary"
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     placeholder="Enter product name"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category" className="mb-1.5 block">Category</Label>
                   <Select
                     value={formData.category}
                     onValueChange={(value) =>
@@ -606,7 +638,7 @@ const AddProduct = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="shortDescription">Short Description</Label>
+                  <Label htmlFor="shortDescription" className="mb-1.5 block">Short Description</Label>
                   <Input
                     id="shortDescription"
                     value={formData.shortDescription}
@@ -618,7 +650,7 @@ const AddProduct = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="longDescription">Long Description</Label>
+                  <Label htmlFor="longDescription" className="mb-1.5 block">Long Description</Label>
                   <Textarea
                     id="longDescription"
                     value={formData.longDescription}
@@ -626,6 +658,7 @@ const AddProduct = () => {
                       handleInputChange("longDescription", e.target.value)
                     }
                     placeholder="Detailed description"
+                    className="min-h-[100px]"
                     rows={3}
                   />
                 </div>
@@ -633,13 +666,13 @@ const AddProduct = () => {
 
               {/* Pricing & Details */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2 text-primary">
                   Pricing & Details
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="price">Price (₹)</Label>
+                    <Label htmlFor="price" className="mb-1.5 block">Price (₹)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -652,7 +685,7 @@ const AddProduct = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="originalPrice">Original Price (₹)</Label>
+                    <Label htmlFor="originalPrice" className="mb-1.5 block">Original Price (₹)</Label>
                     <Input
                       id="originalPrice"
                       type="number"
@@ -667,7 +700,7 @@ const AddProduct = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="stock">Stock Quantity</Label>
+                  <Label htmlFor="stock" className="mb-1.5 block">Stock Quantity</Label>
                   <Input
                     id="stock"
                     type="number"
@@ -678,7 +711,7 @@ const AddProduct = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="weight">Weight/Size</Label>
+                  <Label htmlFor="weight" className="mb-1.5 block">Weight/Size</Label>
                   <Input
                     id="weight"
                     value={formData.weight}
@@ -690,7 +723,7 @@ const AddProduct = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="expiryDate">Expiry Date</Label>
+                  <Label htmlFor="expiryDate" className="mb-1.5 block">Expiry Date</Label>
                   <Input
                     id="expiryDate"
                     type="date"
@@ -704,12 +737,12 @@ const AddProduct = () => {
 
               {/* Product Details */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2 text-primary">
                   Product Details
                 </h3>
 
                 <div>
-                  <Label htmlFor="ingredients">Ingredients</Label>
+                  <Label htmlFor="ingredients" className="mb-1.5 block">Ingredients</Label>
                   <Textarea
                     id="ingredients"
                     value={formData.ingredients}
@@ -722,7 +755,7 @@ const AddProduct = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="dosage">Dosage Instructions</Label>
+                  <Label htmlFor="dosage" className="mb-1.5 block">Dosage Instructions</Label>
                   <Textarea
                     id="dosage"
                     value={formData.dosage}
@@ -735,7 +768,7 @@ const AddProduct = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="manufacturer">Manufacturer</Label>
+                  <Label htmlFor="manufacturer" className="mb-1.5 block">Manufacturer</Label>
                   <Input
                     id="manufacturer"
                     value={formData.manufacturer}
@@ -749,16 +782,17 @@ const AddProduct = () => {
 
               {/* Benefits */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">
+                <h3 className="text-lg font-semibold border-b pb-2 flex items-center gap-2 text-primary">
                   Benefits
                 </h3>
 
                 <div>
-                  <Label htmlFor="benefits">Benefits (one per line)</Label>
+                  <Label htmlFor="benefits" className="mb-1.5 block">Benefits (one per line)</Label>
                   <Textarea
                     id="benefits"
                     value={formData.benefits.join("\n")}
                     onChange={(e) => handleBenefitsChange(e.target.value)}
+                    className="min-h-[120px]"
                     placeholder="Enter benefits, one per line"
                     rows={5}
                   />
@@ -766,7 +800,7 @@ const AddProduct = () => {
               </div>
             </div>
 
-            <div className="flex gap-4 mt-6 pt-6 border-t">
+            <div className="flex gap-4 mt-8 pt-6 border-t">
               <Button
                 onClick={() => setIsEditing(false)}
                 variant="outline"
@@ -794,7 +828,9 @@ const AddProduct = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 };

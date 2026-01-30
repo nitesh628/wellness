@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingCart, ShieldCheck, Truck, RefreshCcw, Star, ChevronRight, Minus, Plus } from 'lucide-react';
+import { Heart, ShoppingCart, ShieldCheck, Truck, RefreshCcw, Star, ChevronRight, Minus, Plus, BadgePercent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/lib/context/CartContext';
 
@@ -55,10 +55,20 @@ const ProductImageZoom = ({ src, alt }: ProductImageZoomProps) => {
 };
 
 export default function ProductDetailView({ product }: { product: any }) {
-    const [selectedImage, setSelectedImage] = useState(product.image);
+    // Handle images array or fallback to single image
+    const images = product.images && product.images.length > 0 
+        ? product.images 
+        : [product.imageUrl || product.image || '/placeholder.png'];
+
+    const [selectedImage, setSelectedImage] = useState(images[0]);
     const [quantity, setQuantity] = useState(1);
     const [isWishlisted, setIsWishlisted] = useState(false);
     const { addToCart } = useCart();
+
+    // Update selected image when product changes
+    useEffect(() => {
+        setSelectedImage(images[0]);
+    }, [product]);
 
     if (!product) return null;
 
@@ -72,16 +82,17 @@ export default function ProductDetailView({ product }: { product: any }) {
         }
     };
 
-    const handleAddToCart = () => {
-        // Parse price to number (remove commas and currency symbols)
-        const priceString = product.price?.toString().replace(/[^0-9.]/g, '') || '0';
-        const priceNumber = parseFloat(priceString);
+    // Handle Price Logic (supports object or number)
+    const price = product.price?.amount ?? product.price ?? 0;
+    const mrp = product.price?.mrp ?? product.originalPrice ?? 0;
+    const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
+    const handleAddToCart = () => {
         addToCart({
-            id: product.id?.toString() || product._id || product.slug,
+            id: product._id || product.id || product.slug,
             name: product.name,
-            price: priceNumber,
-            image: product.image || product.imageUrl || '/placeholder.png',
+            price: Number(price),
+            image: images[0],
         }, quantity);
 
         // Reset quantity after adding
@@ -108,14 +119,14 @@ export default function ProductDetailView({ product }: { product: any }) {
                 <div className="space-y-6">
                     <ProductImageZoom src={selectedImage} alt={product.name} />
 
-                    {product.images && product.images.length > 1 && (
+                    {images.length > 1 && (
                         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                            {product.images.map((img: string, idx: number) => (
+                            {images.map((img: string, idx: number) => (
                                 <button
                                     key={idx}
                                     onClick={() => setSelectedImage(img)}
                                     className={`relative w-24 aspect-square rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 bg-[#f5f5f5]
-                                        ${selectedImage === img ? 'border-blue-600 ring-2 ring-blue-100' : 'border-slate-100 hover:border-slate-300'}`}
+                                        ${selectedImage === img ? 'border-blue-600 ring-2 ring-blue-100' : 'border-slate-100 dark:border-slate-700 hover:border-slate-300'}`}
                                 >
                                     <Image src={img} alt={`${product.name} ${idx + 1}`} fill className="object-contain p-2" />
                                 </button>
@@ -141,19 +152,20 @@ export default function ProductDetailView({ product }: { product: any }) {
                     </div>
 
                     <div className="flex items-baseline gap-4 mb-8">
-                        <span className="text-3xl font-bold text-blue-600">₹{product.price}</span>
-                        {product.original && (
-                            <span className="text-xl text-slate-400 line-through">₹{product.original}</span>
+                        <span className="text-3xl font-bold text-blue-600">₹{price.toLocaleString()}</span>
+                        {mrp > price && (
+                            <span className="text-xl text-slate-400 line-through">₹{mrp.toLocaleString()}</span>
                         )}
-                        {product.original && (
-                            <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">
-                                SAVE {Math.round((1 - parseFloat(product.price.replace(/,/g, '')) / parseFloat(product.original.replace(/,/g, ''))) * 100)}%
+                        {discount > 0 && (
+                            <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full flex items-center gap-1">
+                                <BadgePercent className="w-3 h-3" />
+                                {discount}% OFF
                             </span>
                         )}
                     </div>
 
                     <p className="text-slate-600 text-lg leading-relaxed mb-8">
-                        {product.description || "Scientifically formulated to support your wellness journey with premium ingredients and advanced bioavailability."}
+                        {product.shortDescription || product.description || "Scientifically formulated to support your wellness journey with premium ingredients and advanced bioavailability."}
                     </p>
 
                     <div className="space-y-6 mb-10">
@@ -231,21 +243,74 @@ export default function ProductDetailView({ product }: { product: any }) {
                 <div className="max-w-4xl">
                     <h2 className="text-2xl font-bold text-slate-900 mb-6">Product Information</h2>
                     <div className="prose prose-slate max-w-none">
-                        <p className="text-slate-600 leading-relaxed mb-6">
-                            Our {product.name} is meticulously crafted to provide the highest quality nutraceutical support.
-                            Each batch undergoes rigorous testing to ensure purity and potency.
+                        <p className="text-slate-600 leading-relaxed mb-8 whitespace-pre-line">
+                            {product.longDescription || product.description || `Our ${product.name} is meticulously crafted to provide the highest quality nutraceutical support. Each batch undergoes rigorous testing to ensure purity and potency.`}
                         </p>
 
-                        {product.details && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            {/* Benefits */}
+                            {product.benefits && product.benefits.length > 0 && (
+                                <div>
+                                    <h3 className="text-lg font-bold text-blue-900 mb-4">Key Benefits</h3>
+                                    <ul className="space-y-3">
+                                        {Array.isArray(product.benefits) ? product.benefits.map((benefit: string, i: number) => (
+                                            <li key={i} className="flex items-start gap-3">
+                                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                                <span className="text-slate-700">{benefit}</span>
+                                            </li>
+                                        )) : (
+                                            <li className="text-slate-700">{product.benefits}</li>
+                                        )}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {/* Ingredients & Dosage */}
                             <div className="space-y-6">
-                                <h3 className="text-lg font-bold text-blue-900">{product.details.positioning}</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {product.details.categories.map((cat: string, i: number) => (
-                                        <div key={i} className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg">
-                                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                            <span className="text-sm text-slate-700">{cat}</span>
+                                {product.ingredients && (
+                                    <div>
+                                        <h3 className="text-lg font-bold text-blue-900 mb-3">Ingredients</h3>
+                                        <p className="text-slate-700 leading-relaxed">
+                                            {Array.isArray(product.ingredients) ? product.ingredients.join(", ") : product.ingredients}
+                                        </p>
+                                    </div>
+                                )}
+                                
+                                {product.dosageInstructions && (
+                                    <div>
+                                        <h3 className="text-lg font-bold text-blue-900 mb-3">Recommended Dosage</h3>
+                                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                            <p className="text-blue-800 font-medium">
+                                                {product.dosageInstructions}
+                                            </p>
                                         </div>
-                                    ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Additional Details */}
+                        {(product.manufacturer || product.expiryDate) && (
+                            <div className="border-t border-slate-100 pt-6 mt-6">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {product.manufacturer && (
+                                        <div>
+                                            <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Manufacturer</span>
+                                            <span className="text-slate-700">{product.manufacturer}</span>
+                                        </div>
+                                    )}
+                                    {product.weightSize && (
+                                        <div>
+                                            <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Net Quantity</span>
+                                            <span className="text-slate-700">{product.weightSize.value} {product.weightSize.unit}</span>
+                                        </div>
+                                    )}
+                                    {product.expiryDate && (
+                                        <div>
+                                            <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Expiry Date</span>
+                                            <span className="text-slate-700">{new Date(product.expiryDate).toLocaleDateString()}</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

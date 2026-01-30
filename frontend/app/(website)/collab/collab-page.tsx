@@ -296,10 +296,6 @@ const ProductGrid = () => {
                     fill
                     className="object-contain p-8 transition-transform duration-300 group-hover:scale-105"
                   />
-                  {/* Quote Overlay Mock - simplistic */}
-                  <div className="absolute top-4 right-4 bg-white/90 p-2 rounded-lg text-[10px] font-medium shadow-sm max-w-[100px]">
-                    &quot;The Gut of a Champion...&quot;
-                  </div>
                 </div>
                 <h3 className="font-bold text-blue-900 text-center mb-1 group-hover:text-blue-600 transition-colors line-clamp-1 px-2">
                   {product.name}
