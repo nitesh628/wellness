@@ -37,7 +37,8 @@ const orderStatuses = ["all", "Pending", "Processing", "Shipped", "Delivered", "
 const paymentStatuses = ["all", "Paid", "Pending", "Refunded", "Failed"] as const
 
 interface OrderItem {
-  product: string;
+  product: string | { name: string; image?: string };
+  name?: string;
   quantity: number;
   price: number;
   total: number;
@@ -146,9 +147,19 @@ const OrdersPage = () => {
     }
   }
 
-  const openViewModal = (order: Order) => {
-    setSelectedOrder(order)
-    setShowViewModal(true)
+  const openViewModal = async (order: Order) => {
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/v1/orders/${order._id}`,
+        { withCredentials: true }
+      )
+      const orderData = response.data.order || response.data.data || response.data
+      setSelectedOrder(orderData)
+      setShowViewModal(true)
+    } catch (error) {
+      console.error('Failed to fetch order details:', error)
+      
+    }
   }
 
   const openEditModal = (order: Order) => {
@@ -189,6 +200,14 @@ const OrdersPage = () => {
     if (!address) return 'N/A';
     if (typeof address === 'string') return address;
     return address.address || address.name || JSON.stringify(address);
+  }
+
+  const renderProduct = (item: OrderItem) => {
+    if (item.name) return item.name;
+    if (item.product && typeof item.product === 'object' && 'name' in item.product) {
+      return item.product.name;
+    }
+    return typeof item.product === 'string' ? item.product : 'Unknown Product';
   }
 
   return (
@@ -637,10 +656,10 @@ const OrdersPage = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {selectedOrder.items.map((item, index) => (
+                      {selectedOrder.items?.map((item, index) => (
                         <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
                           <div>
-                            <p className="font-medium">{item.product}</p>
+                            <p className="font-medium">{renderProduct(item)}</p>
                             <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
                           </div>
                           <div className="text-right">
