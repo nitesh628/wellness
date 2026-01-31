@@ -22,7 +22,13 @@ import {
 import { useCart } from "@/lib/context/CartContext";
 import { toast } from "sonner";
 import RazorpayButton from "@/components/RazorpayButton";
-import { formatPrice } from "@/lib/formatters";
+
+const formatPrice = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+  }).format(amount);
+};
 
 interface ShippingAddress {
   name: string;
@@ -196,6 +202,7 @@ const CheckoutPage = () => {
 
       clearCart();
       setIsOrderPlaced(true);
+      alert("Order placed successfully!");
       toast.success("Order placed successfully!");
     } catch (error: any) {
       // Show backend error message if available
@@ -259,6 +266,7 @@ const CheckoutPage = () => {
 
       clearCart();
       setIsOrderPlaced(true);
+      alert("Order placed successfully!");
       toast.success("Order placed successfully!");
     } catch (error: any) {
       console.error("Order API Error:", error);

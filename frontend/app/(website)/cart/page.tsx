@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCart } from "@/lib/context/CartContext";
 
+const formatPrice = (amount: number) => {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+  }).format(amount);
+};
+
 const CartPage = () => {
   const { cartItems, updateQuantity, removeFromCart, cartTotal } = useCart();
 
@@ -34,7 +41,7 @@ const CartPage = () => {
                         {item.name}
                       </h3>
                       <p className="text-blue-600 dark:text-blue-400 text-sm font-semibold">
-                        ${item.price.toFixed(2)}
+                        {formatPrice(item.price)}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <Button
@@ -64,7 +71,7 @@ const CartPage = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        {formatPrice(item.price * item.quantity)}
                       </p>
                       <Button
                         variant="ghost"
@@ -87,7 +94,7 @@ const CartPage = () => {
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span className="font-semibold text-slate-900 dark:text-white">
-                    ${cartTotal.toFixed(2)}
+                    {formatPrice(cartTotal)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -102,7 +109,7 @@ const CartPage = () => {
               <div className="border-t border-blue-200 dark:border-blue-700 pt-6 mt-6">
                 <div className="flex justify-between text-lg font-bold text-slate-900 dark:text-white">
                   <span>Total</span>
-                  <span>${cartTotal.toFixed(2)}</span>
+                  <span>{formatPrice(cartTotal)}</span>
                 </div>
                 <Link href="/checkout">
                   <Button

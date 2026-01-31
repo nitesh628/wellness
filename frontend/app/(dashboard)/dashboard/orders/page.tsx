@@ -17,6 +17,7 @@ import {
   CheckCircle,
   XCircle,
 } from 'lucide-react'
+import axios from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -27,17 +28,6 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Label } from '@/components/ui/label'
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks'
-import { 
-  fetchOrdersData,
-  updateOrderStatus,
-  setFilters,
-  selectOrders,
-  selectOrderLoading,
-  selectOrderError,
-  selectOrderFilters,
-  Order
-} from '@/lib/redux/features/orderSlice'
 import NoData from '@/components/common/dashboard/NoData'
 import Loader from '@/components/common/dashboard/Loader'
 import Error from '@/components/common/dashboard/Error'
@@ -46,12 +36,38 @@ import { formatPrice } from '@/lib/formatters'
 const orderStatuses = ["all", "Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"] as const
 const paymentStatuses = ["all", "Paid", "Pending", "Refunded", "Failed"] as const
 
+interface OrderItem {
+  product: string;
+  quantity: number;
+  price: number;
+  total: number;
+}
+
+interface Order {
+  _id: string;
+  orderNumber: string;
+  user: string | { name: string; email: string };
+  createdAt: string;
+  status: string;
+  totalAmount: number;
+  paymentStatus: string;
+  paymentMethod: string;
+  items: OrderItem[];
+  shippingAddress: any;
+  billingAddress?: string;
+  trackingNumber?: string;
+  notes?: string;
+}
+
 const OrdersPage = () => {
-  const dispatch = useAppDispatch()
-  const orders = useAppSelector(selectOrders)
-  const isLoading = useAppSelector(selectOrderLoading)
-  const error = useAppSelector(selectOrderError)
-  const filters = useAppSelector(selectOrderFilters)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [filters, setFilters] = useState({
+    search: '',
+    status: '',
+    paymentStatus: ''
+  })
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showViewModal, setShowViewModal] = useState(false)
@@ -60,16 +76,44 @@ const OrdersPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
+  const fetchOrders = async () => {
+    try {
+      setIsLoading(true)
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/v1/orders`,
+        { withCredentials: true }
+      )
+      let ordersData = []
+      if (Array.isArray(response.data)) {
+        ordersData = response.data
+      } else if (response.data?.orders && Array.isArray(response.data.orders)) {
+        ordersData = response.data.orders
+      } else if (response.data?.data && Array.isArray(response.data.data)) {
+        ordersData = response.data.data
+      }
+      setOrders(ordersData)
+      setError('')
+    } catch (err: any) {
+      console.error("Error fetching orders:", err)
+      setError(err.response?.data?.message || "Failed to fetch orders")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Fetch orders on mount and when filters change
   useEffect(() => {
-    dispatch(fetchOrdersData())
-  }, [dispatch, filters])
+    fetchOrders()
+  }, [])
 
   // Filter orders
   const filteredOrders = React.useMemo(() => {
+    if (!Array.isArray(orders)) return []
     return orders.filter(order => {
-      const matchesSearch = order.orderNumber.toLowerCase().includes(filters.search?.toLowerCase() || '') ||
-                         order.user.toLowerCase().includes(filters.search?.toLowerCase() || '')
+      const userName = typeof order.user === 'string' ? order.user : order.user?.name || '';
+      const orderNumber = order.orderNumber || '';
+      const matchesSearch = orderNumber.toLowerCase().includes(filters.search?.toLowerCase() || '') ||
+                         userName.toLowerCase().includes(filters.search?.toLowerCase() || '')
       const matchesStatus = !filters.status || order.status === filters.status
       const matchesPaymentStatus = !filters.paymentStatus || order.paymentStatus === filters.paymentStatus
       
@@ -90,8 +134,12 @@ const OrdersPage = () => {
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status'], trackingNumber?: string) => {
     try {
-      await dispatch(updateOrderStatus(orderId, newStatus, trackingNumber))
-      await dispatch(fetchOrdersData())
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/v1/orders/${orderId}`,
+        { status: newStatus, trackingNumber },
+        { withCredentials: true }
+      )
+      await fetchOrders()
       setShowEditModal(false)
     } catch (error) {
       console.error('Failed to update order status:', error)
@@ -130,6 +178,17 @@ const OrdersPage = () => {
       case 'Returned': return 'default'
       default: return 'secondary'
     }
+  }
+
+  const renderUser = (user: Order['user']) => {
+    if (typeof user === 'string') return user;
+    return user?.name || 'Unknown User';
+  }
+
+  const renderAddress = (address: any) => {
+    if (!address) return 'N/A';
+    if (typeof address === 'string') return address;
+    return address.address || address.name || JSON.stringify(address);
   }
 
   return (
@@ -206,7 +265,7 @@ const OrdersPage = () => {
                       type="text"
                       placeholder="Search orders..."
                       value={filters.search || ''}
-                      onChange={(e) => dispatch(setFilters({ search: e.target.value }))}
+                      onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                       className="pl-10"
                     />
                   </div>
@@ -214,7 +273,7 @@ const OrdersPage = () => {
                   {/* Status Filter */}
                   <Select 
                     value={filters.status || 'all'} 
-                    onValueChange={(value) => dispatch(setFilters({ status: value === 'all' ? '' : value as typeof filters.status }))}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, status: value === 'all' ? '' : value }))}
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Select status" />
@@ -231,7 +290,7 @@ const OrdersPage = () => {
                   {/* Payment Status Filter */}
                   <Select 
                     value={filters.paymentStatus || 'all'} 
-                    onValueChange={(value) => dispatch(setFilters({ paymentStatus: value === 'all' ? '' : value as typeof filters.paymentStatus }))}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, paymentStatus: value === 'all' ? '' : value }))}
                   >
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Payment status" />
@@ -304,7 +363,7 @@ const OrdersPage = () => {
                       <span className="ml-1">{order.status}</span>
                     </Badge>
                   </div>
-                  <CardDescription>{order.user}</CardDescription>
+                  <CardDescription>{renderUser(order.user)}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 flex-1 flex flex-col">
                   <div className="space-y-3 flex-1">
@@ -389,8 +448,8 @@ const OrdersPage = () => {
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium text-foreground">{order.user}</p>
-                        <p className="text-sm text-muted-foreground">{order.shippingAddress}</p>
+                        <p className="font-medium text-foreground">{renderUser(order.user)}</p>
+                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">{renderAddress(order.shippingAddress)}</p>
                       </div>
                     </TableCell>
                     <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
@@ -557,11 +616,11 @@ const OrdersPage = () => {
                     <CardContent className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">User ID:</span>
-                        <span className="font-medium">{selectedOrder.user}</span>
+                        <span className="font-medium">{renderUser(selectedOrder.user)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Shipping Address:</span>
-                        <span className="font-medium">{selectedOrder.shippingAddress}</span>
+                        <span className="font-medium">{renderAddress(selectedOrder.shippingAddress)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Billing Address:</span>
@@ -629,8 +688,8 @@ const OrdersPage = () => {
                 <div>
                   <Label htmlFor="order-status" className="mb-2 block">Order Status</Label>
                   <Select 
-                    value={selectedOrder.status} 
-                    onValueChange={(value: Order['status']) => setSelectedOrder({...selectedOrder, status: value})}
+                    value={selectedOrder.status}
+                    onValueChange={(value) => setSelectedOrder({...selectedOrder, status: value})}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
