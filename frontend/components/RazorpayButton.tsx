@@ -43,13 +43,18 @@ const RazorpayButton: React.FC<RazorpayButtonProps> = ({
     }
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/v1/razorpay/order`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      // Ensure amount is an integer in paise (for INR)
+      const amountInPaise = Math.round(amount);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/v1/razorpay/order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ amount: amountInPaise, currency }),
         },
-        body: JSON.stringify({ amount, currency }),
-      });
+      );
       const orderData = await res.json();
 
       if (!orderData.id) {
@@ -67,17 +72,20 @@ const RazorpayButton: React.FC<RazorpayButtonProps> = ({
         handler: async (response: any) => {
           // Verify payment
           try {
-            const verifyRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/v1/razorpay/verify`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
+            const verifyRes = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/v1/razorpay/verify`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                }),
               },
-              body: JSON.stringify({
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              }),
-            });
+            );
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
               onSuccess(response);
@@ -123,9 +131,12 @@ const RazorpayButton: React.FC<RazorpayButtonProps> = ({
       <button
         onClick={handlePayment}
         disabled={loading || disabled}
-        className={className || "w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"}
+        className={
+          className ||
+          "w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+        }
       >
-        {loading ? "Processing..." : (children || "Pay Now")}
+        {loading ? "Processing..." : children || "Pay Now"}
       </button>
     </>
   );

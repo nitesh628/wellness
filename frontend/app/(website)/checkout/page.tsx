@@ -218,6 +218,65 @@ const CheckoutPage = () => {
     return true;
   };
 
+  // Handle Razorpay payment success
+  const handleRazorpaySuccess = async (paymentData: any) => {
+    setIsLoading(true);
+    try {
+      // Simulate user and address ObjectIds (replace with real values in production)
+      const userId = "65a1234567890abcdef12345"; // Replace with real user id from auth
+      const addressId = "65a1234567890abcdef67890"; // Replace with real address id from address book
+
+      // Generate a unique order number (e.g., timestamp + random)
+      const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+      const orderPayload = {
+        orderNumber,
+        user: userId,
+        shippingAddress: addressId,
+        items: cartItems.map((item) => ({
+          product: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.price * item.quantity,
+        })),
+        paymentMethod: "Online",
+        paymentStatus: "Paid",
+        shippingCost,
+        subtotal: cartTotal,
+        totalAmount: finalTotal,
+        isCouponApplied: couponApplied,
+        couponCode,
+        discountValue: discount,
+        razorpayPaymentId: paymentData.razorpay_payment_id,
+        razorpayOrderId: paymentData.razorpay_order_id,
+        razorpaySignature: paymentData.razorpay_signature,
+      };
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/orders`,
+        orderPayload,
+      );
+
+      clearCart();
+      setIsOrderPlaced(true);
+      toast.success("Order placed successfully!");
+    } catch (error: any) {
+      console.error("Order API Error:", error);
+      const message =
+        error?.response?.data?.message ||
+        "Failed to place order. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle Razorpay payment failure
+  const handleRazorpayFailure = (error: any) => {
+    toast.error("Payment failed. Please try again.");
+    console.error("Razorpay Failure:", error);
+  };
+
   if (isOrderPlaced) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-blue-950 flex items-center justify-center p-4">
@@ -627,20 +686,8 @@ const CheckoutPage = () => {
                       email: shippingAddress.email,
                       contact: shippingAddress.phone,
                     }}
-                    onSuccess={(response) => {
-                      // Handle successful payment here - maybe create order first then verify
-                      // For now assuming the button handles the full flow or we pass a callback that creates the order in backend
-                      // Actually the button I created creates the order internally.
-                      // So onSuccess just needs to redirect/clear cart
-                      clearCart();
-                      setIsOrderPlaced(true);
-                      toast.success("Payment successful! Order placed.");
-                      // router.push("/profile?tab=orders");
-                    }}
-                    onFailure={(error) => {
-                      toast.error("Payment failed. Please try again.");
-                      console.error(error);
-                    }}
+                    onSuccess={handleRazorpaySuccess}
+                    onFailure={handleRazorpayFailure}
                     disabled={isLoading}
                     onPaymentStart={handleRazorpayClick}
                     className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-700 hover:via-indigo-700 hover:to-cyan-700 text-white font-bold rounded-full py-4 shadow-xl shadow-blue-500/50 disabled:opacity-70"
