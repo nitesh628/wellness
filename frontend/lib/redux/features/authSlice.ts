@@ -184,7 +184,7 @@ export const registerUser =
   (userData: any) => async (dispatch: AppDispatch) => {
     dispatch(setAuthLoading());
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/register`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/auth/register`;
       console.log("Registering user at:", apiUrl);
       const response = await axios.post(apiUrl, userData);
 

@@ -1,5 +1,4 @@
 "use client";
-
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,7 +17,10 @@ const CartPage = () => {
             <div className="lg:col-span-2">
               <ul className="divide-y divide-border">
                 {cartItems.map((item) => (
-                  <li key={item.id} className="flex items-center gap-6 py-6 bg-white dark:bg-slate-800/90 rounded-xl px-4 shadow-md border border-blue-200/50 dark:border-blue-700/30">
+                  <li
+                    key={item.id}
+                    className="flex items-center gap-6 py-6 bg-white dark:bg-slate-800/90 rounded-xl px-4 shadow-md border border-blue-200/50 dark:border-blue-700/30"
+                  >
                     <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 border border-blue-200 dark:border-blue-700">
                       <Image
                         src={item.image}
