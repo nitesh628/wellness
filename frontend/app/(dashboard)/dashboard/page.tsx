@@ -9,7 +9,7 @@ import {
   Package, 
   TrendingUp, 
   ShoppingCart,
-  DollarSign,
+  IndianRupee,
   Activity,
   Stethoscope,
   Megaphone,
@@ -86,7 +86,7 @@ const DashboardPage = () => {
     { 
       name: 'Revenue', 
       value: '₹45,67,890', 
-      icon: DollarSign, 
+      icon: IndianRupee, 
       change: '+12%', 
       changeType: 'positive',
       color: 'green',

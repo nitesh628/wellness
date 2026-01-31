@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/lib/context/CartContext";
 import { useWishlist } from "@/lib/context/wishlistContext";
 import CommonHero from "@/components/common/common-hero";
+import { formatPrice } from "@/lib/formatters";
 
 // Redux Imports
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -73,7 +74,7 @@ const ProductsPage = () => {
   const isLoading = useAppSelector(selectProductsLoading);
 
   // Contexts
-  const { addToCart } = useCart();
+  const { addToCart, cartItems } = useCart();
   const { toggleWishlistItem, isInWishlist } = useWishlist();
 
   // Local UI State
@@ -197,7 +198,11 @@ const ProductsPage = () => {
   };
 
   // Product Card Component
-  const ProductCard = ({ product }: { product: UIProduct }) => (
+  const ProductCard = ({ product }: { product: UIProduct }) => {
+    const cartItem = cartItems.find((item) => item.id === product.id);
+    const quantityInCart = cartItem ? cartItem.quantity : 0;
+
+    return (
     <motion.div
       className={`bg-white dark:bg-slate-800/90 rounded-2xl shadow-xl shadow-blue-500/10 border border-blue-200/50 dark:border-blue-700/30 overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-2 ${viewMode === "list" ? "flex-row" : ""
         }`}
@@ -256,11 +261,11 @@ const ProductsPage = () => {
 
         <div className="flex items-center gap-2 mb-4">
           <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            ₹{product.price.toLocaleString("en-IN")}
+            {formatPrice(product.price)}
           </span>
           {product.originalPrice && (
             <span className="text-lg text-slate-500 dark:text-slate-400 line-through">
-              ₹{product.originalPrice.toLocaleString("en-IN")}
+              {formatPrice(product.originalPrice)}
             </span>
           )}
         </div>
@@ -269,27 +274,25 @@ const ProductsPage = () => {
           <Button
             onClick={() =>
               addToCart({
-                // FIXED: Changed 'productId' to 'id' and 'image' to 'imageUrl'
                 id: product.id,
                 name: product.name,
                 price: product.price,
-                imageUrl: product.imageUrl,
+                image: product.imageUrl,
               })
             }
             disabled={!product.inStock}
             className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-700 hover:via-indigo-700 hover:to-cyan-700 text-white font-semibold rounded-full shadow-xl shadow-blue-500/50 transition-all"
           >
             <ShoppingCart className="w-4 h-4" />
-            {product.inStock ? "Add to Cart" : "Out of Stock"}
+            {product.inStock ? (quantityInCart > 0 ? `Add Another (${quantityInCart})` : "Add to Cart") : "Out of Stock"}
           </Button>
           <Button
             onClick={() =>
               toggleWishlistItem({
-                // FIXED: Only passing id, name, price, imageUrl. Changed 'productId' to 'id'.
                 id: product.id,
                 name: product.name,
                 price: product.price,
-                imageUrl: product.imageUrl,
+                image: product.imageUrl,
               })
             }
             variant="outline"
@@ -307,7 +310,8 @@ const ProductsPage = () => {
         </div>
       </div>
     </motion.div>
-  );
+    );
+  };
 
   // ... (rest of the return statement remains exactly the same as previous code)
   return (

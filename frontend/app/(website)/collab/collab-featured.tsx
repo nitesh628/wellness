@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, ShoppingCart, Sparkles, Heart, BadgePercent } from "lucide-react";
 import { motion } from "framer-motion";
+import { formatPrice } from "@/lib/formatters";
 
 // Define the Product interface based on expected API response
 interface Product {
@@ -196,11 +197,11 @@ const CollabFeatured = () => {
                     </h3>
                     <div className="flex items-baseline gap-2.5">
                       <span className="text-lg font-bold text-blue-600">
-                        Rs. {product.price?.amount?.toLocaleString()}
+                        {formatPrice(product.price?.amount || 0)}
                       </span>
                       {product.price?.mrp && (
                         <span className="text-sm text-slate-400 line-through decoration-slate-400/50">
-                          Rs. {product.price.mrp.toLocaleString()}
+                          {formatPrice(product.price.mrp)}
                         </span>
                       )}
                     </div>

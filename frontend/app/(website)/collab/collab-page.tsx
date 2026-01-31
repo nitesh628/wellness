@@ -6,10 +6,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, ShoppingCart } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import CollabFeatured from "./collab-featured";
 import Image1 from "../../../public/1.jpg";
+import { useCart } from "@/lib/context/CartContext";
+import { formatPrice } from "@/lib/formatters";
 
 interface Product {
   _id: string;
@@ -99,6 +101,7 @@ const ProductGrid = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { addToCart, cartItems } = useCart();
 
   const searchParams = useSearchParams();
   const categoryFilter = searchParams.get("category");
@@ -279,11 +282,11 @@ const ProductGrid = () => {
         <div className="flex-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {sortedProducts.map((product) => (
-              <Link
-                key={product._id}
-                href={`/product/${product.slug}`}
-                className="group cursor-pointer"
-              >
+              <div key={product._id} className="group relative flex flex-col h-full">
+                <Link
+                  href={`/product/${product.slug}`}
+                  className="block flex-1 cursor-pointer"
+                >
                 <div className="relative aspect-square bg-[#f5f5f5] rounded-xl overflow-hidden mb-4 border border-transparent group-hover:border-blue-100 transition-colors">
                   {/* Use the first image or a placeholder */}
                   <Image
@@ -302,11 +305,11 @@ const ProductGrid = () => {
                 </h3>
                 <div className="flex items-center justify-center gap-2 text-sm mb-2">
                   <span className="text-blue-600 font-semibold">
-                    Rs. {product.price?.amount}
+                    {formatPrice(product.price?.amount || 0)}
                   </span>
                   {product.price?.mrp && (
                     <span className="text-slate-400 line-through text-xs">
-                      Rs. {product.price.mrp}
+                      {formatPrice(product.price.mrp)}
                     </span>
                   )}
                 </div>
@@ -315,7 +318,22 @@ const ProductGrid = () => {
                     {product.shortDescription}
                   </p>
                 )}
-              </Link>
+                </Link>
+                <div className="mt-3 px-2">
+                  <Button
+                    onClick={() => addToCart({
+                      id: product._id,
+                      name: product.name,
+                      price: product.price?.amount || 0,
+                      image: product.images?.[0] || "/placeholder.png"
+                    })}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    {cartItems.find(item => item.id === product._id) ? `Add Another (${cartItems.find(item => item.id === product._id)?.quantity})` : "Add to Cart"}
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         </div>

@@ -13,6 +13,9 @@ interface RazorpayButtonProps {
   onSuccess: (response: any) => void;
   onFailure: (error: any) => void;
   disabled?: boolean;
+  children?: React.ReactNode;
+  onPaymentStart?: () => boolean;
+  className?: string;
 }
 
 declare global {
@@ -28,10 +31,16 @@ const RazorpayButton: React.FC<RazorpayButtonProps> = ({
   onSuccess,
   onFailure,
   disabled,
+  children,
+  onPaymentStart,
+  className,
 }) => {
   const [loading, setLoading] = useState(false);
 
   const handlePayment = async () => {
+    if (onPaymentStart && !onPaymentStart()) {
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/v1/razorpay/order`, {
@@ -114,9 +123,9 @@ const RazorpayButton: React.FC<RazorpayButtonProps> = ({
       <button
         onClick={handlePayment}
         disabled={loading || disabled}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+        className={className || "w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"}
       >
-        {loading ? "Processing..." : "Pay Now"}
+        {loading ? "Processing..." : (children || "Pay Now")}
       </button>
     </>
   );

@@ -21,6 +21,7 @@ import {
 import { useCart } from "@/lib/context/CartContext";
 import { toast } from "sonner";
 import RazorpayButton from "@/components/RazorpayButton";
+import { formatPrice } from "@/lib/formatters";
 
 interface ShippingAddress {
     name: string;
@@ -41,6 +42,7 @@ const CheckoutPage = () => {
     const [couponCode, setCouponCode] = useState("");
     const [couponApplied, setCouponApplied] = useState(false);
     const [discount, setDiscount] = useState(0);
+    const [isOrderPlaced, setIsOrderPlaced] = useState(false);
 
     const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
         name: "",
@@ -77,40 +79,42 @@ const CheckoutPage = () => {
         }
     };
 
-    const validateForm = (): boolean => {
+    const getFormErrors = (data: ShippingAddress) => {
         const newErrors: Partial<ShippingAddress> = {};
 
-        if (!shippingAddress.name.trim()) {
+        if (!data.name.trim()) {
             newErrors.name = "Name is required";
         }
-        if (!shippingAddress.phone.trim()) {
+        if (!data.phone.trim()) {
             newErrors.phone = "Phone number is required";
-        } else if (!/^[0-9]{10}$/.test(shippingAddress.phone.replace(/\s/g, ""))) {
+        } else if (!/^[0-9]{10}$/.test(data.phone.replace(/\s/g, ""))) {
             newErrors.phone = "Please enter a valid 10-digit phone number";
         }
-        if (!shippingAddress.email.trim()) {
+        if (!data.email.trim()) {
             newErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingAddress.email)) {
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
             newErrors.email = "Please enter a valid email address";
         }
-        if (!shippingAddress.address.trim()) {
+        if (!data.address.trim()) {
             newErrors.address = "Address is required";
         }
-        if (!shippingAddress.city.trim()) {
+        if (!data.city.trim()) {
             newErrors.city = "City is required";
         }
-        if (!shippingAddress.state.trim()) {
+        if (!data.state.trim()) {
             newErrors.state = "State is required";
         }
-        if (!shippingAddress.pinCode.trim()) {
+        if (!data.pinCode.trim()) {
             newErrors.pinCode = "PIN code is required";
-        } else if (!/^[0-9]{6}$/.test(shippingAddress.pinCode)) {
+        } else if (!/^[0-9]{6}$/.test(data.pinCode)) {
             newErrors.pinCode = "Please enter a valid 6-digit PIN code";
         }
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        return newErrors;
     };
+
+    const formErrors = getFormErrors(shippingAddress);
+    const isFormValid = Object.keys(formErrors).length === 0;
 
     const handleApplyCoupon = () => {
         if (!couponCode.trim()) {
@@ -143,7 +147,8 @@ const CheckoutPage = () => {
     const finalTotal = cartTotal - discount + shippingCost + taxAmount;
 
     const handlePlaceOrder = async () => {
-        if (!validateForm()) {
+        if (!isFormValid) {
+            setErrors(formErrors);
             toast.error("Please fill in all required fields correctly");
             return;
         }
@@ -157,14 +162,46 @@ const CheckoutPage = () => {
             // Clear cart after successful order
             clearCart();
 
+            setIsOrderPlaced(true);
             toast.success("Order placed successfully!");
-            router.push("/profile?tab=orders");
+            // router.push("/profile?tab=orders"); // Handled by success view
         } catch (error) {
             toast.error("Failed to place order. Please try again.");
         } finally {
             setIsLoading(false);
         }
     };
+
+    const handleRazorpayClick = () => {
+        if (!isFormValid) {
+            setErrors(formErrors);
+            toast.error("Please fill in all required fields correctly");
+            return false;
+        }
+        return true;
+    };
+
+    if (isOrderPlaced) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-blue-950 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-blue-100 dark:border-blue-800">
+                    <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Order Placed Successfully!</h2>
+                    <p className="text-slate-600 dark:text-slate-400 mb-8">
+                        Thank you for your purchase. Your order has been received and is being processed.
+                    </p>
+                    <Button 
+                        onClick={() => router.push("/profile?tab=orders")}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-6"
+                    >
+                        View My Orders
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     if (cartItems.length === 0) {
         return null; // Will redirect to cart
@@ -430,7 +467,7 @@ const CheckoutPage = () => {
                                             </p>
                                         </div>
                                         <p className="font-semibold text-slate-900 dark:text-white text-sm">
-                                            ₹{(item.price * item.quantity).toFixed(2)}
+                                            {formatPrice(item.price * item.quantity)}
                                         </p>
                                     </div>
                                 ))}
@@ -482,12 +519,12 @@ const CheckoutPage = () => {
                             <div className="border-t border-slate-200 dark:border-slate-700 pt-4 space-y-3">
                                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
                                     <span>Subtotal</span>
-                                    <span>₹{cartTotal.toFixed(2)}</span>
+                                    <span>{formatPrice(cartTotal)}</span>
                                 </div>
                                 {discount > 0 && (
                                     <div className="flex justify-between text-green-600">
                                         <span>Discount</span>
-                                        <span>-₹{discount.toFixed(2)}</span>
+                                        <span>-{formatPrice(discount)}</span>
                                     </div>
                                 )}
                                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
@@ -496,18 +533,18 @@ const CheckoutPage = () => {
                                         {shippingCost === 0 ? (
                                             <span className="text-green-600">FREE</span>
                                         ) : (
-                                            `₹${shippingCost.toFixed(2)}`
+                                            formatPrice(shippingCost)
                                         )}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-slate-600 dark:text-slate-400">
                                     <span>GST (18%)</span>
-                                    <span>₹{taxAmount.toFixed(2)}</span>
+                                    <span>{formatPrice(taxAmount)}</span>
                                 </div>
                                 <div className="border-t border-slate-200 dark:border-slate-700 pt-3">
                                     <div className="flex justify-between text-lg font-bold text-slate-900 dark:text-white">
                                         <span>Total</span>
-                                        <span>₹{finalTotal.toFixed(2)}</span>
+                                        <span>{formatPrice(finalTotal)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -530,15 +567,20 @@ const CheckoutPage = () => {
                                             // Actually the button I created creates the order internally.
                                             // So onSuccess just needs to redirect/clear cart
                                             clearCart();
+                                            setIsOrderPlaced(true);
                                             toast.success("Payment successful! Order placed.");
-                                            router.push("/profile?tab=orders");
+                                            // router.push("/profile?tab=orders");
                                         }}
                                         onFailure={(error) => {
                                             toast.error("Payment failed. Please try again.");
                                             console.error(error);
                                         }}
-                                        disabled={isLoading || !validateForm()}
-                                    />
+                                        disabled={isLoading}
+                                        onPaymentStart={handleRazorpayClick}
+                                        className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-700 hover:via-indigo-700 hover:to-cyan-700 text-white font-bold rounded-full py-4 shadow-xl shadow-blue-500/50 disabled:opacity-70"
+                                    >
+                                        Place Order
+                                    </RazorpayButton>
                                 </div>
                             ) : (
                                 <Button

@@ -4,9 +4,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingCart, ShieldCheck, Truck, RefreshCcw, Star, ChevronRight, Minus, Plus, BadgePercent } from 'lucide-react';
+import { Heart, ShoppingCart, ShieldCheck, Truck, RefreshCcw, Star, ChevronRight, Minus, Plus, BadgePercent, Share2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/lib/context/CartContext';
+import { formatPrice } from '@/lib/formatters';
 
 interface ProductImageZoomProps {
     src: string;
@@ -63,7 +64,8 @@ export default function ProductDetailView({ product }: { product: any }) {
     const [selectedImage, setSelectedImage] = useState(images[0]);
     const [quantity, setQuantity] = useState(1);
     const [isWishlisted, setIsWishlisted] = useState(false);
-    const { addToCart } = useCart();
+    const [activeTab, setActiveTab] = useState('details');
+    const { addToCart, cartItems } = useCart();
 
     // Update selected image when product changes
     useEffect(() => {
@@ -103,6 +105,19 @@ export default function ProductDetailView({ product }: { product: any }) {
         setIsWishlisted(!isWishlisted);
     };
 
+    const handleShare = async () => {
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: product.name, text: product.shortDescription, url: window.location.href });
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+            }
+        } catch (err) { console.error(err); }
+    };
+
+    const cartItem = cartItems.find((item) => item.id === (product._id || product.id || product.slug));
+    const quantityInCart = cartItem ? cartItem.quantity : 0;
+
     return (
         <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-12">
             {/* Breadcrumb */}
@@ -116,7 +131,7 @@ export default function ProductDetailView({ product }: { product: any }) {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
                 {/* Left: Images */}
-                <div className="space-y-6">
+                <div className="space-y-6 lg:sticky lg:top-24 h-fit">
                     <ProductImageZoom src={selectedImage} alt={product.name} />
 
                     {images.length > 1 && (
@@ -136,7 +151,12 @@ export default function ProductDetailView({ product }: { product: any }) {
                 </div>
 
                 {/* Right: Info */}
-                <div className="flex flex-col">
+                <motion.div 
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="flex flex-col"
+                >
                     <div className="mb-2">
                         <span className="text-sm font-bold text-blue-600 uppercase tracking-wider">{product.category}</span>
                     </div>
@@ -152,9 +172,9 @@ export default function ProductDetailView({ product }: { product: any }) {
                     </div>
 
                     <div className="flex items-baseline gap-4 mb-8">
-                        <span className="text-3xl font-bold text-blue-600">₹{price.toLocaleString()}</span>
+                        <span className="text-3xl font-bold text-blue-600">{formatPrice(price)}</span>
                         {mrp > price && (
-                            <span className="text-xl text-slate-400 line-through">₹{mrp.toLocaleString()}</span>
+                            <span className="text-xl text-slate-400 line-through">{formatPrice(mrp)}</span>
                         )}
                         {discount > 0 && (
                             <span className="ml-2 px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full flex items-center gap-1">
@@ -202,7 +222,17 @@ export default function ProductDetailView({ product }: { product: any }) {
                             >
                                 <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
                             </button>
+                            <button
+                                onClick={handleShare}
+                                className="h-12 w-12 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors text-slate-400 hover:text-blue-600"
+                                title="Share"
+                            >
+                                <Share2 className="w-5 h-5" />
+                            </button>
                         </div>
+                        {quantityInCart > 0 && (
+                            <p className="text-sm text-green-600 font-medium flex items-center gap-2"><Check className="w-4 h-4" /> You have {quantityInCart} of this item in your cart</p>
+                        )}
                     </div>
 
                     {/* Features Grid */}
@@ -235,64 +265,48 @@ export default function ProductDetailView({ product }: { product: any }) {
                             </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             {/* Product Tabs / Details */}
-            <div className="mt-20 border-t border-slate-100 pt-12">
-                <div className="max-w-4xl">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-6">Product Information</h2>
-                    <div className="prose prose-slate max-w-none">
-                        <p className="text-slate-600 leading-relaxed mb-8 whitespace-pre-line">
-                            {product.longDescription || product.description || `Our ${product.name} is meticulously crafted to provide the highest quality nutraceutical support. Each batch undergoes rigorous testing to ensure purity and potency.`}
-                        </p>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                            {/* Benefits */}
-                            {product.benefits && product.benefits.length > 0 && (
-                                <div>
-                                    <h3 className="text-lg font-bold text-blue-900 mb-4">Key Benefits</h3>
-                                    <ul className="space-y-3">
-                                        {Array.isArray(product.benefits) ? product.benefits.map((benefit: string, i: number) => (
-                                            <li key={i} className="flex items-start gap-3">
-                                                <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                                                <span className="text-slate-700">{benefit}</span>
-                                            </li>
-                                        )) : (
-                                            <li className="text-slate-700">{product.benefits}</li>
-                                        )}
-                                    </ul>
-                                </div>
+            <div className="mt-20">
+                <div className="flex items-center gap-8 border-b border-slate-200 mb-8 overflow-x-auto scrollbar-hide">
+                    {['details', 'ingredients', 'benefits', 'reviews'].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`pb-4 text-lg font-medium capitalize transition-colors relative whitespace-nowrap ${
+                                activeTab === tab ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                        >
+                            {tab}
+                            {activeTab === tab && (
+                                <motion.div
+                                    layoutId="activeTab"
+                                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                                />
                             )}
+                        </button>
+                    ))}
+                </div>
 
-                            {/* Ingredients & Dosage */}
-                            <div className="space-y-6">
-                                {product.ingredients && (
-                                    <div>
-                                        <h3 className="text-lg font-bold text-blue-900 mb-3">Ingredients</h3>
-                                        <p className="text-slate-700 leading-relaxed">
-                                            {Array.isArray(product.ingredients) ? product.ingredients.join(", ") : product.ingredients}
-                                        </p>
-                                    </div>
-                                )}
-                                
-                                {product.dosageInstructions && (
-                                    <div>
-                                        <h3 className="text-lg font-bold text-blue-900 mb-3">Recommended Dosage</h3>
-                                        <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                                            <p className="text-blue-800 font-medium">
-                                                {product.dosageInstructions}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Additional Details */}
-                        {(product.manufacturer || product.expiryDate) && (
-                            <div className="border-t border-slate-100 pt-6 mt-6">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="min-h-[300px]"
+                    >
+                        {activeTab === 'details' && (
+                            <div className="prose prose-slate max-w-none">
+                                <h3 className="text-xl font-bold text-slate-900 mb-4">Product Description</h3>
+                                <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                                    {product.longDescription || product.description || `Our ${product.name} is meticulously crafted to provide the highest quality nutraceutical support. Each batch undergoes rigorous testing to ensure purity and potency.`}
+                                </p>
+                                {(product.manufacturer || product.expiryDate) && (
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8 p-6 bg-slate-50 rounded-2xl">
                                     {product.manufacturer && (
                                         <div>
                                             <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Manufacturer</span>
@@ -311,11 +325,63 @@ export default function ProductDetailView({ product }: { product: any }) {
                                             <span className="text-slate-700">{new Date(product.expiryDate).toLocaleDateString()}</span>
                                         </div>
                                     )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'ingredients' && (
+                            <div className="grid md:grid-cols-2 gap-12">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-6">Active Ingredients</h3>
+                                    <div className="space-y-4">
+                                        {product.ingredients && (Array.isArray(product.ingredients) ? product.ingredients : [product.ingredients]).map((ing: string, idx: number) => (
+                                            <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-white border border-slate-100 shadow-sm">
+                                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                                    <Check className="w-4 h-4" />
+                                                </div>
+                                                <span className="font-medium text-slate-700">{ing}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                {product.dosageInstructions && (
+                                    <div className="bg-blue-50 p-8 rounded-2xl h-fit">
+                                        <h3 className="text-lg font-bold text-blue-900 mb-4">Recommended Dosage</h3>
+                                        <p className="text-blue-800 leading-relaxed">{product.dosageInstructions}</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'benefits' && (
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-6">Key Benefits</h3>
+                                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {product.benefits && (Array.isArray(product.benefits) ? product.benefits : [product.benefits]).map((benefit: string, i: number) => (
+                                        <div key={i} className="p-6 rounded-2xl bg-white border border-slate-100 hover:shadow-md transition-shadow">
+                                            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-4">
+                                                <Star className="w-5 h-5" />
+                                            </div>
+                                            <p className="text-slate-700 font-medium">{benefit}</p>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
-                    </div>
-                </div>
+
+                        {activeTab === 'reviews' && (
+                            <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                                <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
+                                    <Star className="w-8 h-8 text-amber-400 fill-amber-400" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-900">Customer Reviews</h3>
+                                <p className="text-slate-500 max-w-md mt-2">Reviews are coming soon. Be the first to review this product!</p>
+                                <Button variant="outline" className="mt-6">Write a Review</Button>
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
             </div>
         </div>
     );

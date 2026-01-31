@@ -41,6 +41,7 @@ import {
 import NoData from '@/components/common/dashboard/NoData'
 import Loader from '@/components/common/dashboard/Loader'
 import Error from '@/components/common/dashboard/Error'
+import { formatPrice } from '@/lib/formatters'
 
 const orderStatuses = ["all", "Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"] as const
 const paymentStatuses = ["all", "Paid", "Pending", "Refunded", "Failed"] as const
@@ -186,7 +187,7 @@ const OrdersPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-2xl font-bold text-foreground">₹{orders.reduce((sum, o) => sum + o.totalAmount, 0).toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-foreground">{formatPrice(orders.reduce((sum, o) => sum + o.totalAmount, 0))}</p>
                     </div>
                     <DollarSign className="w-8 h-8 text-blue-600" />
                   </div>
@@ -313,7 +314,7 @@ const OrdersPage = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Total Amount:</span>
-                      <span className="text-lg font-bold text-foreground">₹{order.totalAmount}</span>
+                      <span className="text-lg font-bold text-foreground">{formatPrice(order.totalAmount)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Payment:</span>
@@ -404,7 +405,7 @@ const OrdersPage = () => {
                         {order.paymentStatus}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-medium">₹{order.totalAmount}</TableCell>
+                    <TableCell className="font-medium">{formatPrice(order.totalAmount)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Tooltip>
@@ -528,7 +529,7 @@ const OrdersPage = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Total Amount:</span>
-                        <span className="font-bold text-lg">₹{selectedOrder.totalAmount}</span>
+                        <span className="font-bold text-lg">{formatPrice(selectedOrder.totalAmount)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Payment Method:</span>
@@ -584,8 +585,8 @@ const OrdersPage = () => {
                             <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium">₹{item.price}</p>
-                            <p className="text-sm text-muted-foreground">Total: ₹{item.total}</p>
+                            <p className="font-medium">{formatPrice(item.price)}</p>
+                            <p className="text-sm text-muted-foreground">Total: {formatPrice(item.total)}</p>
                           </div>
                         </div>
                       ))}
