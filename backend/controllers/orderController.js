@@ -284,6 +284,23 @@ export async function listOrders(req, res) {
   }
 }
 
+// Count the no. of Order
+export const countOrders = async (req, res) => {
+  try {
+    const count = await Order.countDocuments();
+    res.status(200).json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to count orders',
+      error: error.message
+    });
+  }
+};
+
 // Get one
 export async function getOrderById(req, res) {
   try {

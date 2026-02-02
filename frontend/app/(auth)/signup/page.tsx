@@ -276,8 +276,8 @@ const SignupPage = () => {
                 <div key={step.number} className="flex items-center flex-1">
                   <div className="flex flex-col items-center flex-1">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${currentStep >= step.number
-                        ? 'bg-gradient-to-br from-purple-600 to-pink-600 shadow-lg shadow-purple-500/50'
-                        : 'bg-gray-200 dark:bg-gray-700'
+                      ? 'bg-gradient-to-br from-purple-600 to-pink-600 shadow-lg shadow-purple-500/50'
+                      : 'bg-gray-200 dark:bg-gray-700'
                       }`}>
                       {currentStep > step.number ? (
                         <Check className="w-6 h-6 text-white" />
@@ -293,8 +293,8 @@ const SignupPage = () => {
                   </div>
                   {index < steps.length - 1 && (
                     <div className={`h-1 flex-1 mx-2 rounded transition-all duration-300 ${currentStep > step.number
-                        ? 'bg-gradient-to-r from-purple-600 to-pink-600'
-                        : 'bg-gray-200 dark:bg-gray-700'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600'
+                      : 'bg-gray-200 dark:bg-gray-700'
                       }`} />
                   )}
                 </div>
@@ -425,7 +425,7 @@ const SignupPage = () => {
                               value={formData.phone}
                               onChange={e => handleInputChange('phone', e.target.value)}
                               className="relative pl-11 h-12 border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                              placeholder="+1 (555) 000-0000"
+                              placeholder="+91 8102904321"
                             />
                             <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                           </div>
