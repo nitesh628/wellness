@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect } from 'react'
 import { 
   Search, 
   Grid3X3, 
@@ -28,32 +28,38 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Label } from '@/components/ui/label'
-import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks'
 import Loader from '@/components/common/dashboard/Loader'
 import Error from '@/components/common/dashboard/Error'
 import NoData from '@/components/common/dashboard/NoData'
-import {
-  fetchLeadsData,
-  setFilters,
-  setPagination,
-  selectLeadsData,
-  selectLeadsLoading,
-  selectLeadsError,
-  selectLeadsPagination,
-  updateLead,
-  deleteLead,
-  Lead as LeadType
-} from '@/lib/redux/features/leadSlice'
 
 const leadStatuses = ["new", "contacted", "proposal", "losted"]
 const leadPriorities = ["low", "medium", "high"]
 
+interface Lead {
+  _id: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  status: string;
+  priority: string;
+  estimatedValue: number;
+  notes: string;
+  lastContact: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 const LeadsPage = () => {
-  const dispatch = useAppDispatch()
-  const leads = useAppSelector(selectLeadsData)
-  const isLoading = useAppSelector(selectLeadsLoading)
-  const error = useAppSelector(selectLeadsError)
-  const pagination = useAppSelector(selectLeadsPagination)
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0
+  })
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchTerm, setSearchTerm] = useState('')
@@ -62,102 +68,108 @@ const LeadsPage = () => {
   const [showViewModal, setShowViewModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [selectedLead, setSelectedLead] = useState<LeadType | null>(null)
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [modalLoading, setModalLoading] = useState(false)
   
-
-  // Fetch leads data on component mount
-  useEffect(() => {
-    dispatch(fetchLeadsData())
-  }, [dispatch])
-
-  // Update filters when local state changes
-  useEffect(() => {
-    dispatch(setFilters({
-      search: searchTerm,
-      status: selectedStatus === 'new' ? '' : selectedStatus,
-      priority: selectedPriority === 'low' ? '' : selectedPriority
-    }))
-  }, [dispatch, searchTerm, selectedStatus, selectedPriority])
-
-  // Helper to safely lowercase a string, fallback to empty string if undefined/null
-  const safeLower = (val: string | undefined | null) => (typeof val === 'string' ? val.toLowerCase() : '')
-
-  // Filter leads
-  const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
-      const name = safeLower(lead.name)
-      const email = safeLower(lead.email)
-      const subject = safeLower(lead.subject)
-      const search = safeLower(searchTerm)
-      const matchesSearch =
-        name.includes(search) ||
-        email.includes(search) ||
-        subject.includes(search)
-      const matchesStatus = selectedStatus === 'new' || lead.status === selectedStatus
-      const matchesPriority = selectedPriority === 'low' || lead.priority === selectedPriority
+  const fetchLeads = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+      const queryParams = new URLSearchParams()
+      queryParams.append('page', pagination.page.toString())
+      queryParams.append('limit', pagination.limit.toString())
       
-      return matchesSearch && matchesStatus && matchesPriority
-    })
-  }, [leads, searchTerm, selectedStatus, selectedPriority])
+      if (searchTerm) queryParams.append('search', searchTerm)
+      // Replicating original logic where 'new' and 'low' acted as default/all
+      if (selectedStatus !== 'new') queryParams.append('status', selectedStatus)
+      if (selectedPriority !== 'low') queryParams.append('priority', selectedPriority)
+
+      const res = await fetch(`${apiUrl}/v1/leads?${queryParams.toString()}`)
+      const data = await res.json()
+
+      if (data.success) {
+        setLeads(data.data)
+        setPagination(prev => ({ ...prev, total: data.pagination?.total || data.total || 0 }))
+      } else {
+        setError(data.message || "Failed to fetch leads")
+      }
+    } catch (err) {
+      setError("Failed to fetch leads")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchLeads()
+  }, [pagination.page, pagination.limit, searchTerm, selectedStatus, selectedPriority])
 
   // Pagination logic
   const totalPages = Math.ceil(pagination.total / pagination.limit)
   const startIndex = (pagination.page - 1) * pagination.limit
-  const paginatedLeads = filteredLeads.slice(startIndex, startIndex + pagination.limit)
 
   // Handle pagination changes
   const handlePageChange = (newPage: number) => {
-    dispatch(setPagination({ page: newPage }))
-    dispatch(fetchLeadsData())
+    setPagination(prev => ({ ...prev, page: newPage }))
   }
 
   const handleUpdateLeadStatus = async (leadId: string, newStatus: string) => {
     setModalLoading(true)
     try {
-      const apiLead = leads.find(l => l._id === leadId)
-      if (apiLead) {
-        const success = await dispatch(updateLead(apiLead._id, { 
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+      const res = await fetch(`${apiUrl}/v1/leads/updateLead/${leadId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
           status: newStatus,
           lastContact: new Date().toISOString().split('T')[0]
-        })) as unknown as boolean
-        if (success) {
-          dispatch(fetchLeadsData())
-        }
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        fetchLeads()
+        setShowEditModal(false)
       }
+    } catch (error) {
+      console.error(error)
     } finally {
       setModalLoading(false)
     }
   }
 
   const handleDeleteLead = async () => {
+    if (!selectedLead) return
     setModalLoading(true)
     try {
-      const apiLead = leads.find(l => l._id === selectedLead!._id)
-      if (apiLead) {
-        const success = await dispatch(deleteLead(apiLead._id)) as unknown as boolean
-        if (success) {
-          dispatch(fetchLeadsData())
-          setShowDeleteModal(false)
-          setSelectedLead(null)
-        }
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+      const res = await fetch(`${apiUrl}/v1/leads/deleteLead/${selectedLead._id}`, {
+        method: 'DELETE'
+      })
+      const data = await res.json()
+      if (data.success) {
+        fetchLeads()
+        setShowDeleteModal(false)
+        setSelectedLead(null)
       }
+    } catch (error) {
+      console.error(error)
     } finally {
       setModalLoading(false)
     }
   }
 
-  const openViewModal = (lead: LeadType) => {
+  const openViewModal = (lead: Lead) => {
     setSelectedLead(lead)
     setShowViewModal(true)
   }
 
-  const openEditModal = (lead: LeadType) => {
+  const openEditModal = (lead: Lead) => {
     setSelectedLead(lead)
     setShowEditModal(true)
   }
 
-  const openDeleteModal = (lead: LeadType) => {
+  const openDeleteModal = (lead: Lead) => {
     setSelectedLead(lead)
     setShowDeleteModal(true)
   }
@@ -338,7 +350,7 @@ const LeadsPage = () => {
             {/* Content */}
             {isLoading ? (
               <Loader variant="skeleton" message="Loading leads..." />
-            ) : filteredLeads.length === 0 ? (
+            ) : leads.length === 0 ? (
               <NoData 
                 message="No leads found"
                 description="No leads match your current filters"
@@ -349,7 +361,7 @@ const LeadsPage = () => {
           <>
             {viewMode === 'grid' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {paginatedLeads.map((lead: LeadType) => (
+            {leads.map((lead: Lead) => (
               <Card key={lead._id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -434,7 +446,7 @@ const LeadsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedLeads.map((lead: LeadType) => (
+                {leads.map((lead: Lead) => (
                   <TableRow key={lead._id}>
                     <TableCell>
                       <div>
@@ -518,12 +530,12 @@ const LeadsPage = () => {
         )}
 
             {/* Pagination */}
-            {!isLoading && filteredLeads.length > 0 && totalPages > 1 && (
+            {!isLoading && leads.length > 0 && totalPages > 1 && (
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
-                      Showing {startIndex + 1} to {Math.min(startIndex + pagination.limit, filteredLeads.length)} of {filteredLeads.length} leads
+                      Showing {startIndex + 1} to {Math.min(startIndex + pagination.limit, pagination.total)} of {pagination.total} leads
                     </div>
                     <div className="flex items-center gap-2">
                       <Button

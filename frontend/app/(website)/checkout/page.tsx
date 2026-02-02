@@ -22,6 +22,7 @@ import {
 import { useCart } from "@/lib/context/CartContext";
 import { toast } from "sonner";
 import RazorpayButton from "@/components/RazorpayButton";
+import Swal from "sweetalert2";
 
 const formatPrice = (amount: number) => {
   return new Intl.NumberFormat("en-IN", {
@@ -202,8 +203,15 @@ const CheckoutPage = () => {
 
       clearCart();
       setIsOrderPlaced(true);
-      alert("Order placed successfully!");
-      toast.success("Order placed successfully!");
+      Swal.fire({
+        title: "Order Placed!",
+        text: "Your order has been placed successfully.",
+        icon: "success",
+        confirmButtonColor: "#2563eb",
+        confirmButtonText: "Track Order"
+      }).then(() => {
+        router.push("/track-order");
+      });
     } catch (error: any) {
       // Show backend error message if available
       console.error("Order API Error:", error);
@@ -266,8 +274,15 @@ const CheckoutPage = () => {
 
       clearCart();
       setIsOrderPlaced(true);
-      alert("Order placed successfully!");
-      toast.success("Order placed successfully!");
+      Swal.fire({
+        title: "Order Placed!",
+        text: "Your order has been placed successfully.",
+        icon: "success",
+        confirmButtonColor: "#2563eb",
+        confirmButtonText: "Track Order"
+      }).then(() => {
+        router.push("/track-order");
+      });
     } catch (error: any) {
       console.error("Order API Error:", error);
       const message =
@@ -300,10 +315,10 @@ const CheckoutPage = () => {
             being processed.
           </p>
           <Button
-            onClick={() => router.push("/profile?tab=orders")}
+            onClick={() => router.push("/track-order")}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-6"
           >
-            View My Orders
+            Track Order
           </Button>
         </div>
       </div>

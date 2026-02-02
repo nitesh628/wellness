@@ -28,22 +28,26 @@ const DashboardPage = () => {
   const router = useRouter()
   const [productCount, setProductCount] = useState('0')
   const [orderCount, setOrderCount] = useState('0')
+  const [userCount, setUserCount] = useState('0')
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
         
-        const [productRes, orderRes] = await Promise.all([
+        const [productRes, orderRes, userRes] = await Promise.all([
           fetch(`${apiUrl}/v1/products/count`),
-          fetch(`${apiUrl}/v1/orders/count`)
+          fetch(`${apiUrl}/v1/orders/count`),
+          fetch(`${apiUrl}/v1/users/count`)
         ])
 
         const productData = await productRes.json()
         const orderData = await orderRes.json()
+        const userData = await userRes.json()
 
         if (productData.success) setProductCount(productData.count.toString())
         if (orderData.success) setOrderCount(orderData.count.toString())
+        if (userData.success) setUserCount(userData.total.toString())
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error)
       }
@@ -55,7 +59,7 @@ const DashboardPage = () => {
   const stats = [
     { 
       name: 'Total Users', 
-      value: '2,345', 
+      value: userCount, 
       icon: Users, 
       change: '+12%', 
       changeType: 'positive',

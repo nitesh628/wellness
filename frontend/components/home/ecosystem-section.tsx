@@ -1,56 +1,50 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { Button } from '@/components/ui/button';
-import Product1 from "../../public/supplement-bottle-blue.png"
-import Product2 from "../../public/1.jpg"
-import Product4 from "../../public/4.jpg"
 import { motion } from 'framer-motion';
 
-
-// Placeholder data for the ecosystem categories
-const ecosystemCategories = [
-    {
-        title: "Gut Longevity",
-        image: Product2, // Replace with relevant image
-        bg: "bg-blue-600"
-    },
-    {
-        title: "General Longevity",
-        image: Product1,
-        bg: "bg-blue-600"
-    },
-    {
-        title: "Reproductive Longevity",
-        image: Product4,
-        bg: "bg-blue-600"
-    },
-    {
-        title: "General Longevity",
-        image: Product1,
-        bg: "bg-blue-600"
-    },
-    {
-        title: "Metabolic Longevity",
-        image: Product1,
-        bg: "bg-blue-600"
-    },
-    {
-        title: "Brain Health",
-        image: Product2,
-        bg: "bg-blue-600"
-    }
-];
+interface Product {
+  _id: string;
+  slug: string;
+  name: string;
+  images: string[];
+  price?: {
+    amount: number;
+    mrp?: number;
+  };
+}
 
 const EcosystemSection = () => {
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [emblaRef, emblaApi] = useEmblaCarousel({
         align: 'start',
         containScroll: 'trimSnaps',
         dragFree: true
     });
+
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+                const res = await fetch(`${apiUrl}/v1/products/public`);
+                if (!res.ok) throw new Error("Failed to fetch products");
+                const data = await res.json();
+                if (data.success) {
+                    setProducts(data.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch products:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProducts();
+    }, []);
 
     const scrollPrev = React.useCallback(() => {
         if (emblaApi) emblaApi.scrollPrev();
@@ -59,6 +53,9 @@ const EcosystemSection = () => {
     const scrollNext = React.useCallback(() => {
         if (emblaApi) emblaApi.scrollNext();
     }, [emblaApi]);
+
+    if (loading) return null;
+    if (products.length === 0) return null;
 
     return (
         <section className="py-16 bg-white/0 dark:bg-slate-950/0 overflow-hidden">
@@ -69,7 +66,7 @@ const EcosystemSection = () => {
                         The Wellness Ecosystem
                     </h2>
                     <div className="flex items-center gap-4">
-                        <Link href="/products" className="text-blue-600 font-semibold text-sm md:text-base hidden md:block hover:text-blue-800 transition-colors">
+                        <Link href="/collab" className="text-blue-600 font-semibold text-sm md:text-base hidden md:block hover:text-blue-800 transition-colors">
                             View all &gt;
                         </Link>
                         <div className="flex gap-2">
@@ -87,30 +84,30 @@ const EcosystemSection = () => {
                 <div className="relative">
                     <div className="overflow-hidden" ref={emblaRef}>
                         <div className="flex gap-6">
-                            {ecosystemCategories.map((category, index) => (
+                            {products.map((product, index) => (
                                 <motion.div
-                                    key={index}
+                                    key={product._id}
                                     className="flex-[0_0_280px] sm:flex-[0_0_320px] lg:flex-[0_0_350px] min-w-0"
                                     initial={{ opacity: 0, y: 20 }}
                                     whileInView={{ opacity: 1, y: 0 }}
                                     viewport={{ once: true }}
                                     transition={{ duration: 0.5, delay: index * 0.1 }}
                                 >
-                                    <Link href={`/products?category=${category.title.toLowerCase().replace(/ /g, '-')}`} className="group block w-full">
+                                    <Link href={`/product/${product.slug}`} className="group block w-full">
                                         <div className="relative aspect-square w-full rounded-xl overflow-hidden mb-4 bg-slate-50 border border-slate-100 transition-all duration-300 group-hover:shadow-xl group-hover:border-blue-100 group-hover:-translate-y-2">
                                             <div className="absolute inset-0 flex items-center justify-center p-6">
                                                 <div className="w-full h-full relative">
                                                     <Image
-                                                        src={category.image}
-                                                        alt={category.title}
+                                                        src={product.images?.[0] || "/placeholder.png"}
+                                                        alt={product.name}
                                                         fill
                                                         className="object-contain transition-transform duration-500 group-hover:scale-105"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
-                                        <h3 className="text-xl font-bold text-blue-800 dark:text-blue-400 text-center group-hover:text-blue-600 transition-colors">
-                                            {category.title}
+                                        <h3 className="text-xl font-bold text-blue-800 dark:text-blue-400 text-center group-hover:text-blue-600 transition-colors line-clamp-1">
+                                            {product.name}
                                         </h3>
                                     </Link>
                                 </motion.div>

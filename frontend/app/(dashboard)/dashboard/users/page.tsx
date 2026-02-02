@@ -72,8 +72,8 @@ const UsersPage = () => {
   const [error, setError] = useState('')
   const [filters, setFilters] = useState({
     search: '',
-    role: '',
-    status: ''
+    role: 'All',
+    status: 'All'
   })
   const [pagination, setPagination] = useState({
     page: 1,
@@ -173,8 +173,8 @@ const UsersPage = () => {
       queryParams.append('page', pagination.page.toString())
       queryParams.append('limit', pagination.limit.toString())
       if (filters.search) queryParams.append('search', filters.search)
-      if (filters.role) queryParams.append('role', filters.role)
-      if (filters.status) queryParams.append('status', filters.status)
+      if (filters.role && filters.role !== 'All') queryParams.append('role', filters.role)
+      if (filters.status && filters.status !== 'All') queryParams.append('status', filters.status)
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
       const res = await fetch(`${apiUrl}/v1/users?${queryParams.toString()}`)
@@ -247,12 +247,12 @@ const UsersPage = () => {
   }
 
   const handleRoleChange = (value: string) => {
-    setFilters(prev => ({ ...prev, role: value === 'All' ? '' : value }))
+    setFilters(prev => ({ ...prev, role: value }))
     setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   const handleStatusChange = (value: string) => {
-    setFilters(prev => ({ ...prev, status: value === 'All' ? '' : value }))
+    setFilters(prev => ({ ...prev, status: value }))
     setPagination(prev => ({ ...prev, page: 1 }))
   }
 
@@ -489,7 +489,7 @@ const UsersPage = () => {
                   </div>
 
                   {/* Role Filter */}
-                  <Select value={filters.role || 'All'} onValueChange={handleRoleChange}>
+                  <Select value={filters.role} onValueChange={handleRoleChange}>
                     <SelectTrigger className="w-full lg:w-[180px] bg-background border-muted-foreground/20">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -503,7 +503,7 @@ const UsersPage = () => {
                   </Select>
 
                   {/* Status Filter */}
-                  <Select value={filters.status || 'All'} onValueChange={handleStatusChange}>
+                  <Select value={filters.status} onValueChange={handleStatusChange}>
                     <SelectTrigger className="w-full lg:w-[180px] bg-background border-muted-foreground/20">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
