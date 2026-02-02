@@ -5,6 +5,7 @@ import {
   getUserById,
   updateUser,
   deleteUser,
+  getTotalUsersCount,
 } from "../controllers/userController.js";
 import { createDoctor, getAllDoctors, getDoctorById, toggleDoctorStatus, updateDoctor } from "../controllers/doctorUserController.js";
 import { createInfluencer, getAllInfluencers, getInfluencerById, toggleInfluencerStatus, updateInfluencer } from "../controllers/influencerController.js";
@@ -15,6 +16,7 @@ const router = Router();
 // Routes
 router.post("/", upload.single("imageUrl"), createUser);          // Create user
 router.get("/", getUsers);             // Get all users
+router.get("/count",getTotalUsersCount)
 router.get("/:id", getUserById);       // Get user by ID
 router.put("/:id", upload.single("imageUrl"), updateUser);        // Update user
 router.delete("/:id", deleteUser);     // Delete user
