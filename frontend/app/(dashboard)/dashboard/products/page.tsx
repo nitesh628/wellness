@@ -78,6 +78,7 @@ import {
   deleteProduct,
   Product,
 } from "@/lib/redux/features/productSlice";
+import Swal from "sweetalert2";
 
 interface ProductImage {
   id: string;
@@ -111,7 +112,6 @@ const ProductsPage = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedProduct, setSelectedProduct] =
     useState<ProductWithImages | null>(null);
   const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>(
@@ -384,27 +384,52 @@ const ProductsPage = () => {
         setShowEditModal(false);
         setSelectedProduct(null);
         dispatch(fetchProductsData());
+        Swal.fire({
+          title: "Success!",
+          text: "Product updated successfully",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       }
     } catch (error) {
       console.error("Error updating product:", error);
     }
   };
 
-  const handleDeleteProduct = async () => {
-    try {
-      if (!selectedProduct) return;
-
-      const success = (await dispatch(
-        deleteProduct(selectedProduct._id),
-      )) as unknown as boolean;
-      if (success) {
-        setShowDeleteModal(false);
-        setSelectedProduct(null);
-        dispatch(fetchProductsData());
+  const handleDeleteProduct = (product: Product) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: `Do you want to delete "${product.name}"? This action cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const success = (await dispatch(
+            deleteProduct(product._id),
+          )) as unknown as boolean;
+          if (success) {
+            dispatch(fetchProductsData());
+            Swal.fire({
+              title: "Deleted!",
+              text: "Product has been deleted.",
+              icon: "success",
+            });
+          }
+        } catch (error) {
+          console.error("Error deleting product:", error);
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to delete product.",
+            icon: "error",
+          });
+        }
       }
-    } catch (error) {
-      console.error("Error deleting product:", error);
-    }
+    });
   };
 
   const openEditModal = (product: Product) => {
@@ -453,20 +478,6 @@ const ProductsPage = () => {
     });
     setUrlInput("");
     setShowEditModal(true);
-  };
-
-  const openDeleteModal = (product: Product) => {
-    const productWithImages: ProductWithImages = {
-      ...product,
-      productImages: product.images.map((img, index) => ({
-        id: `img-${index}`,
-        url: img,
-        alt: product.name,
-        caption: "",
-      })),
-    };
-    setSelectedProduct(productWithImages);
-    setShowDeleteModal(true);
   };
 
   return (
@@ -780,7 +791,7 @@ const ProductsPage = () => {
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  onClick={() => openDeleteModal(product)}
+                                  onClick={() => handleDeleteProduct(product)}
                                   variant="outline"
                                   className="flex-1 gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                                   size="sm"
@@ -871,7 +882,7 @@ const ProductsPage = () => {
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
-                                      onClick={() => openDeleteModal(product)}
+                                      onClick={() => handleDeleteProduct(product)}
                                       variant="ghost"
                                       size="icon"
                                       className="text-destructive hover:bg-destructive/10"
@@ -1661,11 +1672,10 @@ const ProductsPage = () => {
                       <div className="flex items-center justify-between mb-2">
                         <Label>
                           Product Images{" "}
-                          {selectedProduct?.productImages?.length || 0}/5
+                          {productImages.length}/5
                         </Label>
                         <div className="flex gap-2">
-                          {(selectedProduct?.productImages?.length || 0) <
-                            5 && (
+                          {productImages.length < 5 && (
                             <Button
                               onClick={addImageFromFile}
                               size="sm"
@@ -1685,7 +1695,7 @@ const ProductsPage = () => {
                         onChange={handleFileSelect}
                         className="hidden"
                       />
-                      {(selectedProduct?.productImages?.length || 0) < 5 && (
+                      {productImages.length < 5 && (
                         <div className="flex gap-2 mb-3">
                           <Input
                             placeholder="Image URL"
@@ -1701,10 +1711,9 @@ const ProductsPage = () => {
                           </Button>
                         </div>
                       )}
-                      {selectedProduct?.productImages &&
-                        selectedProduct.productImages.length > 0 && (
+                      {productImages.length > 0 && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {selectedProduct.productImages.map((image) => (
+                            {productImages.map((image) => (
                               <div
                                 key={image.id}
                                 className="border rounded-lg p-3 space-y-2"
@@ -1716,18 +1725,7 @@ const ProductsPage = () => {
                                     className="object-cover"
                                   />
                                   <Button
-                                    onClick={() => {
-                                      if (selectedProduct.productImages) {
-                                        const updatedImages =
-                                          selectedProduct.productImages.filter(
-                                            (img) => img.id !== image.id,
-                                          );
-                                        setSelectedProduct({
-                                          ...selectedProduct,
-                                          productImages: updatedImages,
-                                        });
-                                      }
-                                    }}
+                                    onClick={() => removeImage(image.id)}
                                     variant="destructive"
                                     size="icon"
                                     className="absolute top-1 right-1 h-5 w-5"
@@ -1738,44 +1736,13 @@ const ProductsPage = () => {
                                 <Input
                                   placeholder="Alt text"
                                   value={image.alt}
-                                  onChange={(e) => {
-                                    if (selectedProduct.productImages) {
-                                      const updatedImages =
-                                        selectedProduct.productImages.map(
-                                          (img) =>
-                                            img.id === image.id
-                                              ? { ...img, alt: e.target.value }
-                                              : img,
-                                        );
-                                      setSelectedProduct({
-                                        ...selectedProduct,
-                                        productImages: updatedImages,
-                                      });
-                                    }
-                                  }}
+                                  onChange={(e) => updateImage(image.id, "alt", e.target.value)}
                                   className="text-sm"
                                 />
                                 <Input
                                   placeholder="Caption (optional)"
                                   value={image.caption || ""}
-                                  onChange={(e) => {
-                                    if (selectedProduct.productImages) {
-                                      const updatedImages =
-                                        selectedProduct.productImages.map(
-                                          (img) =>
-                                            img.id === image.id
-                                              ? {
-                                                  ...img,
-                                                  caption: e.target.value,
-                                                }
-                                              : img,
-                                        );
-                                      setSelectedProduct({
-                                        ...selectedProduct,
-                                        productImages: updatedImages,
-                                      });
-                                    }
-                                  }}
+                                  onChange={(e) => updateImage(image.id, "caption", e.target.value)}
                                   className="text-sm"
                                 />
                               </div>
@@ -1801,42 +1768,6 @@ const ProductsPage = () => {
                       </>
                     ) : (
                       "Update Product"
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Delete Confirmation Modal */}
-            <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Delete Product</DialogTitle>
-                  <DialogDescription>
-                    Are you sure you want to delete &quot;
-                    {selectedProduct?.name}&quot;? This action cannot be undone.
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowDeleteModal(false)}
-                    disabled={isLoading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={handleDeleteProduct}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Deleting...
-                      </>
-                    ) : (
-                      "Delete"
                     )}
                   </Button>
                 </DialogFooter>

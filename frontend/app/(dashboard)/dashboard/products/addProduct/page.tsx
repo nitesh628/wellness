@@ -41,6 +41,7 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { createProduct } from "@/lib/redux/features/productSlice";
 import { isFulfilled } from "@reduxjs/toolkit";
+import Swal from "sweetalert2";
 
 interface AIProductData {
   name: string;
@@ -262,10 +263,13 @@ const AddProduct = () => {
       productFormData.append("description", formData.longDescription); // Fallback
 
       // Handle array conversion for benefits if it's a string in current local state (it appears to be array in interface, so clean it)
-      const benefitsString = Array.isArray(formData.benefits)
-        ? formData.benefits.join("\n")
-        : formData.benefits;
-      productFormData.append("benefits", benefitsString);
+      const benefitsArray = Array.isArray(formData.benefits)
+        ? formData.benefits
+        : (typeof formData.benefits === 'string' ? (formData.benefits as string).split('\n') : []);
+      
+      benefitsArray.forEach((benefit) => {
+        if (benefit.trim()) productFormData.append("benefits", benefit.trim());
+      });
 
       productFormData.append("ingredients", formData.ingredients);
       productFormData.append("dosageInstructions", formData.dosage);
@@ -288,13 +292,12 @@ const AddProduct = () => {
       productFormData.append("slug", slug);
 
       // Append images
-      if (selectedImages.length > 0) {
-        selectedImages.forEach((file) => {});
-
-        // Using the imagePreviews which are base64 string
-        imagePreviews.forEach((preview) => {
-          productFormData.append("images[]", preview);
+      if (imagePreviews.length > 0) {
+        imagePreviews.forEach((preview, index) => {
+          productFormData.append(`images[${index}]`, preview);
         });
+        // Fallback image
+        productFormData.append("imageUrl", imagePreviews[0]);
       }
 
       const result = await dispatch(createProduct(productFormData));
@@ -832,6 +835,7 @@ const AddProduct = () => {
       )}
       </AnimatePresence>
     </div>
+   
   );
 };
 

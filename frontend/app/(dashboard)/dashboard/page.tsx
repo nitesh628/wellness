@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { 
@@ -26,6 +26,30 @@ import { Badge } from '@/components/ui/badge'
 
 const DashboardPage = () => {
   const router = useRouter()
+  const [productCount, setProductCount] = useState('0')
+  const [orderCount, setOrderCount] = useState('0')
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+        
+        const [productRes, orderRes] = await Promise.all([
+          fetch(`${apiUrl}/v1/products/count`),
+          fetch(`${apiUrl}/v1/orders/count`)
+        ])
+
+        const productData = await productRes.json()
+        const orderData = await orderRes.json()
+
+        if (productData.success) setProductCount(productData.count.toString())
+        if (orderData.success) setOrderCount(orderData.count.toString())
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error)
+      }
+    }
+    fetchDashboardData()
+  }, [])
 
   // Enhanced stats with more detailed information
   const stats = [
@@ -67,7 +91,7 @@ const DashboardPage = () => {
     },
     { 
       name: 'Products', 
-      value: '234', 
+      value: productCount, 
       icon: Package, 
       change: '+5%', 
       changeType: 'positive',
@@ -76,7 +100,7 @@ const DashboardPage = () => {
     },
     { 
       name: 'Orders', 
-      value: '567', 
+      value: orderCount, 
       icon: ShoppingCart, 
       change: '+18%', 
       changeType: 'positive',

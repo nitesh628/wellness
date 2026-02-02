@@ -1,88 +1,64 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, ShoppingBag, Star } from 'lucide-react';
-import Product1 from "../../public/supplement-bottle-blue.png"
-import Product2 from "../../public/1.jpg"
-import Product4 from "../../public/4.jpg"
 import { motion } from "framer-motion";
-
-// Sample data for Featured Collection
-const featuredProducts = [
-    // Row 1 ( Images)
-    {
-        id: 1,
-        name: "Forever Gut",
-        price: "1,477.00",
-        originalPrice: "1,970.00",
-        image: Product1, // Replace with  image
-        hoverImage: Product1,
-    },
-    {
-        id: 2,
-        name: "Complete Gut Fibre",
-        price: "974.00",
-        originalPrice: "1,299.00",
-        image: Product2,
-        hoverImage: Product2,
-    },
-    {
-        id: 3,
-        name: "Longevity Pro",
-        price: "2,774.00",
-        originalPrice: "3,699.00",
-        image: Product1,
-        hoverImage: Product1,
-    },
-    {
-        id: 4,
-        name: "Complete Superfoods Blend",
-        price: "1,499.00",
-        originalPrice: "1,999.00",
-        image: Product4,
-        hoverImage: Product4,
-    },
-    // Row 2 (Bottle Images)
-    {
-        id: 5,
-        name: "Bone Essentials",
-        price: "1,200.00",
-        originalPrice: "1,500.00",
-        image: Product1, // Replace with bottle image
-        hoverImage: Product1,
-    },
-    {
-        id: 6,
-        name: "Fat Metabolism Boost",
-        price: "1,800.00",
-        originalPrice: "2,400.00",
-        image: Product2,
-        hoverImage: Product2,
-    },
-    {
-        id: 7,
-        name: "Fatty Liver Revive",
-        price: "1,600.00",
-        originalPrice: "2,100.00",
-        image: Product1,
-        hoverImage: Product1,
-    },
-    {
-        id: 8,
-        name: "Fertility Boost",
-        price: "2,000.00",
-        originalPrice: "2,800.00",
-        image: Product4,
-        hoverImage: Product4,
-    },
-];
-
 import { useRouter } from "next/navigation";
+import { formatPrice } from "@/lib/formatters";
+import { useCart } from "@/lib/context/CartContext";
+import Swal from 'sweetalert2';
+
+interface Product {
+    _id: string;
+    slug: string;
+    name: string;
+    images: string[];
+    price?: {
+        amount: number;
+        mrp?: number;
+    };
+}
 
 const FeaturedCollectionSection = () => {
     const router = useRouter();
+    const { addToCart } = useCart();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFeaturedProducts = async () => {
+            try {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+                const res = await fetch(`${apiUrl}/v1/products/public`);
+                if (!res.ok) {
+                    throw new Error("Failed to fetch products");
+                }
+                const data = await res.json();
+                if (data.success) {
+                    setProducts(data.data.slice(0, 8));
+                }
+            } catch (error) {
+                console.error("Failed to fetch featured products:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFeaturedProducts();
+    }, []);
+
+    if (loading) {
+        return (
+            <section className="py-24 relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900 min-h-[600px] flex items-center justify-center">
+                <div className="animate-pulse text-blue-600 font-semibold">Loading Featured Collection...</div>
+            </section>
+        );
+    }
+
+    if (products.length === 0) return null;
+
     return (
         <section className="py-24 relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
             {/* Animated Background Elements */}
@@ -141,43 +117,49 @@ const FeaturedCollectionSection = () => {
 
                 {/* Product Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {featuredProducts.map((product, index) => (
+                    {products.map((product, index) => {
+                        const discount = product.price?.mrp ? Math.round(((product.price.mrp - product.price.amount) / product.price.mrp) * 100) : 0;
+                        return (
                         <motion.div
-                            key={product.id}
+                            key={product._id}
                             initial={{ opacity: 0, y: 30 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                             className="group cursor-pointer"
-                            onClick={() => router.push(`/product/${product.name.toLowerCase().replace(/ /g, '-')}`)}
+                            onClick={() => router.push(`/product/${product.slug}`)}
                         >
 
                             {/* Card Container */}
                             <div className="relative bg-white dark:bg-slate-900 rounded-[2rem] p-4 transition-all duration-500 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] hover:shadow-blue-500/10 border border-slate-100 dark:border-slate-800 group-hover:border-blue-200 dark:group-hover:border-blue-800/50 h-full flex flex-col">
                                 
                                 {/* Discount Badge */}
+                                {discount > 0 && (
                                 <div className="absolute top-6 left-6 z-20">
                                     <span className="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg shadow-red-500/30">
-                                        Sale
+                                        {discount}% OFF
                                     </span>
                                 </div>
+                                )}
 
                                 {/* Image Area */}
                                 <div className="relative w-full aspect-[4/5] mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-800/50 dark:to-slate-800/30">
                                     <div className="absolute inset-0 flex items-center justify-center p-8">
                                         <div className="relative w-full h-full transition-transform duration-700 group-hover:scale-110">
                                             <Image
-                                                src={product.image}
+                                                src={product.images?.[0] || "/placeholder.png"}
                                                 alt={product.name}
                                                 fill
-                                                className="object-contain transition-opacity duration-500 group-hover:opacity-0"
+                                                className={`object-contain transition-opacity duration-500 ${product.images?.[1] ? 'group-hover:opacity-0' : ''}`}
                                             />
+                                            {product.images?.[1] && (
                                             <Image
-                                                src={product.hoverImage}
+                                                src={product.images[1]}
                                                 alt={product.name}
                                                 fill
                                                 className="object-contain absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
                                             />
+                                            )}
                                         </div>
                                     </div>
 
@@ -186,7 +168,26 @@ const FeaturedCollectionSection = () => {
                                         <Button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                router.push(`/product/${product.name.toLowerCase().replace(/ /g, '-')}`);
+                                                addToCart({
+                                                    id: product._id,
+                                                    name: product.name,
+                                                    price: product.price?.amount || 0,
+                                                    image: product.images?.[0] || "/placeholder.png"
+                                                });
+                                                Swal.fire({
+                                                    title: "Added to Cart!",
+                                                    text: `${product.name} has been added to your cart.`,
+                                                    icon: "success",
+                                                    showCancelButton: true,
+                                                    confirmButtonColor: "#2563eb",
+                                                    cancelButtonColor: "#64748b",
+                                                    confirmButtonText: "Go to Cart",
+                                                    cancelButtonText: "Continue Shopping"
+                                                }).then((result) => {
+                                                    if (result.isConfirmed) {
+                                                        router.push('/cart');
+                                                    }
+                                                });
                                             }}
                                             className="w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-md hover:bg-blue-600 hover:text-white text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-blue-600 rounded-xl shadow-lg h-12 font-semibold transition-all duration-300"
                                         >
@@ -211,13 +212,15 @@ const FeaturedCollectionSection = () => {
                                     </h3>
                                     
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl font-bold text-slate-900 dark:text-white">Rs. {product.price}</span>
-                                        <span className="text-sm text-slate-400 line-through font-medium">Rs. {product.originalPrice}</span>
+                                        <span className="text-xl font-bold text-slate-900 dark:text-white">{formatPrice(product.price?.amount || 0)}</span>
+                                        {product.price?.mrp && (
+                                            <span className="text-sm text-slate-400 line-through font-medium">{formatPrice(product.price.mrp)}</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                         </motion.div>
-                    ))}
+                    )})}
                 </div>
 
             </div>
