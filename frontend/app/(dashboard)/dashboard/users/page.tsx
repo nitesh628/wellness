@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { 
-  Search, 
-  Grid3X3, 
-  List, 
-  Edit, 
-  Trash2, 
+import {
+  Search,
+  Grid3X3,
+  List,
+  Edit,
+  Trash2,
   UserPlus,
   User,
   Eye,
@@ -72,7 +72,7 @@ const UsersPage = () => {
   const [modalLoading, setModalLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const newUserFileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [newUser, setNewUser] = useState({
     firstName: '',
     lastName: '',
@@ -211,7 +211,7 @@ const UsersPage = () => {
 
   const handleDeleteUser = async () => {
     if (!selectedUser || selectedUser.role === 'Admin') return
-    
+
     setModalLoading(true)
     try {
       const success = await dispatch(deleteUser(selectedUser._id)) as unknown as boolean
@@ -394,7 +394,7 @@ const UsersPage = () => {
             {isLoading ? (
               <Loader variant="skeleton" message="Loading users..." />
             ) : users.length === 0 ? (
-              <NoData 
+              <NoData
                 message="No users found"
                 description="Get started by adding your first user"
                 icon={<User className="w-full h-full text-muted-foreground/60" />}
@@ -405,111 +405,111 @@ const UsersPage = () => {
                 size="lg"
               />
             ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-            {users.map(user => (
-              <Card key={user._id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12">
-                        <AvatarImage 
-                          src={getUserImage(user)} 
-                          alt={`${user.firstName} ${user.lastName}`}
-                          onError={(e) => {
-                            e.currentTarget.src = '/placeholder-user.svg'
-                          }}
-                        />
-                        <AvatarFallback>{user.firstName[0]}{user.lastName[0]}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-lg">{user.firstName} {user.lastName}</CardTitle>
-                        <CardDescription className="text-sm">{user.email}</CardDescription>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <Badge variant={getRoleColor(user.role) as 'default' | 'secondary' | 'destructive' | 'outline'}>
-                        {getRoleIcon(user.role)}
-                        <span className="ml-1">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>
-                      </Badge>
-                      <Badge variant={getStatusColor(user.status) as 'default' | 'secondary' | 'destructive' | 'outline'}>
-                        {getStatusIcon(user.status)}
-                        <span className="ml-1">{user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3 flex-1 flex flex-col">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Phone:</span>
-                      <span className="text-sm font-medium">{user.phone}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Verified:</span>
-                      <Badge variant={user.verified ? 'success' : 'secondary'}>
-                        {user.verified ? 'Yes' : 'No'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Join Date:</span>
-                      <span className="text-sm font-medium">{new Date(user.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    {user.role === 'Customer' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+                {users.map(user => (
+                  <Card key={user._id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
+                    <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Phone:</span>
-                        <span className="text-sm font-medium">{user.phone}</span>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage
+                              src={getUserImage(user)}
+                              alt={`${user.firstName} ${user.lastName}`}
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder-user.svg'
+                              }}
+                            />
+                            <AvatarFallback>{user.firstName[0]}{user.lastName[0]}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <CardTitle className="text-lg">{user.firstName} {user.lastName}</CardTitle>
+                            <CardDescription className="text-sm">{user.email}</CardDescription>
+                          </div>
                         </div>
-                    )}
-                    {user.role === 'Influencer' && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Followers:</span>
-                        <span className="text-sm font-medium">{user.followers?.toLocaleString() || 0}</span>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={getRoleColor(user.role) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                            {getRoleIcon(user.role)}
+                            <span className="ml-1">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>
+                          </Badge>
+                          <Badge variant={getStatusColor(user.status) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                            {getStatusIcon(user.status)}
+                            <span className="ml-1">{user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
+                          </Badge>
+                        </div>
                       </div>
-                    )}
-                    {user.role === 'Doctor' && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Experience:</span>
-                        <span className="text-sm font-medium">{user.experience || 0} years</span>
+                    </CardHeader>
+                    <CardContent className="space-y-3 flex-1 flex flex-col">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Phone:</span>
+                          <span className="text-sm font-medium">{user.phone}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Verified:</span>
+                          <Badge variant={user.verified ? 'success' : 'secondary'}>
+                            {user.verified ? 'Yes' : 'No'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Join Date:</span>
+                          <span className="text-sm font-medium">{new Date(user.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        {user.role === 'Customer' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Phone:</span>
+                            <span className="text-sm font-medium">{user.phone}</span>
+                          </div>
+                        )}
+                        {user.role === 'Influencer' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Followers:</span>
+                            <span className="text-sm font-medium">{user.followers?.toLocaleString() || 0}</span>
+                          </div>
+                        )}
+                        {user.role === 'Doctor' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Experience:</span>
+                            <span className="text-sm font-medium">{user.experience || 0} years</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2 pt-2 mt-auto">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          onClick={() => openViewModal(user)}
-                          className="flex-1 gap-2"
-                          size="sm"
-                          variant="outline"
-                        >
-                          <Eye className="w-4 h-4" />
-                          View
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>View user profile</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          onClick={() => openEditModal(user)}
-                          className="flex-1 gap-2"
-                          size="sm"
-                        >
-                          <Edit className="w-4 h-4" />
-                          Edit
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Edit user details</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                      <div className="flex gap-2 pt-2 mt-auto">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={() => openViewModal(user)}
+                              className="flex-1 gap-2"
+                              size="sm"
+                              variant="outline"
+                            >
+                              <Eye className="w-4 h-4" />
+                              View
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View user profile</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={() => openEditModal(user)}
+                              className="flex-1 gap-2"
+                              size="sm"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit user details</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : (
               <Card>
                 <Table>
@@ -530,8 +530,8 @@ const UsersPage = () => {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="w-10 h-10">
-                              <AvatarImage 
-                                src={getUserImage(user)} 
+                              <AvatarImage
+                                src={getUserImage(user)}
                                 alt={`${user.firstName} ${user.lastName}`}
                                 onError={(e) => {
                                   e.currentTarget.src = '/placeholder-user.svg'
@@ -618,48 +618,48 @@ const UsersPage = () => {
 
             {/* Pagination */}
             {!isLoading && users.length > 0 && totalPages > 1 && (
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">
-                  Showing {startIndex + 1} to {Math.min(endIndex, pagination.total)} of {pagination.total} users
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(Math.max(pagination.page - 1, 1))}
-                    disabled={pagination.page === 1}
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1} to {Math.min(endIndex, pagination.total)} of {pagination.total} users
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Button
-                        key={page}
-                        variant={pagination.page === page ? "default" : "outline"}
+                        variant="outline"
                         size="sm"
-                        onClick={() => handlePageChange(page)}
-                        className="w-8 h-8 p-0"
+                        onClick={() => handlePageChange(Math.max(pagination.page - 1, 1))}
+                        disabled={pagination.page === 1}
                       >
-                        {page}
+                        <ChevronLeft className="w-4 h-4" />
+                        Previous
                       </Button>
-                    ))}
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <Button
+                            key={page}
+                            variant={pagination.page === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(Math.min(pagination.page + 1, totalPages))}
+                        disabled={pagination.page === totalPages}
+                      >
+                        Next
+                        <ChevronRight className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePageChange(Math.min(pagination.page + 1, totalPages))}
-                    disabled={pagination.page === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
             )}
           </>
         )}
@@ -839,15 +839,15 @@ const UsersPage = () => {
                 Update user information and account settings.
               </DialogDescription>
             </DialogHeader>
-            
+
             {selectedUser && (
               <div className="space-y-6">
                 {/* Avatar Section - Top Center */}
                 <div className="flex flex-col items-center space-y-4 py-4">
                   <Label htmlFor="avatar" className="text-lg font-medium">Profile Picture</Label>
                   <Avatar className="w-24 h-24">
-                    <AvatarImage 
-                      src={selectedUser.imageUrl || '/placeholder-user.svg'} 
+                    <AvatarImage
+                      src={selectedUser.imageUrl || '/placeholder-user.svg'}
                       alt={`${selectedUser.firstName} ${selectedUser.lastName}`}
                     />
                     <AvatarFallback className="text-xl">{selectedUser.firstName[0]}{selectedUser.lastName[0]}</AvatarFallback>
@@ -876,7 +876,7 @@ const UsersPage = () => {
                     <Input
                       id="firstName"
                       value={selectedUser.firstName}
-                      onChange={(e) => setSelectedUser({...selectedUser, firstName: e.target.value})}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, firstName: e.target.value })}
                     />
                   </div>
                   <div>
@@ -884,7 +884,7 @@ const UsersPage = () => {
                     <Input
                       id="lastName"
                       value={selectedUser.lastName}
-                      onChange={(e) => setSelectedUser({...selectedUser, lastName: e.target.value})}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, lastName: e.target.value })}
                     />
                   </div>
                   <div>
@@ -893,7 +893,7 @@ const UsersPage = () => {
                       id="email"
                       type="email"
                       value={selectedUser.email}
-                      onChange={(e) => setSelectedUser({...selectedUser, email: e.target.value})}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, email: e.target.value })}
                     />
                   </div>
                   <div>
@@ -901,14 +901,14 @@ const UsersPage = () => {
                     <Input
                       id="phone"
                       value={selectedUser.phone}
-                      onChange={(e) => setSelectedUser({...selectedUser, phone: e.target.value})}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, phone: e.target.value })}
                     />
                   </div>
                   <div>
                     <Label htmlFor="role">Role</Label>
-                    <Select 
-                      value={selectedUser.role} 
-                      onValueChange={(value: "Admin" | "Doctor" | "Influencer" | "Customer") => setSelectedUser({...selectedUser, role: value})}
+                    <Select
+                      value={selectedUser.role}
+                      onValueChange={(value: "Admin" | "Doctor" | "Influencer" | "Customer") => setSelectedUser({ ...selectedUser, role: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select role" />
@@ -923,9 +923,9 @@ const UsersPage = () => {
                   </div>
                   <div>
                     <Label htmlFor="status">Status</Label>
-                    <Select 
-                      value={selectedUser.status} 
-                      onValueChange={(value: "Active" | "Inactive") => setSelectedUser({...selectedUser, status: value})}
+                    <Select
+                      value={selectedUser.status}
+                      onValueChange={(value: "Active" | "Inactive") => setSelectedUser({ ...selectedUser, status: value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -942,14 +942,14 @@ const UsersPage = () => {
                       id="dateOfBirth"
                       type="date"
                       value={selectedUser.dateOfBirth}
-                      onChange={(e) => setSelectedUser({...selectedUser, dateOfBirth: e.target.value})}
+                      onChange={(e) => setSelectedUser({ ...selectedUser, dateOfBirth: e.target.value })}
                     />
                   </div>
                   <div>
                     <Label htmlFor="verified">Verified</Label>
-                    <Select 
-                      value={selectedUser.verified ? 'true' : 'false'} 
-                      onValueChange={(value) => setSelectedUser({...selectedUser, verified: value === 'true'})}
+                    <Select
+                      value={selectedUser.verified ? 'true' : 'false'}
+                      onValueChange={(value) => setSelectedUser({ ...selectedUser, verified: value === 'true' })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select verification" />
@@ -966,7 +966,7 @@ const UsersPage = () => {
                   <Textarea
                     id="address"
                     value={selectedUser.address}
-                    onChange={(e) => setSelectedUser({...selectedUser, address: e.target.value})}
+                    onChange={(e) => setSelectedUser({ ...selectedUser, address: e.target.value })}
                     rows={3}
                   />
                 </div>
@@ -975,7 +975,7 @@ const UsersPage = () => {
                   <Textarea
                     id="bio"
                     value={selectedUser.bio}
-                    onChange={(e) => setSelectedUser({...selectedUser, bio: e.target.value})}
+                    onChange={(e) => setSelectedUser({ ...selectedUser, bio: e.target.value })}
                     rows={3}
                   />
                 </div>
@@ -985,14 +985,14 @@ const UsersPage = () => {
               <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={modalLoading}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   // Update user using Redux
                   setModalLoading(true)
                   dispatch(updateUser(selectedUser!._id, selectedUser!))
                   setShowEditModal(false)
                   setModalLoading(false)
-                }} 
+                }}
                 disabled={modalLoading}
               >
                 {modalLoading ? (
@@ -1022,8 +1022,8 @@ const UsersPage = () => {
               <div className="flex flex-col items-center space-y-4 py-4">
                 <Label htmlFor="newAvatar" className="text-lg font-medium">Profile Picture</Label>
                 <Avatar className="w-24 h-24">
-                  <AvatarImage 
-                    src={newUser.imageUrl || '/placeholder-user.svg'} 
+                  <AvatarImage
+                    src={newUser.imageUrl || '/placeholder-user.svg'}
                     alt={`${newUser.firstName} ${newUser.lastName}`}
                   />
                   <AvatarFallback className="text-xl">
@@ -1055,7 +1055,7 @@ const UsersPage = () => {
                     id="newFirstName"
                     placeholder="Enter first name"
                     value={newUser.firstName}
-                    onChange={(e) => setNewUser({...newUser, firstName: e.target.value})}
+                    onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1064,7 +1064,7 @@ const UsersPage = () => {
                     id="newLastName"
                     placeholder="Enter last name"
                     value={newUser.lastName}
-                    onChange={(e) => setNewUser({...newUser, lastName: e.target.value})}
+                    onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1074,7 +1074,7 @@ const UsersPage = () => {
                     type="email"
                     placeholder="Enter email address"
                     value={newUser.email}
-                    onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   />
                 </div>
                 <div>
@@ -1083,12 +1083,12 @@ const UsersPage = () => {
                     id="newPhone"
                     placeholder="Enter phone number"
                     value={newUser.phone}
-                    onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
+                    onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label htmlFor="newRole">Role</Label>
-                  <Select value={newUser.role} onValueChange={(value: "Admin" | "Doctor" | "Influencer" | "Customer") => setNewUser({...newUser, role: value})}>
+                  <Select value={newUser.role} onValueChange={(value: "Admin" | "Doctor" | "Influencer" | "Customer") => setNewUser({ ...newUser, role: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
@@ -1154,14 +1154,14 @@ const UsersPage = () => {
               <Button variant="outline" onClick={() => setShowAddModal(false)} disabled={modalLoading}>
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={() => {
                   // Add new user logic here
                   setModalLoading(true)
                   // TODO: Implement createUser logic with form data
                   setShowAddModal(false)
                   setModalLoading(false)
-                }} 
+                }}
                 disabled={modalLoading}
               >
                 {modalLoading ? (
@@ -1195,9 +1195,9 @@ const UsersPage = () => {
               <Button variant="outline" onClick={() => setShowDeleteModal(false)} disabled={isLoading}>
                 Cancel
               </Button>
-              <Button 
-                variant="destructive" 
-                onClick={handleDeleteUser} 
+              <Button
+                variant="destructive"
+                onClick={handleDeleteUser}
                 disabled={isLoading || selectedUser?.role === 'Admin'}
               >
                 {modalLoading ? (

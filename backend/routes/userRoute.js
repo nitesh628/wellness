@@ -1,4 +1,4 @@
-import {Router} from "express";
+import { Router } from "express";
 import {
   createUser,
   getUsers,
@@ -13,10 +13,10 @@ import { upload } from "../config/s3Config.js";
 const router = Router();
 
 // Routes
-router.post("/",upload.single("imageUrl"), createUser);          // Create user
+router.post("/", upload.single("imageUrl"), createUser);          // Create user
 router.get("/", getUsers);             // Get all users
 router.get("/:id", getUserById);       // Get user by ID
-router.put("/:id",upload.single("imageUrl"), updateUser);        // Update user
+router.put("/:id", upload.single("imageUrl"), updateUser);        // Update user
 router.delete("/:id", deleteUser);     // Delete user
 
 
@@ -32,7 +32,7 @@ router.post("/influencer", createInfluencer);          // Create user
 router.get("/influencer", getAllInfluencers);             // Get all users
 router.get("/influencer/:id", getInfluencerById);       // Get user by ID
 router.put("/influencer/:id", updateInfluencer);        // Update user
-router.get("/influencer/isactive/:id", toggleInfluencerStatus);     
+router.get("/influencer/isactive/:id", toggleInfluencerStatus);
 
 
 export default router;
