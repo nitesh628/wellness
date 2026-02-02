@@ -19,7 +19,7 @@ import notesRoute from './routes/notesRoute.js';
 import sessionRoute from './routes/sessionRoute.js';
 import popupRoute from './routes/popupRoute.js'
 import newsLetterRoute from './routes/newsLetterRoute.js'
-
+import contactRoute from './routes/contactRoute.js';
 //doctor routes
 import appointmentRoute from './routes/appointmentRoute.js';
 import patientRoute from './routes/patientRoute.js';
@@ -85,6 +85,7 @@ app.use('/v1/notes', notesRoute);
 app.use('/v1/sessions', sessionRoute);
 app.use('/v1/popups', popupRoute);
 app.use('/v1/newsletters', newsLetterRoute);
+app.use('/v1/contact', contactRoute);
 //doctor
 app.use("/v1/appointments", appointmentRoute);
 app.use('/v1/patients', patientRoute);
