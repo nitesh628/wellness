@@ -233,6 +233,23 @@ export const getAllProductsForPublic = async (req, res) => {
   }
 };
 
+// Count the no. of Product
+export const countProducts = async (req, res) => {
+  try {
+    const count = await Product.countDocuments();
+    res.status(200).json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to count products',
+      error: error.message
+    });
+  }
+};  
+
 // READ - Get single product by ID
 export const getProductById = async (req, res) => {
   try {
