@@ -7,11 +7,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ChevronDown, SlidersHorizontal, ShoppingCart } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import CollabFeatured from "./collab-featured";
 import Image1 from "../../../public/1.jpg";
 import { useCart } from "@/lib/context/CartContext";
 import { formatPrice } from "@/lib/formatters";
+import Swal from 'sweetalert2';
 
 interface Product {
   _id: string;
@@ -102,6 +103,7 @@ const ProductGrid = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { addToCart, cartItems } = useCart();
+  const router = useRouter();
 
   const searchParams = useSearchParams();
   const categoryFilter = searchParams.get("category");
@@ -321,12 +323,28 @@ const ProductGrid = () => {
                 </Link>
                 <div className="mt-3 px-2">
                   <Button
-                    onClick={() => addToCart({
-                      id: product._id,
-                      name: product.name,
-                      price: product.price?.amount || 0,
-                      image: product.images?.[0] || "/placeholder.png"
-                    })}
+                    onClick={() => {
+                      addToCart({
+                        id: product._id,
+                        name: product.name,
+                        price: product.price?.amount || 0,
+                        image: product.images?.[0] || "/placeholder.png"
+                      });
+                      Swal.fire({
+                        title: "Added to Cart!",
+                        text: `${product.name} has been added to your cart.`,
+                        icon: "success",
+                        showCancelButton: true,
+                        confirmButtonColor: "#2563eb",
+                        cancelButtonColor: "#64748b",
+                        confirmButtonText: "Go to Cart",
+                        cancelButtonText: "Continue Shopping"
+                      }).then((result) => {
+                        if (result.isConfirmed) {
+                          router.push('/cart');
+                        }
+                      });
+                    }}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center gap-2"
                   >
                     <ShoppingCart className="w-4 h-4" />
