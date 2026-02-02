@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
+import { motion } from "framer-motion"
 import { 
   Search, 
   Grid3X3, 
@@ -33,35 +34,52 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks'
 import Loader from '@/components/common/dashboard/Loader'
 import Error from '@/components/common/dashboard/Error'
 import NoData from '@/components/common/dashboard/NoData'
-import {
-  fetchUsersData,
-  setFilters,
-  setPagination,
-  selectUsersData,
-  selectUsersLoading,
-  selectUsersError,
-  selectUsersFilters,
-  selectUsersPagination,
-  updateUser,
-  deleteUser,
-  User as UserType
-} from '@/lib/redux/features/userSlice'
+import Swal from "sweetalert2"
 
+interface UserType {
+  _id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  role: 'Admin' | 'Doctor' | 'Influencer' | 'Customer'
+  status: 'Active' | 'Inactive'
+  imageUrl?: string
+  verified: boolean
+  createdAt: string
+  updatedAt: string
+  bio?: string
+  address?: string
+  dateOfBirth?: string
+  followers?: number
+  platform?: string
+  commissionRate?: number
+  experience?: number
+  hospital?: string
+  consultationFee?: number
+  isActive?: boolean
+}
 
 const userRoles = ["All", "Admin", "Doctor", "Influencer", "Customer"]
 const userStatuses = ["All", "Active", "Inactive"]
 
 const UsersPage = () => {
-  const dispatch = useAppDispatch()
-  const users = useAppSelector(selectUsersData)
-  const isLoading = useAppSelector(selectUsersLoading)
-  const error = useAppSelector(selectUsersError)
-  const filters = useAppSelector(selectUsersFilters)
-  const pagination = useAppSelector(selectUsersPagination)
+  const [users, setUsers] = useState<UserType[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [filters, setFilters] = useState({
+    search: '',
+    role: '',
+    status: ''
+  })
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0
+  })
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [showViewModal, setShowViewModal] = useState(false)
@@ -80,7 +98,11 @@ const UsersPage = () => {
     phone: '',
     imageUrl: '',
     role: 'Customer' as 'Admin' | 'Doctor' | 'Influencer' | 'Customer',
-    status: 'Active' as 'Active' | 'Inactive'
+    status: 'Active' as 'Active' | 'Inactive',
+    dateOfBirth: '',
+    address: '',
+    bio: '',
+    verified: false
   })
 
 
@@ -144,9 +166,38 @@ const UsersPage = () => {
   }
 
   // Fetch data on component mount
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true)
+      const queryParams = new URLSearchParams()
+      queryParams.append('page', pagination.page.toString())
+      queryParams.append('limit', pagination.limit.toString())
+      if (filters.search) queryParams.append('search', filters.search)
+      if (filters.role) queryParams.append('role', filters.role)
+      if (filters.status) queryParams.append('status', filters.status)
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const res = await fetch(`${apiUrl}/v1/users?${queryParams.toString()}`)
+      const data = await res.json()
+
+      if (data.success) {
+        setUsers(data.data)
+        setPagination(prev => ({ ...prev, total: data.pagination.total }))
+        setError('')
+      } else {
+        setError(data.message || 'Failed to fetch users')
+      }
+    } catch (err) {
+      console.error('Error fetching users:', err)
+      setError('Failed to fetch users')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   useEffect(() => {
-    dispatch(fetchUsersData())
-  }, [dispatch])
+    fetchUsers()
+  }, [pagination.page, filters])
 
   // Pagination logic using Redux pagination
   const totalPages = Math.ceil(pagination.total / pagination.limit)
@@ -163,13 +214,13 @@ const UsersPage = () => {
     }
   }
 
-  const getRoleColor = (role: string) => {
+  const getRoleBadgeStyles = (role: string) => {
     switch (role) {
-      case 'Admin': return 'outline'
-      case 'Doctor': return 'default'
-      case 'Influencer': return 'secondary'
-      case 'Customer': return 'outline'
-      default: return 'secondary'
+      case 'Admin': return 'bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300 dark:border-violet-800'
+      case 'Doctor': return 'bg-sky-100 text-sky-700 border-sky-200 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300 dark:border-sky-800'
+      case 'Influencer': return 'bg-pink-100 text-pink-700 border-pink-200 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-800'
+      case 'Customer': return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+      default: return 'bg-gray-100 text-gray-700 border-gray-200'
     }
   }
 
@@ -181,50 +232,71 @@ const UsersPage = () => {
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeStyles = (status: string) => {
     switch (status) {
-      case 'Active': return 'default'
-      case 'Inactive': return 'secondary'
-      default: return 'secondary'
+      case 'Active': return 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800'
+      case 'Inactive': return 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800'
+      default: return 'bg-gray-100 text-gray-700'
     }
   }
 
   // Handle filter changes
   const handleSearchChange = (value: string) => {
-    dispatch(setFilters({ search: value }))
-    dispatch(setPagination({ page: 1 }))
+    setFilters(prev => ({ ...prev, search: value }))
+    setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   const handleRoleChange = (value: string) => {
-    dispatch(setFilters({ role: value === 'All' ? '' : value }))
-    dispatch(setPagination({ page: 1 }))
+    setFilters(prev => ({ ...prev, role: value === 'All' ? '' : value }))
+    setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   const handleStatusChange = (value: string) => {
-    dispatch(setFilters({ status: value === 'All' ? '' : value }))
-    dispatch(setPagination({ page: 1 }))
+    setFilters(prev => ({ ...prev, status: value === 'All' ? '' : value }))
+    setPagination(prev => ({ ...prev, page: 1 }))
   }
 
   const handlePageChange = (page: number) => {
-    dispatch(setPagination({ page }))
+    setPagination(prev => ({ ...prev, page }))
   }
 
   const handleDeleteUser = async () => {
     if (!selectedUser || selectedUser.role === 'Admin') return
     
-    setModalLoading(true)
-    try {
-      const success = await dispatch(deleteUser(selectedUser._id)) as unknown as boolean
-      if (success) {
-        setShowDeleteModal(false)
-        setSelectedUser(null)
-        dispatch(fetchUsersData())
+    Swal.fire({
+      title: "Are you sure?",
+      text: `Do you want to delete ${selectedUser.firstName} ${selectedUser.lastName}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        setModalLoading(true)
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+          const res = await fetch(`${apiUrl}/v1/users/${selectedUser._id}`, {
+            method: 'DELETE'
+          })
+          const data = await res.json()
+
+          if (data.success) {
+            setShowDeleteModal(false)
+            setSelectedUser(null)
+            fetchUsers()
+            Swal.fire("Deleted!", "User has been deleted.", "success")
+          } else {
+            Swal.fire("Error!", data.message || "Failed to delete user", "error")
+          }
+        } catch (error) {
+          console.error('Error deleting user:', error)
+          Swal.fire("Error!", "Failed to delete user", "error")
+        } finally {
+          setModalLoading(false)
+        }
       }
-    } catch (error) {
-      console.error('Error deleting user:', error)
-    } finally {
-      setModalLoading(false)
-    }
+    })
   }
 
   const openViewModal = (user: UserType) => {
@@ -237,6 +309,89 @@ const UsersPage = () => {
     setShowEditModal(true)
   }
 
+  const handleUpdateUser = async () => {
+    if (!selectedUser) return
+    setModalLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('firstName', selectedUser.firstName)
+      formData.append('lastName', selectedUser.lastName)
+      formData.append('email', selectedUser.email)
+      formData.append('phone', selectedUser.phone)
+      formData.append('role', selectedUser.role)
+      formData.append('status', selectedUser.status)
+      if (selectedUser.dateOfBirth) formData.append('dateOfBirth', selectedUser.dateOfBirth)
+      if (selectedUser.address) formData.append('address', selectedUser.address)
+      if (selectedUser.bio) formData.append('bio', selectedUser.bio)
+      formData.append('verified', String(selectedUser.verified))
+
+      if (fileInputRef.current?.files?.[0]) {
+        formData.append('image', fileInputRef.current.files[0])
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const res = await fetch(`${apiUrl}/v1/users/${selectedUser._id}`, {
+        method: 'PUT',
+        body: formData
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        setShowEditModal(false)
+        fetchUsers()
+        Swal.fire("Success", "User updated successfully", "success")
+      } else {
+        Swal.fire("Error", data.message || "Failed to update user", "error")
+      }
+    } catch (error) {
+      console.error('Error updating user:', error)
+      Swal.fire("Error", "Failed to update user", "error")
+    } finally {
+      setModalLoading(false)
+    }
+  }
+
+  const handleAddUser = async () => {
+    setModalLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('firstName', newUser.firstName)
+      formData.append('lastName', newUser.lastName)
+      formData.append('email', newUser.email)
+      formData.append('password', 'Password@123') // Default password required by backend
+      formData.append('phone', newUser.phone)
+      formData.append('role', newUser.role)
+      formData.append('status', newUser.status)
+      
+      if (newUserFileInputRef.current?.files?.[0]) {
+        formData.append('image', newUserFileInputRef.current.files[0])
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      const res = await fetch(`${apiUrl}/v1/users`, {
+        method: 'POST',
+        body: formData
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        setShowAddModal(false)
+        fetchUsers()
+        setNewUser({
+          firstName: '', lastName: '', email: '', phone: '', imageUrl: '', role: 'Customer', status: 'Active', dateOfBirth: '', address: '', bio: '', verified: false
+        })
+        Swal.fire("Success", "User created successfully", "success")
+      } else {
+        Swal.fire("Error", data.message || "Failed to create user", "error")
+      }
+    } catch (error) {
+      console.error('Error creating user:', error)
+      Swal.fire("Error", "Failed to create user", "error")
+    } finally {
+      setModalLoading(false)
+    }
+  }
+
   const openDeleteModal = (user: UserType) => {
     setSelectedUser(user)
     setShowDeleteModal(true)
@@ -244,7 +399,7 @@ const UsersPage = () => {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 p-2">
         {error ? (
           <Error title="Error loading users" message={error} />
         ) : (
@@ -252,82 +407,90 @@ const UsersPage = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Users</h1>
-                <p className="text-muted-foreground">Manage user accounts and permissions</p>
+                <h1 className="text-4xl font-bold text-foreground tracking-tight">Users</h1>
+                <p className="text-muted-foreground mt-1">Manage user accounts, roles, and permissions</p>
               </div>
-              <Button onClick={() => setShowAddModal(true)} className="gap-2">
+              <Button onClick={() => setShowAddModal(true)} className="gap-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white border-0">
                 <UserPlus className="w-4 h-4" />
                 Add User
               </Button>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              <Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="border-l-4 border-l-violet-500 shadow-sm hover:shadow-md transition-all bg-white dark:bg-slate-950">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Total Users</p>
-                      <p className="text-2xl font-bold text-foreground">{pagination.total}</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">{pagination.total}</p>
                     </div>
-                    <User className="w-8 h-8 text-primary" />
+                    <div className="p-3 bg-violet-100 dark:bg-violet-900/20 rounded-full">
+                      <User className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-l-4 border-l-emerald-500 shadow-sm hover:shadow-md transition-all bg-white dark:bg-slate-950">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Active Users</p>
-                      <p className="text-2xl font-bold text-foreground">{(users || []).filter(u => u.status === 'Active').length}</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">{(users || []).filter(u => u.status === 'Active').length}</p>
                     </div>
-                    <CheckCircle className="w-8 h-8 text-emerald-500" />
+                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-full">
+                      <CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-l-4 border-l-sky-500 shadow-sm hover:shadow-md transition-all bg-white dark:bg-slate-950">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Doctors</p>
-                      <p className="text-2xl font-bold text-foreground">{(users || []).filter(u => u.role === 'Doctor').length}</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">{(users || []).filter(u => u.role === 'Doctor').length}</p>
                     </div>
-                    <Stethoscope className="w-8 h-8 text-blue-500" />
+                    <div className="p-3 bg-sky-100 dark:bg-sky-900/20 rounded-full">
+                      <Stethoscope className="w-6 h-6 text-sky-600 dark:text-sky-400" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="border-l-4 border-l-pink-500 shadow-sm hover:shadow-md transition-all bg-white dark:bg-slate-950">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">Influencers</p>
-                      <p className="text-2xl font-bold text-foreground">{(users || []).filter(u => u.role === 'Influencer').length}</p>
+                      <p className="text-3xl font-bold text-foreground mt-1">{(users || []).filter(u => u.role === 'Influencer').length}</p>
                     </div>
-                    <Megaphone className="w-8 h-8 text-purple-500" />
+                    <div className="p-3 bg-pink-100 dark:bg-pink-900/20 rounded-full">
+                      <Megaphone className="w-6 h-6 text-pink-600 dark:text-pink-400" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* Filters and Search */}
-            <Card>
+            <Card className="border-none shadow-sm bg-muted/30">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row gap-4">
                   {/* Search */}
-                  <div className="relative flex-1">
+                  <div className="relative flex-1 group">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type="text"
                       placeholder="Search users..."
                       value={filters.search}
                       onChange={(e) => handleSearchChange(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 bg-background border-muted-foreground/20 focus:border-primary transition-all"
                     />
                   </div>
 
                   {/* Role Filter */}
                   <Select value={filters.role || 'All'} onValueChange={handleRoleChange}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full lg:w-[180px] bg-background border-muted-foreground/20">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                     <SelectContent>
@@ -341,7 +504,7 @@ const UsersPage = () => {
 
                   {/* Status Filter */}
                   <Select value={filters.status || 'All'} onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full lg:w-[180px] bg-background border-muted-foreground/20">
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -354,14 +517,14 @@ const UsersPage = () => {
                   </Select>
 
                   {/* View Toggle */}
-                  <div className="flex border border-input rounded-lg overflow-hidden">
+                  <div className="flex bg-background border border-muted-foreground/20 rounded-lg overflow-hidden p-1 gap-1">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                          variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
                           size="icon"
                           onClick={() => setViewMode('grid')}
-                          className="rounded-none"
+                          className="rounded-md h-8 w-8"
                         >
                           <Grid3X3 className="w-4 h-4" />
                         </Button>
@@ -373,10 +536,10 @@ const UsersPage = () => {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          variant={viewMode === 'list' ? 'default' : 'ghost'}
+                          variant={viewMode === 'list' ? 'secondary' : 'ghost'}
                           size="icon"
                           onClick={() => setViewMode('list')}
-                          className="rounded-none"
+                          className="rounded-md h-8 w-8"
                         >
                           <List className="w-4 h-4" />
                         </Button>
@@ -405,33 +568,55 @@ const UsersPage = () => {
                 size="lg"
               />
             ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
-            {users.map(user => (
-              <Card key={user._id} className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-12 h-12">
+          <motion.div 
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          >
+            {users.map((user) => (
+              <motion.div
+                key={user._id}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: { opacity: 1, y: 0 }
+                }}
+              >
+              <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full group border-muted/60">
+                <CardHeader className="pb-4 relative">
+                  <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-r from-violet-50 via-fuchsia-50 to-indigo-50 dark:from-violet-950/20 dark:via-fuchsia-950/20 dark:to-indigo-950/20 z-0" />
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="w-16 h-16 border-4 border-white dark:border-slate-950 shadow-md group-hover:scale-105 transition-transform duration-300 flex-shrink-0 ring-2 ring-violet-100 dark:ring-violet-900/20">
                         <AvatarImage 
                           src={getUserImage(user)} 
                           alt={`${user.firstName} ${user.lastName}`}
                           onError={(e) => {
                             e.currentTarget.src = '/placeholder-user.svg'
                           }}
+                          className="object-cover"
                         />
                         <AvatarFallback>{user.firstName[0]}{user.lastName[0]}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <CardTitle className="text-lg">{user.firstName} {user.lastName}</CardTitle>
-                        <CardDescription className="text-sm">{user.email}</CardDescription>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-lg font-bold truncate" title={`${user.firstName} ${user.lastName}`}>{user.firstName} {user.lastName}</CardTitle>
+                        <CardDescription className="text-xs truncate" title={user.email}>{user.email}</CardDescription>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <Badge variant={getRoleColor(user.role) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                    <div className="flex flex-col gap-1 items-end flex-shrink-0 ml-2">
+                      <Badge variant="outline" className={getRoleBadgeStyles(user.role)}>
                         {getRoleIcon(user.role)}
                         <span className="ml-1">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>
                       </Badge>
-                      <Badge variant={getStatusColor(user.status) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                      <Badge variant="outline" className={getStatusBadgeStyles(user.status)}>
                         {getStatusIcon(user.status)}
                         <span className="ml-1">{user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
                       </Badge>
@@ -446,7 +631,7 @@ const UsersPage = () => {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Verified:</span>
-                      <Badge variant={user.verified ? 'success' : 'secondary'}>
+                      <Badge variant={user.verified ? 'default' : 'secondary'} className={user.verified ? "bg-emerald-500 hover:bg-emerald-600 text-white border-0" : ""}>
                         {user.verified ? 'Yes' : 'No'}
                       </Badge>
                     </div>
@@ -456,8 +641,8 @@ const UsersPage = () => {
                     </div>
                     {user.role === 'Customer' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Phone:</span>
-                        <span className="text-sm font-medium">{user.phone}</span>
+                        <span className="text-sm text-muted-foreground">Status:</span>
+                        <span className="text-sm font-medium">{user.isActive ? 'Active' : 'Inactive'}</span>
                         </div>
                     )}
                     {user.role === 'Influencer' && (
@@ -474,42 +659,30 @@ const UsersPage = () => {
                     )}
                   </div>
                   <div className="flex gap-2 pt-2 mt-auto">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
                         <Button
                           onClick={() => openViewModal(user)}
-                          className="flex-1 gap-2"
+                          className="flex-1 gap-2 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-900/20 dark:hover:text-violet-400 border-violet-200 dark:border-violet-800"
                           size="sm"
                           variant="outline"
                         >
                           <Eye className="w-4 h-4" />
                           View
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>View user profile</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
                         <Button
                           onClick={() => openEditModal(user)}
-                          className="flex-1 gap-2"
+                          className="flex-1 gap-2 bg-violet-50 text-violet-600 hover:bg-violet-100 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-violet-900/40"
                           size="sm"
+                          variant="ghost"
                         >
                           <Edit className="w-4 h-4" />
                           Edit
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Edit user details</p>
-                      </TooltipContent>
-                    </Tooltip>
                   </div>
                 </CardContent>
               </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
             ) : (
               <Card>
                 <Table>
@@ -518,15 +691,15 @@ const UsersPage = () => {
                       <TableHead>User</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Join Date</TableHead>
-                      <TableHead>Last Login</TableHead>
+                      <TableHead className="hidden md:table-cell">Phone</TableHead>
+                      <TableHead className="hidden lg:table-cell">Join Date</TableHead>
+                      <TableHead className="hidden xl:table-cell">Last Login</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.map(user => (
-                      <TableRow key={user._id}>
+                      <TableRow key={user._id} className="hover:bg-violet-50/50 dark:hover:bg-violet-900/10 transition-colors">
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="w-10 h-10">
@@ -546,20 +719,20 @@ const UsersPage = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getRoleColor(user.role) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                          <Badge variant="outline" className={getRoleBadgeStyles(user.role)}>
                             {getRoleIcon(user.role)}
                             <span className="ml-1">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</span>
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getStatusColor(user.status) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                          <Badge variant="outline" className={getStatusBadgeStyles(user.status)}>
                             {getStatusIcon(user.status)}
                             <span className="ml-1">{user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
                           </Badge>
                         </TableCell>
-                        <TableCell>{user.phone}</TableCell>
-                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>{new Date(user.updatedAt).toLocaleDateString()}</TableCell>
+                        <TableCell className="hidden md:table-cell">{user.phone}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell className="hidden xl:table-cell">{new Date(user.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Tooltip>
@@ -568,6 +741,7 @@ const UsersPage = () => {
                                   onClick={() => openViewModal(user)}
                                   variant="ghost"
                                   size="icon"
+                                  className="hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-900/20"
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
@@ -582,6 +756,7 @@ const UsersPage = () => {
                                   onClick={() => openEditModal(user)}
                                   variant="ghost"
                                   size="icon"
+                                  className="hover:text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20"
                                 >
                                   <Edit className="w-4 h-4" />
                                 </Button>
@@ -712,21 +887,21 @@ const UsersPage = () => {
                     <CardContent className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Role:</span>
-                        <Badge variant={getRoleColor(selectedUser.role) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                        <Badge variant="outline" className={getRoleBadgeStyles(selectedUser.role)}>
                           {getRoleIcon(selectedUser.role)}
                           <span className="ml-1">{selectedUser.role.charAt(0).toUpperCase() + selectedUser.role.slice(1)}</span>
                         </Badge>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Status:</span>
-                        <Badge variant={getStatusColor(selectedUser.status) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                        <Badge variant="outline" className={getStatusBadgeStyles(selectedUser.status)}>
                           {getStatusIcon(selectedUser.status)}
                           <span className="ml-1">{selectedUser.status.charAt(0).toUpperCase() + selectedUser.status.slice(1)}</span>
                         </Badge>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Verified:</span>
-                        <Badge variant={selectedUser.verified ? 'success' : 'secondary'}>
+                        <Badge variant={selectedUser.verified ? 'default' : 'secondary'} className={selectedUser.verified ? "bg-emerald-500 text-white border-0" : ""}>
                           {selectedUser.verified ? 'Yes' : 'No'}
                         </Badge>
                       </div>
@@ -985,16 +1160,7 @@ const UsersPage = () => {
               <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={modalLoading}>
                 Cancel
               </Button>
-              <Button 
-                onClick={() => {
-                  // Update user using Redux
-                  setModalLoading(true)
-                  dispatch(updateUser(selectedUser!._id, selectedUser!))
-                  setShowEditModal(false)
-                  setModalLoading(false)
-                }} 
-                disabled={modalLoading}
-              >
+              <Button onClick={handleUpdateUser} disabled={modalLoading}>
                 {modalLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1102,14 +1268,13 @@ const UsersPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="newStatus">Status</Label>
-                  <Select defaultValue="active">
+                  <Select value={newUser.status} onValueChange={(value: "Active" | "Inactive") => setNewUser({...newUser, status: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="suspended">Suspended</SelectItem>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1118,11 +1283,13 @@ const UsersPage = () => {
                   <Input
                     id="newDateOfBirth"
                     type="date"
+                    value={newUser.dateOfBirth}
+                    onChange={(e) => setNewUser({...newUser, dateOfBirth: e.target.value})}
                   />
                 </div>
                 <div>
                   <Label htmlFor="newVerified">Verified</Label>
-                  <Select defaultValue="false">
+                  <Select value={newUser.verified ? 'true' : 'false'} onValueChange={(value) => setNewUser({...newUser, verified: value === 'true'})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select verification" />
                     </SelectTrigger>
@@ -1138,6 +1305,8 @@ const UsersPage = () => {
                 <Textarea
                   id="newAddress"
                   placeholder="Enter address"
+                  value={newUser.address}
+                  onChange={(e) => setNewUser({...newUser, address: e.target.value})}
                   rows={3}
                 />
               </div>
@@ -1146,6 +1315,8 @@ const UsersPage = () => {
                 <Textarea
                   id="newBio"
                   placeholder="Enter bio"
+                  value={newUser.bio}
+                  onChange={(e) => setNewUser({...newUser, bio: e.target.value})}
                   rows={3}
                 />
               </div>
@@ -1154,16 +1325,7 @@ const UsersPage = () => {
               <Button variant="outline" onClick={() => setShowAddModal(false)} disabled={modalLoading}>
                 Cancel
               </Button>
-              <Button 
-                onClick={() => {
-                  // Add new user logic here
-                  setModalLoading(true)
-                  // TODO: Implement createUser logic with form data
-                  setShowAddModal(false)
-                  setModalLoading(false)
-                }} 
-                disabled={modalLoading}
-              >
+              <Button onClick={handleAddUser} disabled={modalLoading}>
                 {modalLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -1212,7 +1374,7 @@ const UsersPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </motion.div>
     </TooltipProvider>
   )
 }
