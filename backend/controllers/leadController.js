@@ -11,7 +11,7 @@ export async function createLead(req, res) {
   }
   try {
     const lead = await Lead.create(req.body);
-    if(!lead){
+    if (!lead) {
       return res.status(400).json({ success: false, message: 'Lead creation failed' });
     }
     res.status(201).json({
@@ -53,11 +53,11 @@ export async function listLeads(req, res) {
     if (q) {
       const rx = new RegExp(q, 'i');
       filter.$or = [
-        { firstName: rx },
-        { lastName: rx },
+        { name: rx },
         { email: rx },
-        { company: rx },
-        { phone: rx }
+        { subject: rx },
+        { phone: rx },
+        { message: rx }
       ];
     }
 
@@ -72,7 +72,7 @@ export async function listLeads(req, res) {
     res.json({
       success: true,
       data: items,
-        pagination: {
+      pagination: {
         page: Number(page),
         limit: Number(limit),
         total,

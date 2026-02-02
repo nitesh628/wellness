@@ -1,9 +1,9 @@
-import  { model, Schema } from 'mongoose';
+import { model, Schema } from 'mongoose';
 
 const leadSchema = new Schema({
-  name:{
-    type:String,
-    required:true
+  name: {
+    type: String,
+    required: true
   },
   email: {
     type: String,
@@ -13,29 +13,29 @@ const leadSchema = new Schema({
   phone: {
     type: String,
     trim: true,
-    required:true
+    required: true
   },
 
-  subject:{
+  subject: {
     type: String,
-   
+
   },
-  message:{
-    type:String,
-   
+  message: {
+    type: String,
+
   },
 
   // Lead status and meta
   status: {
     type: String,
-    enum: ['New', 'Contacted',  'Proposal', "losted"],
-    default: 'New',
+    enum: ['new', 'contacted', 'proposal', 'lost'],
+    default: 'new',
     index: true
   },
   priority: {
     type: String,
-    enum: ['Low', 'Medium', 'High'],
-    default: 'Medium'
+    enum: ['low', 'medium', 'high'],
+    default: 'low'
   },
   estimatedValue: {
     type: Number,
@@ -50,12 +50,12 @@ const leadSchema = new Schema({
     maxlength: [1000, 'Notes cannot exceed 1000 characters']
   },
 
-  lastContact:{
-    type:String
+  lastContact: {
+    type: String
   }
 }, { timestamps: true });
 
 
-const Lead =model('Lead', leadSchema);
+const Lead = model('Lead', leadSchema);
 
 export default Lead;
