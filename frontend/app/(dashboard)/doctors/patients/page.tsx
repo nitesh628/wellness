@@ -92,11 +92,13 @@ interface PatientUI {
   location: string;
   patientType: string;
   age: number;
+  dateOfBirth: string;
+  gender: string;
   bloodGroup: string;
   medicalHistory: string[];
   currentMedications: string[];
   allergies: string[];
-  emergencyContact: string;
+  emergencyContact: string | { name: string; phone: string };
   insuranceProvider: string;
   tags: string[];
   notes: string;
@@ -133,29 +135,33 @@ const PatientsPage = () => {
   }, [dispatch]);
 
   // Map Redux users to PatientUI
-  const patients: PatientUI[] = rawPatients.map((patient) => ({
-    id: patient._id,
-    name: `${patient.firstName} ${patient.lastName}`.trim(),
-    email: patient.email,
-    phone: patient.phone,
-    avatar: patient.avatar || "",
-    status: patient.status || "active",
-    totalVisits: patient.totalVisits || 0,
-    totalFees: patient.totalFees || 0,
-    lastVisit: patient.lastVisit || patient.updatedAt,
-    joinDate: patient.createdAt,
-    location: patient.location || "Not specified",
-    patientType: patient.patientType || "new",
-    age: patient.age || 0,
-    bloodGroup: patient.bloodGroup || "Unknown",
-    medicalHistory: patient.medicalHistory || [],
-    currentMedications: patient.currentMedications || [],
-    allergies: patient.allergies || [],
-    emergencyContact: patient.emergencyContact || "",
-    insuranceProvider: patient.insuranceProvider || "None",
-    tags: patient.tags || [],
-    notes: patient.note || "",
-  }));
+  const patients: PatientUI[] = rawPatients.map((patient) => {
+    return {
+      id: patient._id,
+      name: `${patient.firstName} ${patient.lastName}`.trim(),
+      email: patient.email,
+      phone: patient.phone,
+      avatar: patient.avatar || "",
+      status: patient.status || "active",
+      totalVisits: patient.totalVisits || 0,
+      totalFees: patient.totalFees || 0,
+      lastVisit: patient.lastVisit || patient.updatedAt,
+      joinDate: patient.createdAt,
+      location: patient.location || "Not specified",
+      patientType: patient.patientType || "new",
+      age: patient.age || 0,
+      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : "",
+      gender: patient.gender || "",
+      bloodGroup: patient.bloodGroup || "Unknown",
+      medicalHistory: patient.medicalHistory || [],
+      currentMedications: patient.currentMedications || [],
+      allergies: patient.allergies || [],
+      emergencyContact: patient.emergencyContact || { name: "", phone: "" },
+      insuranceProvider: patient.insuranceProvider || "None",
+      tags: patient.tags || [],
+      notes: patient.note || "",
+    }
+  });
 
   // Filter and sort patients
   const filteredPatients = patients
@@ -257,9 +263,13 @@ const PatientsPage = () => {
       password: formData.get("password") as string,
       role: "Customer" as const,
       age: parseInt(formData.get("age") as string) || 0,
+      dateOfBirth: formData.get("dateOfBirth") as string,
       bloodGroup: formData.get("bloodGroup") as any,
       location: formData.get("location") as string,
-      emergencyContact: formData.get("emergencyContact") as string,
+      emergencyContact: {
+        name: formData.get("emergencyContactName") as string,
+        phone: formData.get("emergencyContactPhone") as string,
+      },
       gender: formData.get("gender") as any,
       patientType: formData.get("patientType") as string,
     };
@@ -286,11 +296,16 @@ const PatientsPage = () => {
       email: formData.get("email") as string,
       phone: formData.get("phone") as string,
       age: parseInt(formData.get("age") as string),
+      dateOfBirth: formData.get("dateOfBirth") as string,
+      gender: formData.get("gender") as any,
       bloodGroup: formData.get("bloodGroup") as any,
       location: formData.get("location") as string,
       status: formData.get("status") as any,
       patientType: formData.get("patientType") as string,
-      emergencyContact: formData.get("emergencyContact") as string,
+      emergencyContact: {
+        name: formData.get("emergencyContactName") as string,
+        phone: formData.get("emergencyContactPhone") as string,
+      },
       insuranceProvider: formData.get("insuranceProvider") as string,
       medicalHistory: (formData.get("medicalHistory") as string)
         ?.split(",")
@@ -888,6 +903,10 @@ const PatientsPage = () => {
                   <Input id="age" name="age" type="number" required />
                 </div>
                 <div>
+                  <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                  <Input id="dateOfBirth" name="dateOfBirth" type="date" required />
+                </div>
+                <div>
                   <Label htmlFor="gender">Gender *</Label>
                   <Select name="gender" required>
                     <SelectTrigger>
@@ -927,10 +946,18 @@ const PatientsPage = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="emergencyContact">Emergency Contact</Label>
+                  <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
                   <Input
-                    id="emergencyContact"
-                    name="emergencyContact"
+                    id="emergencyContactName"
+                    name="emergencyContactName"
+                    placeholder="Name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
+                  <Input
+                    id="emergencyContactPhone"
+                    name="emergencyContactPhone"
                     placeholder="+91 XXXXX XXXXX"
                   />
                 </div>
@@ -1028,6 +1055,31 @@ const PatientsPage = () => {
                         />
                       </div>
                       <div>
+                        <Label htmlFor="editDateOfBirth">Date of Birth</Label>
+                        <Input
+                          id="editDateOfBirth"
+                          name="dateOfBirth"
+                          type="date"
+                          defaultValue={selectedPatient.dateOfBirth}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="editGender">Gender</Label>
+                        <Select
+                          name="gender"
+                          defaultValue={selectedPatient.gender}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Male">Male</SelectItem>
+                            <SelectItem value="Female">Female</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
                         <Label htmlFor="editBloodGroup">Blood Group</Label>
                         <Select
                           name="bloodGroup"
@@ -1100,13 +1152,31 @@ const PatientsPage = () => {
                   <form onSubmit={handleUpdatePatient} id="editMedicalForm">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="editEmergencyContact">
-                          Emergency Contact
+                        <Label htmlFor="editEmergencyContactName">
+                          Emergency Contact Name
                         </Label>
                         <Input
-                          id="editEmergencyContact"
-                          name="emergencyContact"
-                          defaultValue={selectedPatient.emergencyContact}
+                          id="editEmergencyContactName"
+                          name="emergencyContactName"
+                          defaultValue={
+                            typeof selectedPatient.emergencyContact === 'string'
+                              ? selectedPatient.emergencyContact
+                              : selectedPatient.emergencyContact?.name || ''
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="editEmergencyContactPhone">
+                          Emergency Contact Phone
+                        </Label>
+                        <Input
+                          id="editEmergencyContactPhone"
+                          name="emergencyContactPhone"
+                          defaultValue={
+                            typeof selectedPatient.emergencyContact === 'string'
+                              ? ''
+                              : selectedPatient.emergencyContact?.phone || ''
+                          }
                         />
                       </div>
                       <div>

@@ -1,33 +1,128 @@
 import mongoose from 'mongoose';
-import User from '../models/userModel.js';
+import Customer from '../models/customerModel.js';
 import Appointment from '../models/appointmentModel.js';
 import { Parser } from 'json2csv';
 
 const isId = (id) => mongoose.isValidObjectId(id);
 
+// export const createPatient = async (req, res) => {
+//     try {
+//         const patientData = {
+//             ...req.body,
+//             role: 'Customer'
+//         };
+
+//         if (!patientData.password) {
+//             const tempPassword = Math.random().toString(36).slice(-8);
+//             patientData.password = tempPassword;
+//         }
+
+//         const newPatient = await User.create(patientData);
+//         newPatient.password = undefined;
+
+//         res.status(201).json({ success: true, data: newPatient });
+//     } catch (error) {
+//         if (error.code === 11000) {
+//             return res.status(409).json({ success: false, message: 'Email or phone already exists.' });
+//         }
+//         res.status(400).json({ success: false, message: error.message });
+//     }
+// };
+
 export const createPatient = async (req, res) => {
     try {
+        const {
+            firstName,
+            lastName,
+            email,
+            phone,
+            dateOfBirth,
+            age,
+            gender,
+            bloodGroup,
+            location,
+            address,
+            city,
+            state,
+            zipCode,
+            patientType,
+            medicalHistory,
+            currentMedications,
+            allergies,
+            emergencyContact,
+            insuranceProvider,
+            notes,
+            password,
+            tags,
+        } = req.body;
+
+        // ✅ validations
+        if (!firstName || !lastName || !email || !phone || !dateOfBirth) {
+            return res.status(400).json({
+                success: false,
+                message: "firstName, lastName, email, phone and dateOfBirth are required",
+            });
+        }
+
+        // ✅ Generate temp password if not provided
+        const generatedPassword =
+            password || Math.random().toString(36).slice(-8);
+
         const patientData = {
-            ...req.body,
-            role: 'Customer'
+            firstName,
+            lastName,
+            email,
+            phone,
+            dateOfBirth,
+            age,
+            gender,
+            bloodGroup,
+            location,
+            address,
+            city,
+            state,
+            zipCode,
+            patientType,
+            medicalHistory,
+            currentMedications,
+            allergies,
+            emergencyContact,
+            insuranceProvider,
+            notes,
+            tags,
+            password: generatedPassword,
+            createdBy: req.user._id, // Save which doctor created this patient
         };
 
-        if (patientData.password) {
-            patientData.password = await bcrypt.hash(patientData.password, 10);
-        } else {
-            const tempPassword = Math.random().toString(36).slice(-8);
-            patientData.password = tempPassword;
-        }
+        const newPatient = await Customer.create(patientData);
 
-        const newPatient = await User.create(patientData);
-        newPatient.password = undefined;
+        // ✅ Hide password in response
+        const patientResponse = newPatient.toObject();
+        delete patientResponse.password;
 
-        res.status(201).json({ success: true, data: newPatient });
+        return res.status(201).json({
+            success: true,
+            message: "Patient created successfully",
+            data: patientResponse,
+
+            // ✅ OPTIONAL: return temporary password
+            // In production you should EMAIL/SMS this instead of returning it.
+            tempPassword: password ? null : generatedPassword,
+        });
     } catch (error) {
+        console.log("Create patient error:", error);
+
         if (error.code === 11000) {
-            return res.status(409).json({ success: false, message: 'Email or phone already exists.' });
+            return res.status(409).json({
+                success: false,
+                message: "Email or phone already exists.",
+            });
         }
-        res.status(400).json({ success: false, message: error.message });
+
+        return res.status(400).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
@@ -43,7 +138,8 @@ export const getPatients = async (req, res) => {
             sortOrder = 'asc'
         } = req.query;
 
-        const filter = { role: 'Customer' };
+        // Filter by logged-in doctor
+        const filter = { createdBy: req.user._id };
         if (status && status !== 'all') filter.status = status;
         if (patientType && patientType !== 'all') filter.patientType = patientType;
 
@@ -61,14 +157,14 @@ export const getPatients = async (req, res) => {
         const sortOptions = {};
         sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-        const patients = await User.find(filter)
+        const patients = await Customer.find(filter)
             .sort(sortOptions)
             .skip((page - 1) * limit)
             .limit(Number(limit))
             .select('-password');
-            
-        const total = await User.countDocuments(filter);
-        
+
+        const total = await Customer.countDocuments(filter);
+
         const patientIds = patients.map(p => p._id);
 
         const appointmentStats = await Appointment.aggregate([
@@ -82,7 +178,7 @@ export const getPatients = async (req, res) => {
                 }
             }
         ]);
-        
+
         const statsMap = appointmentStats.reduce((acc, stat) => {
             acc[stat._id] = stat;
             return acc;
@@ -117,8 +213,8 @@ export const getPatientById = async (req, res) => {
         const { id } = req.params;
         if (!isId(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
 
-        const patient = await User.findOne({ _id: id, role: 'Customer' }).select('-password');
-        if (!patient) return res.status(404).json({ success: false, message: 'Patient not found' });
+        const patient = await Customer.findOne({ _id: id, createdBy: req.user._id }).select('-password');
+        if (!patient) return res.status(404).json({ success: false, message: 'Patient not found or access denied' });
 
         const stats = await Appointment.aggregate([
             { $match: { patient: patient._id } },
@@ -131,7 +227,7 @@ export const getPatientById = async (req, res) => {
                 }
             }
         ]);
-        
+
         const finalPatientData = {
             ...patient.toObject(),
             ...(stats[0] || { totalVisits: 0, totalFees: 0, lastVisit: null })
@@ -148,17 +244,18 @@ export const updatePatient = async (req, res) => {
     try {
         const { id } = req.params;
         if (!isId(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
-        
+
         const updateData = req.body;
         delete updateData.password; // Prevent password update through this route
-        
-        const updatedPatient = await User.findOneAndUpdate(
-            { _id: id, role: 'Customer' },
+        delete updateData.createdBy; // Prevent changing who created the patient
+
+        const updatedPatient = await Customer.findOneAndUpdate(
+            { _id: id, createdBy: req.user._id },
             updateData,
             { new: true, runValidators: true }
         ).select('-password');
-        
-        if (!updatedPatient) return res.status(404).json({ success: false, message: 'Patient not found' });
+
+        if (!updatedPatient) return res.status(404).json({ success: false, message: 'Patient not found or access denied' });
         res.json({ success: true, data: updatedPatient });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
@@ -169,15 +266,15 @@ export const deletePatient = async (req, res) => {
     try {
         const { id } = req.params;
         if (!isId(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
-        
+
         // Soft delete can also be an option by setting status to 'inactive'
-        const deletedPatient = await User.findOneAndDelete({ _id: id, role: 'Customer' });
-        
-        if (!deletedPatient) return res.status(404).json({ success: false, message: 'Patient not found' });
-        
+        const deletedPatient = await Customer.findOneAndDelete({ _id: id, createdBy: req.user._id });
+
+        if (!deletedPatient) return res.status(404).json({ success: false, message: 'Patient not found or access denied' });
+
         // Also delete related appointments
         await Appointment.deleteMany({ patient: id });
-        
+
         res.json({ success: true, message: 'Patient and related appointments deleted successfully', id });
     } catch (error) {
         res.status(400).json({ success: false, message: error.message });
@@ -193,9 +290,9 @@ export const getPatientStats = async (req, res) => {
             vipPatients,
             visitStats
         ] = await Promise.all([
-            User.countDocuments({ role: 'Customer' }),
-            User.countDocuments({ role: 'Customer', status: 'active' }),
-            User.countDocuments({ role: 'Customer', patientType: 'vip' }),
+            Customer.countDocuments({ createdBy: req.user._id }),
+            Customer.countDocuments({ createdBy: req.user._id, status: 'active' }),
+            Customer.countDocuments({ createdBy: req.user._id, patientType: 'vip' }),
             Appointment.aggregate([
                 { $group: { _id: null, totalVisits: { $sum: 1 }, totalFees: { $sum: '$fee' } } }
             ])
@@ -220,22 +317,22 @@ export const getPatientStats = async (req, res) => {
 
 export const exportPatients = async (req, res) => {
     try {
-        const patients = await User.find({ role: 'Customer' }).select('-password').lean();
-        
+        const patients = await Customer.find().select('-password').lean();
+
         if (patients.length === 0) {
             return res.status(404).json({ success: false, message: 'No patients found to export' });
         }
-        
+
         const fields = [
-            'firstName', 'lastName', 'email', 'phone', 'status', 
-            'patientType', 'age', 'bloodGroup', 'location', 
-            'medicalHistory', 'currentMedications', 'allergies', 
+            'firstName', 'lastName', 'email', 'phone', 'status',
+            'patientType', 'age', 'bloodGroup', 'location',
+            'medicalHistory', 'currentMedications', 'allergies',
             'emergencyContact.phone', 'insuranceProvider', 'tags'
         ];
 
         const json2csvParser = new Parser({ fields });
         const csv = json2csvParser.parse(patients);
-        
+
         res.header('Content-Type', 'text/csv');
         res.attachment(`patients-export-${new Date().toISOString()}.csv`);
         res.send(csv);

@@ -1,5 +1,9 @@
 import Session from "../models/sessionModel.js";
-import User from "../models/userModel.js";
+import Customer from "../models/customerModel.js";
+import Doctor from "../models/doctorModel.js";
+import Influencer from "../models/influencerModel.js";
+import Admin from "../models/adminModel.js";
+import User from "../models/userModel.js"; // Keep for backward compatibility during migration
 import generateToken from "../utils/generateToken.js";
 import passwordCheck from "../utils/passwordCheck.js";
 import { UAParser } from "ua-parser-js";
@@ -31,14 +35,22 @@ export const signup = async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    // Check in all role-specific collections
+    const existingCustomer = await Customer.findOne({ email });
+    const existingDoctor = await Doctor.findOne({ email });
+    const existingInfluencer = await Influencer.findOne({ email });
+    const existingAdmin = await Admin.findOne({ email });
+
+    if (existingCustomer || existingDoctor || existingInfluencer || existingAdmin) {
       return res.status(409).json({
         success: false,
         message: "User already exists",
       });
     }
-    const user = await User.create({
+
+    // Create user in appropriate collection based on userType
+    let user;
+    const userData = {
       firstName,
       lastName,
       email,
@@ -49,8 +61,18 @@ export const signup = async (req, res) => {
       city,
       state,
       zipCode,
-      role: userType === 'user' ? 'Customer' : userType.charAt(0).toUpperCase() + userType.slice(1), // Map 'user' to 'Customer' and capitalize others
-    });
+    };
+
+    if (userType === 'doctor') {
+      user = await Doctor.create(userData);
+    } else if (userType === 'influencer') {
+      user = await Influencer.create(userData);
+    } else if (userType === 'admin') {
+      user = await Admin.create(userData);
+    } else {
+      // Default to Customer for 'user' or any other type
+      user = await Customer.create(userData);
+    }
 
     // Auto-login logic
     const token = generateToken(user._id);
@@ -119,7 +141,14 @@ export const login = async (req, res) => {
   const userAgent = req.headers["user-agent"];
 
   try {
-    const user = await User.findOne({ email });
+    // Search across all role-specific collections
+    let user = await Customer.findOne({ email });
+    if (!user) user = await Doctor.findOne({ email });
+    if (!user) user = await Influencer.findOne({ email });
+    if (!user) user = await Admin.findOne({ email });
+
+    // Fallback to old User collection for backward compatibility
+    if (!user) user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({

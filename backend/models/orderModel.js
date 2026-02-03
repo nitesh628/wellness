@@ -88,6 +88,17 @@ const OrderItemSchema = new Schema(
   { _id: false }
 );
 
+const OrderAddressSchema = new Schema({
+  name: { type: String, required: true },
+  phone: { type: String, required: true },
+  email: { type: String, required: true },
+  address: { type: String, required: true },
+  city: { type: String, required: true },
+  state: { type: String, required: true },
+  pinCode: { type: String, required: true },
+  landmark: { type: String }
+}, { _id: false });
+
 const OrderSchema = new Schema(
   {
     orderNumber: {
@@ -102,12 +113,11 @@ const OrderSchema = new Schema(
       required: [true, 'User is required']
     },
     shippingAddress: {
-      type: Schema.Types.ObjectId,
-      ref: 'Address'
+      type: OrderAddressSchema,
+      required: true
     },
     billingAddress: {
-      type: Schema.Types.ObjectId,
-      ref: 'Address'
+      type: OrderAddressSchema
     },
     razorpayOrderId: { type: String },
     razorpayPaymentId: { type: String },

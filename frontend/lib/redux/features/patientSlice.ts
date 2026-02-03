@@ -9,12 +9,13 @@ export interface Patient {
   email: string;
   phone: string;
   gender?: string;
+  dateOfBirth?: string;
   age?: number;
   bloodGroup?: string;
   location?: string;
   status?: string;
   patientType?: string;
-  emergencyContact?: string;
+  emergencyContact?: string | { name: string; phone: string };
   insuranceProvider?: string;
   medicalHistory?: string[];
   currentMedications?: string[];
@@ -62,8 +63,30 @@ const sanitizeBaseUrl = (url?: string) => {
 };
 
 const API_BASE_URL = `${sanitizeBaseUrl(
-  process.env.NEXT_PUBLIC_API_BASE_URL
-)}/patients`;
+  process.env.NEXT_PUBLIC_API_BASE_URL,
+)}/v1/patients`;
+
+// Helper to get auth token from cookies
+const getAuthToken = () => {
+  if (typeof window !== "undefined") {
+    const cookies = document.cookie.split("; ");
+    const tokenCookie = cookies.find((row) => row.startsWith("token="));
+    return tokenCookie ? tokenCookie.split("=")[1] : null;
+  }
+  return null;
+};
+
+// Helper to create axios config with auth token
+const getAuthConfig = () => {
+  const token = getAuthToken();
+  return token
+    ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    : {};
+};
 
 const patientSlice = createSlice({
   name: "patients",
@@ -120,6 +143,7 @@ const mapApiPatientToPatient = (apiPatient: any): Patient => ({
   email: apiPatient.email || "",
   phone: apiPatient.phone || "",
   gender: apiPatient.gender,
+  dateOfBirth: apiPatient.dateOfBirth,
   age: apiPatient.age,
   bloodGroup: apiPatient.bloodGroup,
   location: apiPatient.location,
@@ -151,10 +175,11 @@ const handleApiError = (error: unknown) => {
 };
 
 export const fetchPatients =
-  () => async (dispatch: AppDispatch): Promise<boolean> => {
+  () =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
     dispatch(setPatientsLoading());
     try {
-      const response = await axios.get(API_BASE_URL);
+      const response = await axios.get(API_BASE_URL, getAuthConfig());
       if (response.data?.success && Array.isArray(response.data.data)) {
         const mapped = response.data.data.map(mapApiPatientToPatient);
         dispatch(setPatients(mapped));
@@ -169,10 +194,14 @@ export const fetchPatients =
   };
 
 export const fetchPatientStats =
-  () => async (dispatch: AppDispatch): Promise<boolean> => {
+  () =>
+  async (dispatch: AppDispatch): Promise<boolean> => {
     dispatch(setStatsLoading());
     try {
-      const response = await axios.get(`${API_BASE_URL}/stats`);
+      const response = await axios.get(
+        `${API_BASE_URL}/stats`,
+        getAuthConfig(),
+      );
       if (response.data?.success && response.data.data) {
         dispatch(
           setPatientStats({
@@ -180,7 +209,7 @@ export const fetchPatientStats =
             activePatients: response.data.data.activePatients ?? 0,
             vipPatients: response.data.data.vipPatients ?? 0,
             newPatients: response.data.data.newPatients ?? 0,
-          })
+          }),
         );
         return true;
       }
@@ -197,9 +226,14 @@ export const fetchPatientById =
   async (dispatch: AppDispatch): Promise<boolean> => {
     dispatch(setPatientsLoading());
     try {
-      const response = await axios.get(`${API_BASE_URL}/${patientId}`);
+      const response = await axios.get(
+        `${API_BASE_URL}/${patientId}`,
+        getAuthConfig(),
+      );
       if (response.data?.success && response.data.data) {
-        dispatch(setSelectedPatient(mapApiPatientToPatient(response.data.data)));
+        dispatch(
+          setSelectedPatient(mapApiPatientToPatient(response.data.data)),
+        );
         return true;
       }
       throw new Error(response.data?.message || "Failed to fetch patient");
@@ -214,7 +248,7 @@ export const createPatient =
   (payload: Partial<Patient>) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
-      const response = await axios.post(API_BASE_URL, payload);
+      const response = await axios.post(API_BASE_URL, payload, getAuthConfig());
       if (response.data?.success) {
         await dispatch(fetchPatients());
         return true;
@@ -233,7 +267,11 @@ export const updatePatientRecord =
   (patientId: string, payload: Partial<Patient>) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
-      const response = await axios.put(`${API_BASE_URL}/${patientId}`, payload);
+      const response = await axios.put(
+        `${API_BASE_URL}/${patientId}`,
+        payload,
+        getAuthConfig(),
+      );
       if (response.data?.success) {
         await dispatch(fetchPatients());
         return true;
@@ -250,7 +288,10 @@ export const deletePatientRecord =
   (patientId: string) =>
   async (dispatch: AppDispatch): Promise<boolean> => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/${patientId}`);
+      const response = await axios.delete(
+        `${API_BASE_URL}/${patientId}`,
+        getAuthConfig(),
+      );
       if (response.data?.success) {
         await dispatch(fetchPatients());
         return true;
@@ -267,6 +308,7 @@ export const exportPatientsList = async (): Promise<Blob | null> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/export`, {
       responseType: "blob",
+      ...getAuthConfig(),
     });
     return response.data;
   } catch (error) {
@@ -281,4 +323,3 @@ export const selectPatientsError = (state: RootState) => state.patients.error;
 export const selectPatientStats = (state: RootState) => state.patients.stats;
 
 export default patientSlice.reducer;
-

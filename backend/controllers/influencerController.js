@@ -1,5 +1,5 @@
 import { validationResult } from 'express-validator';
-import User from '../models/userModel.js';
+import Influencer from '../models/influencerModel.js';
 
 // Create a new influencer
 export async function createInfluencer(req, res) {
@@ -7,14 +7,9 @@ export async function createInfluencer(req, res) {
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
   try {
-    const influencerData = {
-      ...req.body,
-      role: 'Influencer'
-    };
-    
-    const influencer = new User(influencerData);
+    const influencer = new Influencer(req.body);
     const savedInfluencer = await influencer.save();
-    
+
     // Remove password from response
     const { password, ...influencerResponse } = savedInfluencer.toObject();
     res.status(201).json(influencerResponse);
@@ -29,12 +24,12 @@ export async function updateInfluencer(req, res) {
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
   try {
-    const updatedInfluencer = await User.findOneAndUpdate(
-      { _id: req.params.id, role: 'Influencer' },
+    const updatedInfluencer = await Influencer.findOneAndUpdate(
+      { _id: req.params.id },
       req.body,
       { new: true }
     ).select('-password');
-    
+
     if (!updatedInfluencer) return res.status(404).json({ error: 'Influencer not found' });
     res.json(updatedInfluencer);
   } catch (error) {
@@ -42,18 +37,19 @@ export async function updateInfluencer(req, res) {
   }
 }
 
-// Toggle influencer isActive status
+// Toggle influencer status
 export async function toggleInfluencerStatus(req, res) {
   try {
-    const influencer = await User.findOne({ _id: req.params.id, role: 'Influencer' });
+    const influencer = await Influencer.findOne({ _id: req.params.id });
     if (!influencer) return res.status(404).json({ error: 'Influencer not found' });
-    
-    influencer.isActive = !influencer.isActive;
+
+    const newStatus = influencer.status === 'active' ? 'inactive' : 'active';
+    influencer.status = newStatus;
     await influencer.save();
-    
-    res.json({ 
-      message: `Influencer ${influencer.isActive ? 'activated' : 'deactivated'} successfully`,
-      isActive: influencer.isActive 
+
+    res.json({
+      message: `Influencer ${newStatus} successfully`,
+      status: influencer.status
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -63,7 +59,7 @@ export async function toggleInfluencerStatus(req, res) {
 // Get all influencers
 export async function getAllInfluencers(req, res) {
   try {
-    const influencers = await User.find({ role: 'Influencer' }).select('-password');
+    const influencers = await Influencer.find().select('-password');
     res.json(influencers);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -73,7 +69,7 @@ export async function getAllInfluencers(req, res) {
 // Get influencer by ID
 export async function getInfluencerById(req, res) {
   try {
-    const influencer = await User.findOne({ _id: req.params.id, role: 'Influencer' }).select('-password');
+    const influencer = await Influencer.findOne({ _id: req.params.id }).select('-password');
     if (!influencer) return res.status(404).json({ error: 'Influencer not found' });
     res.json(influencer);
   } catch (error) {

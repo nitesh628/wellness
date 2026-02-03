@@ -23,6 +23,8 @@ import { useCart } from "@/lib/context/CartContext";
 import { toast } from "sonner";
 import RazorpayButton from "@/components/RazorpayButton";
 import Swal from "sweetalert2";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUser, selectIsAuthenticated } from "@/lib/redux/features/authSlice";
 
 const formatPrice = (amount: number) => {
   return new Intl.NumberFormat("en-IN", {
@@ -52,6 +54,9 @@ const CheckoutPage = () => {
   const [discount, setDiscount] = useState(0);
   const [isOrderPlaced, setIsOrderPlaced] = useState(false);
 
+  const user = useAppSelector(selectUser);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     name: "",
     phone: "",
@@ -71,6 +76,17 @@ const CheckoutPage = () => {
       router.push("/cart");
     }
   }, [cartItems.length, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      // Optional: Redirect to login or show login prompt
+      // router.push("/login?redirect=/checkout");
+      // For now we might proceed if we want to allow guest checkout but backend requires user ID
+      // So we should probably enforce login
+      toast.error("Please login to place an order");
+      router.push("/login");
+    }
+  }, [isAuthenticated, router, isLoading]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -164,17 +180,20 @@ const CheckoutPage = () => {
     setIsLoading(true);
 
     try {
-      // Simulate user and address ObjectIds (replace with real values in production)
-      const userId = "65a1234567890abcdef12345"; // Replace with real user id from auth
-      const addressId = "65a1234567890abcdef67890"; // Replace with real address id from address book
+      if (!user?._id) {
+        toast.error("User not verified or logged in");
+        setIsLoading(false);
+        return;
+      }
 
       // Generate a unique order number (e.g., timestamp + random)
       const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
       const orderPayload = {
         orderNumber,
-        user: userId,
-        shippingAddress: addressId,
+        user: user._id,
+        shippingAddress: shippingAddress, // valid address object
+        billingAddress: shippingAddress, // assuming same for now
         items: cartItems.map((item) => ({
           product: item.id, // or item.productId
           quantity: item.quantity,
@@ -237,17 +256,20 @@ const CheckoutPage = () => {
   const handleRazorpaySuccess = async (paymentData: any) => {
     setIsLoading(true);
     try {
-      // Simulate user and address ObjectIds (replace with real values in production)
-      const userId = "65a1234567890abcdef12345"; // Replace with real user id from auth
-      const addressId = "65a1234567890abcdef67890"; // Replace with real address id from address book
+      if (!user?._id) {
+        toast.error("User not verified or logged in");
+        setIsLoading(false);
+        return;
+      }
 
       // Generate a unique order number (e.g., timestamp + random)
       const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
       const orderPayload = {
         orderNumber,
-        user: userId,
-        shippingAddress: addressId,
+        user: user._id,
+        shippingAddress: shippingAddress, // valid address object
+        billingAddress: shippingAddress,
         items: cartItems.map((item) => ({
           product: item.id,
           quantity: item.quantity,
@@ -532,11 +554,10 @@ const CheckoutPage = () => {
 
               <div className="space-y-4">
                 <label
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === "cod"
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                      : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
-                  }`}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "cod"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
+                    }`}
                 >
                   <input
                     type="radio"
@@ -558,11 +579,10 @@ const CheckoutPage = () => {
                 </label>
 
                 <label
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === "online"
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                      : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
-                  }`}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "online"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                    : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
+                    }`}
                 >
                   <input
                     type="radio"

@@ -145,23 +145,23 @@ export async function createOrder(req, res) {
 
     // Validate required fields before creating
     if (!req.body.orderNumber) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Order number is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Order number is required'
       });
     }
 
     if (!req.body.user || !isId(req.body.user)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Valid user ID is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'Valid user ID is required'
       });
     }
 
     if (!req.body.items || !Array.isArray(req.body.items) || req.body.items.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Order must have at least one item' 
+      return res.status(400).json({
+        success: false,
+        message: 'Order must have at least one item'
       });
     }
 
@@ -173,15 +173,14 @@ export async function createOrder(req, res) {
     const populated = await Order.findById(order._id)
       .populate({ path: 'user', select: 'firstName lastName email' })
       .populate({ path: 'items.product', select: 'name price' })
-      .populate({ path: 'shippingAddress', select: 'address state city pinCode' })
-      .populate({ path: 'billingAddress', select: 'address state city pinCode' });
+      .populate({ path: 'items.product', select: 'name price' });
 
     console.log('✅ Order saved and populated successfully');
-    
-    res.status(201).json({ 
-      success: true, 
+
+    res.status(201).json({
+      success: true,
       message: 'Order created successfully',
-      data: populated 
+      data: populated
     });
 
   } catch (err) {
@@ -189,33 +188,33 @@ export async function createOrder(req, res) {
 
     // Handle duplicate orderNumber
     if (err.code === 11000 && err.keyPattern?.orderNumber) {
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Order number already exists' 
+      return res.status(409).json({
+        success: false,
+        message: 'Order number already exists'
       });
     }
 
     // Handle validation errors
     if (err.name === 'ValidationError') {
       const messages = Object.values(err.errors).map(e => e.message);
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: 'Validation failed',
-        errors: messages 
+        errors: messages
       });
     }
 
     // Handle cast errors (invalid ObjectId)
     if (err.name === 'CastError') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Invalid ${err.path}: ${err.value}` 
+      return res.status(400).json({
+        success: false,
+        message: `Invalid ${err.path}: ${err.value}`
       });
     }
 
     // Generic error
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       message: err.message || 'Failed to create order',
       error: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
@@ -257,8 +256,7 @@ export async function listOrders(req, res) {
       Order.find(filter)
         .populate({ path: 'user', select: 'firstName lastName email' })
         .populate({ path: 'items.product', select: 'name price' })
-        .populate({ path: 'shippingAddress', select: 'address state city pinCode' })
-        .populate({ path: 'billingAddress', select: 'address state city pinCode' })
+        .populate({ path: 'items.product', select: 'name price' })
         .sort(sort)
         .skip((page - 1) * limit)
         .limit(Number(limit)),
@@ -277,9 +275,9 @@ export async function listOrders(req, res) {
     });
   } catch (err) {
     console.error('❌ Error fetching orders:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: err.message || 'Failed to fetch orders' 
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to fetch orders'
     });
   }
 }
@@ -306,31 +304,30 @@ export async function getOrderById(req, res) {
   try {
     const { id } = req.params;
     if (!isId(id)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid order ID' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order ID'
       });
     }
 
     const order = await Order.findById(id)
       .populate({ path: 'user', select: 'firstName lastName email' })
       .populate({ path: 'items.product', select: 'name price' })
-      .populate({ path: 'shippingAddress', select: 'address state city pinCode' })
-      .populate({ path: 'billingAddress', select: 'address state city pinCode' });
+      .populate({ path: 'items.product', select: 'name price' });
 
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
       });
     }
 
     res.json({ success: true, data: order });
   } catch (err) {
     console.error('❌ Error fetching order:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: err.message || 'Failed to fetch order' 
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to fetch order'
     });
   }
 }
@@ -340,9 +337,9 @@ export async function updateOrder(req, res) {
   try {
     const { id } = req.params;
     if (!isId(id)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid order ID' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order ID'
       });
     }
 
@@ -352,26 +349,25 @@ export async function updateOrder(req, res) {
     })
       .populate({ path: 'user', select: 'firstName lastName email' })
       .populate({ path: 'items.product', select: 'name price' })
-      .populate({ path: 'shippingAddress', select: 'address state city pinCode' })
-      .populate({ path: 'billingAddress', select: 'address state city pinCode' });
+      .populate({ path: 'items.product', select: 'name price' });
 
     if (!updated) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
       });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Order updated successfully', 
-      data: updated 
+    res.json({
+      success: true,
+      message: 'Order updated successfully',
+      data: updated
     });
   } catch (err) {
     console.error('❌ Error updating order:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: err.message || 'Failed to update order' 
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to update order'
     });
   }
 }
@@ -381,30 +377,30 @@ export async function deleteOrder(req, res) {
   try {
     const { id } = req.params;
     if (!isId(id)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid order ID' 
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order ID'
       });
     }
 
     const deleted = await Order.findByIdAndDelete(id);
     if (!deleted) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Order not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
       });
     }
 
-    res.json({ 
-      success: true, 
-      message: 'Order deleted successfully', 
-      id 
+    res.json({
+      success: true,
+      message: 'Order deleted successfully',
+      id
     });
   } catch (err) {
     console.error('❌ Error deleting order:', err);
-    res.status(500).json({ 
-      success: false, 
-      message: err.message || 'Failed to delete order' 
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to delete order'
     });
   }
 }

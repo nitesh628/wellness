@@ -1,36 +1,49 @@
 import jwt from "jsonwebtoken"
-import User from "../models/userModel.js";
+import Customer from "../models/customerModel.js";
+import Doctor from "../models/doctorModel.js";
+import Influencer from "../models/influencerModel.js";
+import Admin from "../models/adminModel.js";
+import User from "../models/userModel.js"; // Keep for backward compatibility during migration
 
 
-export const isLogin=async(req,res,next)=>{
+export const isLogin = async (req, res, next) => {
 
-    const token=req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
-    
+    const token = req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
+
     try {
-        if(!token|| token===undefined){
-           return res.status(404).json({
-                message:"No Token"
+        if (!token || token === undefined) {
+            return res.status(404).json({
+                message: "No Token"
             })
         }
-        const tokenUser=jwt.verify(token,process.env.JWT_TOKEN)
-        if(!tokenUser){
-            res.status(401).json({
-                message:"Invalide"
+        const tokenUser = jwt.verify(token, process.env.JWT_TOKEN)
+        if (!tokenUser) {
+            return res.status(401).json({
+                message: "Invalid"
             })
         }
-        const user=await User.findOne({_id:tokenUser.id})
-        if(!user){
-            res.status(401).json({
-                message:"Not Found"
+
+        // Search across all role-specific collections first
+        let user = await Customer.findOne({ _id: tokenUser.id })
+        if (!user) user = await Doctor.findOne({ _id: tokenUser.id })
+        if (!user) user = await Influencer.findOne({ _id: tokenUser.id })
+        if (!user) user = await Admin.findOne({ _id: tokenUser.id })
+
+        // Fallback to old User collection for backward compatibility
+        if (!user) user = await User.findOne({ _id: tokenUser.id })
+
+        if (!user) {
+            return res.status(401).json({
+                message: "Not Found"
             })
         }
-        
-        req.user=user
+
+        req.user = user
         next()
 
     } catch (error) {
-        consoleManager.log(error);
-        res.status(500).clearCookie("token").json({message:"islogin error"})
+        console.log(error);
+        res.status(500).clearCookie("token").json({ message: "islogin error" })
     }
 
 }
