@@ -56,8 +56,18 @@ export interface Appointment {
   updatedAt: string;
 }
 
+interface AppointmentStats {
+  todaysAppointments: number;
+  totalAppointments: number;
+  pendingAppointments: number;
+  totalRevenue: number;
+  totalCompleted: number;
+  confirmedToday: number;
+}
+
 interface AppointmentState {
   data: Appointment[];
+  stats: AppointmentStats | null;
   isLoading: boolean;
   error: string | null;
   pagination: {
@@ -69,6 +79,7 @@ interface AppointmentState {
 
 const initialState: AppointmentState = {
   data: [],
+  stats: null,
   isLoading: false,
   error: null,
   pagination: {
@@ -139,7 +150,7 @@ const appointmentSlice = createSlice({
     },
     setAppointments: (
       state,
-      action: PayloadAction<{ data: Appointment[]; total: number }>
+      action: PayloadAction<{ data: Appointment[]; total: number }>,
     ) => {
       state.data = action.payload.data;
       state.pagination.total = action.payload.total;
@@ -163,6 +174,9 @@ const appointmentSlice = createSlice({
     setPage: (state, action: PayloadAction<number>) => {
       state.pagination.page = action.payload;
     },
+    setStats: (state, action: PayloadAction<AppointmentStats>) => {
+      state.stats = action.payload;
+    },
   },
 });
 
@@ -174,6 +188,7 @@ export const {
   updateAppointmentInList,
   removeAppointmentFromList,
   setPage,
+  setStats,
 } = appointmentSlice.actions;
 
 // --- Async Thunks ---
@@ -183,28 +198,38 @@ export const fetchAppointments =
     dispatch(setLoading());
     try {
       const { page, limit } = getState().appointments.pagination;
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments?page=${page}&limit=${limit}`;
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments?page=${page}&limit=${limit}`,
-        getAuthConfig()
-      );
+      console.log("Fetching appointments from:", url);
+      const response = await axios.get(url, getAuthConfig());
+
+      console.log("API Response:", response.data);
 
       if (response.data.success) {
         const uiData = response.data.data.map((item: ApiAppointment) =>
-          mapApiToUI(item)
+          mapApiToUI(item),
         );
+        console.log("Mapped UI data:", uiData);
         dispatch(
           setAppointments({
             data: uiData,
             total: response.data.pagination?.total || uiData.length,
-          })
+          }),
+        );
+      } else {
+        dispatch(
+          setError(response.data.message || "Failed to fetch appointments"),
         );
       }
     } catch (error: any) {
+      console.error("Fetch appointments error:", error);
+      console.error("Error response:", error.response?.data);
       dispatch(
         setError(
-          error.response?.data?.message || "Failed to fetch appointments"
-        )
+          error.response?.data?.message ||
+            error.message ||
+            "Failed to fetch appointments",
+        ),
       );
     }
   };
@@ -213,16 +238,10 @@ export const createAppointment =
   (formData: any) => async (dispatch: AppDispatch) => {
     dispatch(setLoading());
     try {
-      const payload = {
-        ...formData,
-        appointmentDate: formData.date,
-        appointmentTime: formData.time,
-      };
-
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments`,
-        payload,
-        getAuthConfig()
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments`,
+        formData,
+        getAuthConfig(),
       );
 
       if (response.data.success) {
@@ -232,8 +251,8 @@ export const createAppointment =
     } catch (error: any) {
       dispatch(
         setError(
-          error.response?.data?.message || "Failed to create appointment"
-        )
+          error.response?.data?.message || "Failed to create appointment",
+        ),
       );
       return false;
     }
@@ -250,9 +269,9 @@ export const updateAppointment =
       };
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments/${id}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/${id}`,
         payload,
-        getAuthConfig()
+        getAuthConfig(),
       );
 
       if (response.data.success) {
@@ -262,8 +281,8 @@ export const updateAppointment =
     } catch (error: any) {
       dispatch(
         setError(
-          error.response?.data?.message || "Failed to update appointment"
-        )
+          error.response?.data?.message || "Failed to update appointment",
+        ),
       );
       return false;
     }
@@ -274,8 +293,8 @@ export const deleteAppointment =
     dispatch(setLoading());
     try {
       const response = await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/appointments/${id}`,
-        getAuthConfig()
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/${id}`,
+        getAuthConfig(),
       );
 
       if (response.data.success) {
@@ -285,19 +304,61 @@ export const deleteAppointment =
     } catch (error: any) {
       dispatch(
         setError(
-          error.response?.data?.message || "Failed to delete appointment"
-        )
+          error.response?.data?.message || "Failed to delete appointment",
+        ),
       );
       return false;
     }
   };
+
+export const fetchAppointmentStats = () => async (dispatch: AppDispatch) => {
+  try {
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/stats`,
+      getAuthConfig(),
+    );
+
+    if (response.data.success) {
+      dispatch(setStats(response.data.data));
+    }
+  } catch (error: any) {
+    console.error(
+      "Failed to fetch appointment stats:",
+      error.response?.data?.message || error.message,
+    );
+  }
+};
+
+export const exportAppointments = async (
+  filters?: Record<string, any>,
+): Promise<Blob | null> => {
+  try {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const response = await axios.get(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/export${queryParams ? `?${queryParams}` : ""}`,
+      {
+        ...getAuthConfig(),
+        responseType: "blob",
+      },
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error(
+      "Failed to export appointments:",
+      error.response?.data?.message || error.message,
+    );
+    return null;
+  }
+};
 
 // --- Selectors ---
 // Using RootState ensures TypeScript knows 'appointments' exists in the store
 export const selectAppointments = (state: RootState) => state.appointments.data;
 export const selectApptLoading = (state: RootState) =>
   state.appointments.isLoading;
+export const selectApptError = (state: RootState) => state.appointments.error;
 export const selectApptPagination = (state: RootState) =>
   state.appointments.pagination;
+export const selectApptStats = (state: RootState) => state.appointments.stats;
 
 export default appointmentSlice.reducer;
