@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { 
   Megaphone,
@@ -24,15 +24,44 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import Loader from '@/components/common/dashboard/Loader'
 
 const InfluencersDashboard = () => {
   const router = useRouter()
+  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+        const token = localStorage.getItem('token')
+        const res = await fetch(`${apiUrl}/v1/influencer-dashboard`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+          credentials: 'include',
+        })
+        if (!res.ok) throw new Error('Failed to fetch dashboard data')
+        const data = await res.json()
+        if (data) {
+          setDashboardData(data.data || data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchDashboardData()
+  }, [])
 
   // Influencer-specific stats
   const stats = [
     { 
       name: 'Total Followers', 
-      value: '125K', 
+      value: dashboardData?.followers !== undefined ? `${(dashboardData.followers / 1000).toFixed(1)}K` : '125K', 
       icon: Users, 
       change: '+8.5K', 
       changeType: 'positive',
@@ -41,7 +70,7 @@ const InfluencersDashboard = () => {
     },
     { 
       name: 'Monthly Income', 
-      value: '₹45,600', 
+      value: dashboardData?.monthlyEarnings !== undefined ? `₹${dashboardData.monthlyEarnings.toLocaleString()}` : '₹45,600', 
       icon: DollarSign, 
       change: '+12%', 
       changeType: 'positive',
@@ -50,7 +79,7 @@ const InfluencersDashboard = () => {
     },
     { 
       name: 'Referral Code', 
-      value: 'WELL20', 
+      value: dashboardData?.referralCode || 'WELL20', 
       icon: Megaphone, 
       change: 'Active', 
       changeType: 'neutral',
@@ -59,7 +88,7 @@ const InfluencersDashboard = () => {
     },
     { 
       name: 'Engagement Rate', 
-      value: '4.8%', 
+      value: dashboardData?.performanceMetrics?.engagement !== undefined ? `${dashboardData.performanceMetrics.engagement}%` : '4.8%', 
       icon: TrendingUp, 
       change: '+0.3%', 
       changeType: 'positive',
@@ -68,7 +97,7 @@ const InfluencersDashboard = () => {
     },
     { 
       name: 'Total Referrals', 
-      value: '234', 
+      value: dashboardData?.totalReferrals !== undefined ? dashboardData.totalReferrals : '234', 
       icon: Share2, 
       change: '+18', 
       changeType: 'positive',
@@ -77,7 +106,7 @@ const InfluencersDashboard = () => {
     },
     { 
       name: 'Commission Rate', 
-      value: '15%', 
+      value: dashboardData?.commissionRate !== undefined ? `${dashboardData.commissionRate}%` : '15%', 
       icon: Percent, 
       change: 'Premium', 
       changeType: 'neutral',
@@ -87,7 +116,7 @@ const InfluencersDashboard = () => {
   ]
 
   // Recent activities data
-  const recentActivities = [
+  const recentActivities = dashboardData?.recentActivities || [
     {
       id: 1,
       type: 'referral_earned',
@@ -136,7 +165,7 @@ const InfluencersDashboard = () => {
   ]
 
   // Recent referrals
-  const recentReferrals = [
+  const recentReferrals = dashboardData?.recentReferrals || [
     { 
       name: 'Priya Sharma', 
       platform: 'Instagram', 
@@ -172,7 +201,7 @@ const InfluencersDashboard = () => {
   ]
 
   // Social media performance
-  const socialPerformance = [
+  const socialPerformance = dashboardData?.socialPerformance || [
     { 
       platform: 'Instagram', 
       followers: '85K', 
@@ -230,13 +259,17 @@ const InfluencersDashboard = () => {
     return icons[platform as keyof typeof icons] || Megaphone
   }
 
+  if (isLoading) {
+    return <Loader variant="skeleton" message="Loading dashboard..." />
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Influencer Dashboard</h1>
-          <p className="text-muted-foreground mt-2">Welcome back, @wellness_guru! Here&apos;s your influencer performance overview.</p>
+          <p className="text-muted-foreground mt-2">Welcome back, @{dashboardData?.username || 'wellness_guru'}! Here&apos;s your influencer performance overview.</p>
         </div>
       </div>
 

@@ -21,10 +21,10 @@ const HomePage = () => {
         <EcosystemSection />
         <FeaturesBar />
         <BenchmarkSection />
-       
-       
-      
-      
+        {/* <LiveLimitlessSection /> */}
+        {/* <ComboPacksSection /> */}
+        {/* <IngredientScienceSection /> */}
+        {/* <TestimonialsCarouselSection /> */}
         <FeaturedCollectionSection />
       </div>
       {/* <StatsSection />

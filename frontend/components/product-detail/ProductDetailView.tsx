@@ -57,15 +57,16 @@ const ProductImageZoom = ({ src, alt }: ProductImageZoomProps) => {
 
 export default function ProductDetailView({ product }: { product: any }) {
     // Handle images array or fallback to single image
-    const images = product.images && product.images.length > 0 
-        ? product.images 
+    const images = product.images && product.images.length > 0
+        ? product.images
         : [product.imageUrl || product.image || '/placeholder.png'];
 
+    const productId = product._id || product.id || product.slug;
+
     const [selectedImage, setSelectedImage] = useState(images[0]);
-    const [quantity, setQuantity] = useState(1);
     const [isWishlisted, setIsWishlisted] = useState(false);
     const [activeTab, setActiveTab] = useState('details');
-    const { addToCart, cartItems } = useCart();
+    const { addToCart, updateQuantity, cartItems } = useCart();
 
     // Update selected image when product changes
     useEffect(() => {
@@ -74,16 +75,6 @@ export default function ProductDetailView({ product }: { product: any }) {
 
     if (!product) return null;
 
-    const handleIncreaseQuantity = () => {
-        setQuantity(prev => prev + 1);
-    };
-
-    const handleDecreaseQuantity = () => {
-        if (quantity > 1) {
-            setQuantity(prev => prev - 1);
-        }
-    };
-
     // Handle Price Logic (supports object or number)
     const price = product.price?.amount ?? product.price ?? 0;
     const mrp = product.price?.mrp ?? product.originalPrice ?? 0;
@@ -91,14 +82,11 @@ export default function ProductDetailView({ product }: { product: any }) {
 
     const handleAddToCart = () => {
         addToCart({
-            id: product._id || product.id || product.slug,
+            id: productId,
             name: product.name,
             price: Number(price),
             image: images[0],
-        }, quantity);
-
-        // Reset quantity after adding
-        setQuantity(1);
+        }, 1);
     };
 
     const handleToggleWishlist = () => {
@@ -115,7 +103,7 @@ export default function ProductDetailView({ product }: { product: any }) {
         } catch (err) { console.error(err); }
     };
 
-    const cartItem = cartItems.find((item) => item.id === (product._id || product.id || product.slug));
+    const cartItem = cartItems.find((item) => item.id === productId);
     const quantityInCart = cartItem ? cartItem.quantity : 0;
 
     return (
@@ -151,7 +139,7 @@ export default function ProductDetailView({ product }: { product: any }) {
                 </div>
 
                 {/* Right: Info */}
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.5 }}
@@ -190,18 +178,18 @@ export default function ProductDetailView({ product }: { product: any }) {
 
                     <div className="space-y-6 mb-10">
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden h-12">
+                            <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden h-12 flex-shrink-0">
                                 <button
-                                    onClick={handleDecreaseQuantity}
-                                    className="px-4 py-2 hover:bg-slate-50 transition-colors disabled:opacity-50"
-                                    disabled={quantity <= 1}
+                                    onClick={() => updateQuantity(productId, Math.max(0, quantityInCart - 1))}
+                                    className="px-3 md:px-4 py-2 hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                    disabled={quantityInCart <= 0}
                                 >
                                     <Minus className="w-4 h-4" />
                                 </button>
-                                <span className="w-12 text-center font-bold text-lg">{quantity}</span>
+                                <span className="w-8 md:w-12 text-center font-bold text-lg">{quantityInCart}</span>
                                 <button
-                                    onClick={handleIncreaseQuantity}
-                                    className="px-4 py-2 hover:bg-slate-50 transition-colors"
+                                    onClick={() => updateQuantity(productId, quantityInCart + 1)}
+                                    className="px-3 md:px-4 py-2 hover:bg-slate-50 transition-colors"
                                 >
                                     <Plus className="w-4 h-4" />
                                 </button>
@@ -230,9 +218,6 @@ export default function ProductDetailView({ product }: { product: any }) {
                                 <Share2 className="w-5 h-5" />
                             </button>
                         </div>
-                        {quantityInCart > 0 && (
-                            <p className="text-sm text-green-600 font-medium flex items-center gap-2"><Check className="w-4 h-4" /> You have {quantityInCart} of this item in your cart</p>
-                        )}
                     </div>
 
                     {/* Features Grid */}
@@ -275,9 +260,8 @@ export default function ProductDetailView({ product }: { product: any }) {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-4 text-lg font-medium capitalize transition-colors relative whitespace-nowrap ${
-                                activeTab === tab ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'
-                            }`}
+                            className={`pb-4 text-lg font-medium capitalize transition-colors relative whitespace-nowrap ${activeTab === tab ? 'text-blue-600' : 'text-slate-500 hover:text-slate-800'
+                                }`}
                         >
                             {tab}
                             {activeTab === tab && (
@@ -307,24 +291,24 @@ export default function ProductDetailView({ product }: { product: any }) {
                                 </p>
                                 {(product.manufacturer || product.expiryDate) && (
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8 p-6 bg-slate-50 rounded-2xl">
-                                    {product.manufacturer && (
-                                        <div>
-                                            <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Manufacturer</span>
-                                            <span className="text-slate-700">{product.manufacturer}</span>
-                                        </div>
-                                    )}
-                                    {product.weightSize && (
-                                        <div>
-                                            <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Net Quantity</span>
-                                            <span className="text-slate-700">{product.weightSize.value} {product.weightSize.unit}</span>
-                                        </div>
-                                    )}
-                                    {product.expiryDate && (
-                                        <div>
-                                            <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Expiry Date</span>
-                                            <span className="text-slate-700">{new Date(product.expiryDate).toLocaleDateString()}</span>
-                                        </div>
-                                    )}
+                                        {product.manufacturer && (
+                                            <div>
+                                                <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Manufacturer</span>
+                                                <span className="text-slate-700">{product.manufacturer}</span>
+                                            </div>
+                                        )}
+                                        {product.weightSize && (
+                                            <div>
+                                                <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Net Quantity</span>
+                                                <span className="text-slate-700">{product.weightSize.value} {product.weightSize.unit}</span>
+                                            </div>
+                                        )}
+                                        {product.expiryDate && (
+                                            <div>
+                                                <span className="block text-xs text-slate-500 uppercase tracking-wider font-semibold">Expiry Date</span>
+                                                <span className="text-slate-700">{new Date(product.expiryDate).toLocaleDateString()}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
