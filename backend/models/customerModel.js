@@ -22,6 +22,11 @@ const CustomerSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        role: {
+            type: String,
+            enum: ["Customer"],
+            default: "Customer",
+        },
         password: {
             type: String,
             required: true,

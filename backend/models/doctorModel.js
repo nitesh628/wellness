@@ -23,6 +23,11 @@ const DoctorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    role: {
+      type: String,
+      enum: ["Doctor"],
+      default: "Doctor",
+    },
     password: {
       type: String,
       required: true,

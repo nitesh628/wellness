@@ -143,12 +143,25 @@ export const login = async (req, res) => {
   try {
     // Search across all role-specific collections
     let user = await Customer.findOne({ email });
-    if (!user) user = await Doctor.findOne({ email });
-    if (!user) user = await Influencer.findOne({ email });
-    if (!user) user = await Admin.findOne({ email });
+    let resolvedRole = user ? "Customer" : null;
+    if (!user) {
+      user = await Doctor.findOne({ email });
+      resolvedRole = user ? "Doctor" : null;
+    }
+    if (!user) {
+      user = await Influencer.findOne({ email });
+      resolvedRole = user ? "Influencer" : null;
+    }
+    if (!user) {
+      user = await Admin.findOne({ email });
+      resolvedRole = user ? (user.role || "admin") : null;
+    }
 
     // Fallback to old User collection for backward compatibility
-    if (!user) user = await User.findOne({ email });
+    if (!user) {
+      user = await User.findOne({ email });
+      resolvedRole = user ? user.role : resolvedRole;
+    }
 
     if (!user) {
       return res.status(401).json({
@@ -198,7 +211,7 @@ export const login = async (req, res) => {
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          role: user.role
+          role: user.role || resolvedRole
         }
       });
   } catch (error) {
