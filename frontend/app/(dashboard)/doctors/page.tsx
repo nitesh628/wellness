@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -59,23 +59,24 @@ const DoctorsDashboard = () => {
     );
   }
 
-type DashboardStats =
-  NonNullable<ReturnType<typeof selectDashboardData>>["stats"];
+  type DashboardStats = NonNullable<
+    ReturnType<typeof selectDashboardData>
+  >["stats"];
 
-const defaultStats: DashboardStats = {
-  todayAppointments: 0,
-  totalPatients: 0,
-  prescriptionsCount: 0,
-  consultationFee: 0,
-  rating: 0,
-  experience: "0 Years",
-};
+  const defaultStats: DashboardStats = {
+    todayAppointments: 0,
+    totalPatients: 0,
+    prescriptionsCount: 0,
+    consultationFee: 0,
+    rating: 0,
+    experience: "0 Years",
+  };
 
-// Handle Default/Empty Data to prevent crashes
-const statsData: DashboardStats = {
-  ...defaultStats,
-  ...(dashboardData?.stats ?? {}),
-};
+  // Handle Default/Empty Data to prevent crashes
+  const statsData: DashboardStats = {
+    ...defaultStats,
+    ...(dashboardData?.stats ?? {}),
+  };
 
   const todaysAppointments = dashboardData?.todaysAppointments || [];
   const recentPrescriptions = dashboardData?.recentPrescriptions || [];
@@ -496,4 +497,4 @@ const statsData: DashboardStats = {
   );
 };
 
-export default DoctorsDashboard
+export default DoctorsDashboard;

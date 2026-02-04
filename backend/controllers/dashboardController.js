@@ -27,7 +27,7 @@ export const getDoctorDashboardData = async (req, res) => {
             Appointment.distinct('patient', { doctor: doctorId }),
             Prescription.countDocuments({ doctor: doctorId }),
             Rating.aggregate([
-                { $match: { product: doctorId } }, 
+                { $match: { product: doctorId } },
                 { $group: { _id: null, avgRating: { $avg: '$rating' } } }
             ]),
             Appointment.find({ doctor: doctorId, appointmentDate: { $gte: today, $lt: tomorrow } })
@@ -46,7 +46,7 @@ export const getDoctorDashboardData = async (req, res) => {
 
         const totalPatients = totalPatientsResult.length;
         const averageRating = averageRatingResult.length > 0 ? averageRatingResult[0].avgRating.toFixed(1) : 'N/A';
-        
+
         const stats = {
             todaysAppointments: todaysAppointmentsCount,
             totalPatients: totalPatients,

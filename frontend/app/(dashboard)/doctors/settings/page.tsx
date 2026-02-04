@@ -1,26 +1,30 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { 
-  Save,
-  Edit,
-  Loader2,
-  Camera,
-  Plus,
-  X,
-  Languages
-} from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Switch } from '@/components/ui/switch'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import React, { useState } from "react";
+import { Save, Edit, Loader2, Camera, Plus, X, Languages } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Doctor Settings Page Component
 const DoctorSettingsPage = () => {
@@ -28,101 +32,118 @@ const DoctorSettingsPage = () => {
     profile: false,
     business: false,
     security: false,
-  })
+  });
 
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const [originalData, setOriginalData] = useState({
     profile: {
-      name: 'Dr. Sarah Johnson',
-      email: 'sarah.johnson@medicalclinic.com',
-      phone: '+1 (555) 123-4567',
-      specialization: 'Cardiology',
+      name: "Dr. Sarah Johnson",
+      email: "sarah.johnson@medicalclinic.com",
+      phone: "+1 (555) 123-4567",
+      specialization: "Cardiology",
       experience: 12,
-      qualifications: 'MD, PhD in Cardiology',
-      license: 'MD-12345',
-      hospital: 'City Medical Center',
-      location: 'New York, NY',
-      bio: 'Experienced cardiologist with 12+ years of practice. Specialized in interventional cardiology and preventive care.',
-      avatar: '/avatars/doctor-1.jpg',
-      languages: ['English', 'Spanish', 'French'],
+      qualifications: "MD, PhD in Cardiology",
+      license: "MD-12345",
+      hospital: "City Medical Center",
+      location: "New York, NY",
+      bio: "Experienced cardiologist with 12+ years of practice. Specialized in interventional cardiology and preventive care.",
+      avatar: "/avatars/doctor-1.jpg",
+      languages: ["English", "Spanish", "French"],
       consultationFee: 200,
-      emergencyFee: 350
+      emergencyFee: 350,
     },
     business: {
-      clinicName: 'City Medical Center',
-      clinicAddress: '123 Medical Plaza, New York, NY 10001',
-      clinicPhone: '+1 (555) 987-6543',
-      clinicEmail: 'info@citymedical.com',
-      website: 'www.citymedical.com',
-      taxId: '12-3456789',
-      businessType: 'Private Practice',
+      clinicName: "City Medical Center",
+      clinicAddress: "123 Medical Plaza, New York, NY 10001",
+      clinicPhone: "+1 (555) 987-6543",
+      clinicEmail: "info@citymedical.com",
+      website: "www.citymedical.com",
+      taxId: "12-3456789",
+      businessType: "Private Practice",
       operatingHours: {
-        monday: { start: '09:00', end: '17:00', closed: false },
-        tuesday: { start: '09:00', end: '17:00', closed: false },
-        wednesday: { start: '09:00', end: '17:00', closed: false },
-        thursday: { start: '09:00', end: '17:00', closed: false },
-        friday: { start: '09:00', end: '17:00', closed: false },
-        saturday: { start: '10:00', end: '14:00', closed: false },
-        sunday: { start: '00:00', end: '00:00', closed: true }
+        monday: { start: "09:00", end: "17:00", closed: false },
+        tuesday: { start: "09:00", end: "17:00", closed: false },
+        wednesday: { start: "09:00", end: "17:00", closed: false },
+        thursday: { start: "09:00", end: "17:00", closed: false },
+        friday: { start: "09:00", end: "17:00", closed: false },
+        saturday: { start: "10:00", end: "14:00", closed: false },
+        sunday: { start: "00:00", end: "00:00", closed: true },
       },
       appointmentDuration: 30,
       maxPatientsPerDay: 20,
-      emergencyAvailability: true
+      emergencyAvailability: true,
     },
     security: {
       twoFactorAuth: true,
       loginAlerts: true,
       sessionTimeout: 30,
       passwordExpiry: 90,
-      ipWhitelist: ['192.168.1.100', '10.0.0.50'],
+      ipWhitelist: ["192.168.1.100", "10.0.0.50"],
       auditLogs: true,
       dataEncryption: true,
-      backupFrequency: 'daily'
-    }
-  })
+      backupFrequency: "daily",
+    },
+  });
 
-  const [formData, setFormData] = useState(originalData)
+  const [formData, setFormData] = useState(originalData);
 
   const handleEdit = (section: string) => {
-    setEditStates(prev => ({ ...prev, [section]: true }))
-  }
+    setEditStates((prev) => ({ ...prev, [section]: true }));
+  };
 
   const handleCancel = (section: string) => {
-    setEditStates(prev => ({ ...prev, [section]: false }))
-    setFormData(prev => ({ ...prev, [section]: originalData[section as keyof typeof originalData] }))
-  }
+    setEditStates((prev) => ({ ...prev, [section]: false }));
+    setFormData((prev) => ({
+      ...prev,
+      [section]: originalData[section as keyof typeof originalData],
+    }));
+  };
 
   const handleSave = async (section: string) => {
-    setIsLoading(true)
+    setIsLoading(true);
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setOriginalData(prev => ({ ...prev, [section]: formData[section as keyof typeof formData] }))
-    setEditStates(prev => ({ ...prev, [section]: false }))
-    setIsLoading(false)
-  }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setOriginalData((prev) => ({
+      ...prev,
+      [section]: formData[section as keyof typeof formData],
+    }));
+    setEditStates((prev) => ({ ...prev, [section]: false }));
+    setIsLoading(false);
+  };
 
-  const handleInputChange = (section: string, field: string, value: string | number | boolean | string[]) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    section: string,
+    field: string,
+    value: string | number | boolean | string[],
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section as keyof typeof prev],
-        [field]: value
-      }
-    }))
-  }
+        [field]: value,
+      },
+    }));
+  };
 
-  const handleNestedInputChange = (section: string, parentField: string, childField: string, value: string | number | boolean | object) => {
-    setFormData(prev => ({
+  const handleNestedInputChange = (
+    section: string,
+    parentField: string,
+    childField: string,
+    value: string | number | boolean | object,
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [section]: {
         ...prev[section as keyof typeof prev],
         [parentField]: {
-          ...(prev[section as keyof typeof prev] as Record<string, unknown>)[parentField] as Record<string, unknown>,
-          [childField]: value
-        }
-      }
-    }))
-  }
+          ...((prev[section as keyof typeof prev] as Record<string, unknown>)[
+            parentField
+          ] as Record<string, unknown>),
+          [childField]: value,
+        },
+      },
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -157,11 +178,17 @@ const DoctorSettingsPage = () => {
                 <div className="flex items-center gap-2">
                   {editStates.profile ? (
                     <>
-                      <Button variant="outline" onClick={() => handleCancel('profile')}>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleCancel("profile")}
+                      >
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
-                      <Button onClick={() => handleSave('profile')} disabled={isLoading}>
+                      <Button
+                        onClick={() => handleSave("profile")}
+                        disabled={isLoading}
+                      >
                         {isLoading ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
@@ -171,7 +198,7 @@ const DoctorSettingsPage = () => {
                       </Button>
                     </>
                   ) : (
-                    <Button onClick={() => handleEdit('profile')}>
+                    <Button onClick={() => handleEdit("profile")}>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Profile
                     </Button>
@@ -183,9 +210,15 @@ const DoctorSettingsPage = () => {
               {/* Profile Picture */}
               <div className="flex items-center gap-6">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={formData.profile.avatar} alt={formData.profile.name} />
+                  <AvatarImage
+                    src={formData.profile.avatar}
+                    alt={formData.profile.name}
+                  />
                   <AvatarFallback className="text-2xl">
-                    {formData.profile.name.split(' ').map(n => n[0]).join('')}
+                    {formData.profile.name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
@@ -208,7 +241,9 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="name"
                     value={formData.profile.name}
-                    onChange={(e) => handleInputChange('profile', 'name', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("profile", "name", e.target.value)
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
@@ -218,7 +253,9 @@ const DoctorSettingsPage = () => {
                     id="email"
                     type="email"
                     value={formData.profile.email}
-                    onChange={(e) => handleInputChange('profile', 'email', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("profile", "email", e.target.value)
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
@@ -227,7 +264,9 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="phone"
                     value={formData.profile.phone}
-                    onChange={(e) => handleInputChange('profile', 'phone', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("profile", "phone", e.target.value)
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
@@ -235,7 +274,9 @@ const DoctorSettingsPage = () => {
                   <Label htmlFor="specialization">Specialization</Label>
                   <Select
                     value={formData.profile.specialization}
-                    onValueChange={(value) => handleInputChange('profile', 'specialization', value)}
+                    onValueChange={(value) =>
+                      handleInputChange("profile", "specialization", value)
+                    }
                     disabled={!editStates.profile}
                   >
                     <SelectTrigger>
@@ -245,9 +286,13 @@ const DoctorSettingsPage = () => {
                       <SelectItem value="Cardiology">Cardiology</SelectItem>
                       <SelectItem value="Neurology">Neurology</SelectItem>
                       <SelectItem value="Orthopedics">Orthopedics</SelectItem>
-                      <SelectItem value="Ophthalmology">Ophthalmology</SelectItem>
+                      <SelectItem value="Ophthalmology">
+                        Ophthalmology
+                      </SelectItem>
                       <SelectItem value="Pediatrics">Pediatrics</SelectItem>
-                      <SelectItem value="Internal Medicine">Internal Medicine</SelectItem>
+                      <SelectItem value="Internal Medicine">
+                        Internal Medicine
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -257,7 +302,13 @@ const DoctorSettingsPage = () => {
                     id="experience"
                     type="number"
                     value={formData.profile.experience}
-                    onChange={(e) => handleInputChange('profile', 'experience', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "profile",
+                        "experience",
+                        parseInt(e.target.value),
+                      )
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
@@ -266,7 +317,9 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="license"
                     value={formData.profile.license}
-                    onChange={(e) => handleInputChange('profile', 'license', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("profile", "license", e.target.value)
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
@@ -275,7 +328,9 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="hospital"
                     value={formData.profile.hospital}
-                    onChange={(e) => handleInputChange('profile', 'hospital', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("profile", "hospital", e.target.value)
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
@@ -284,7 +339,9 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="location"
                     value={formData.profile.location}
-                    onChange={(e) => handleInputChange('profile', 'location', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("profile", "location", e.target.value)
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
@@ -295,7 +352,13 @@ const DoctorSettingsPage = () => {
                 <Input
                   id="qualifications"
                   value={formData.profile.qualifications}
-                  onChange={(e) => handleInputChange('profile', 'qualifications', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "profile",
+                      "qualifications",
+                      e.target.value,
+                    )
+                  }
                   disabled={!editStates.profile}
                 />
               </div>
@@ -305,7 +368,9 @@ const DoctorSettingsPage = () => {
                 <Textarea
                   id="bio"
                   value={formData.profile.bio}
-                  onChange={(e) => handleInputChange('profile', 'bio', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("profile", "bio", e.target.value)
+                  }
                   disabled={!editStates.profile}
                   rows={4}
                 />
@@ -316,7 +381,11 @@ const DoctorSettingsPage = () => {
                 <Label>Languages Spoken</Label>
                 <div className="flex flex-wrap gap-2">
                   {formData.profile.languages.map((language, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
                       <Languages className="w-3 h-3" />
                       {language}
                       {editStates.profile && (
@@ -325,8 +394,15 @@ const DoctorSettingsPage = () => {
                           size="sm"
                           className="h-4 w-4 p-0 ml-1"
                           onClick={() => {
-                            const newLanguages = formData.profile.languages.filter((_, i) => i !== index)
-                            handleInputChange('profile', 'languages', newLanguages)
+                            const newLanguages =
+                              formData.profile.languages.filter(
+                                (_, i) => i !== index,
+                              );
+                            handleInputChange(
+                              "profile",
+                              "languages",
+                              newLanguages,
+                            );
                           }}
                         >
                           <X className="w-3 h-3" />
@@ -339,9 +415,12 @@ const DoctorSettingsPage = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const newLanguage = prompt('Enter language:')
+                        const newLanguage = prompt("Enter language:");
                         if (newLanguage) {
-                          handleInputChange('profile', 'languages', [...formData.profile.languages, newLanguage])
+                          handleInputChange("profile", "languages", [
+                            ...formData.profile.languages,
+                            newLanguage,
+                          ]);
                         }
                       }}
                     >
@@ -355,22 +434,38 @@ const DoctorSettingsPage = () => {
               {/* Consultation Fees */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="consultationFee">Regular Consultation Fee ($)</Label>
+                  <Label htmlFor="consultationFee">
+                    Regular Consultation Fee (₹)
+                  </Label>
                   <Input
                     id="consultationFee"
                     type="number"
                     value={formData.profile.consultationFee}
-                    onChange={(e) => handleInputChange('profile', 'consultationFee', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "profile",
+                        "consultationFee",
+                        parseInt(e.target.value),
+                      )
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emergencyFee">Emergency Consultation Fee ($)</Label>
+                  <Label htmlFor="emergencyFee">
+                    Emergency Consultation Fee (₹)
+                  </Label>
                   <Input
                     id="emergencyFee"
                     type="number"
                     value={formData.profile.emergencyFee}
-                    onChange={(e) => handleInputChange('profile', 'emergencyFee', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "profile",
+                        "emergencyFee",
+                        parseInt(e.target.value),
+                      )
+                    }
                     disabled={!editStates.profile}
                   />
                 </div>
@@ -393,11 +488,17 @@ const DoctorSettingsPage = () => {
                 <div className="flex items-center gap-2">
                   {editStates.business ? (
                     <>
-                      <Button variant="outline" onClick={() => handleCancel('business')}>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleCancel("business")}
+                      >
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
-                      <Button onClick={() => handleSave('business')} disabled={isLoading}>
+                      <Button
+                        onClick={() => handleSave("business")}
+                        disabled={isLoading}
+                      >
                         {isLoading ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
@@ -407,7 +508,7 @@ const DoctorSettingsPage = () => {
                       </Button>
                     </>
                   ) : (
-                    <Button onClick={() => handleEdit('business')}>
+                    <Button onClick={() => handleEdit("business")}>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Business
                     </Button>
@@ -422,7 +523,13 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="clinicName"
                     value={formData.business.clinicName}
-                    onChange={(e) => handleInputChange('business', 'clinicName', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "business",
+                        "clinicName",
+                        e.target.value,
+                      )
+                    }
                     disabled={!editStates.business}
                   />
                 </div>
@@ -430,17 +537,23 @@ const DoctorSettingsPage = () => {
                   <Label htmlFor="businessType">Business Type</Label>
                   <Select
                     value={formData.business.businessType}
-                    onValueChange={(value) => handleInputChange('business', 'businessType', value)}
+                    onValueChange={(value) =>
+                      handleInputChange("business", "businessType", value)
+                    }
                     disabled={!editStates.business}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Private Practice">Private Practice</SelectItem>
+                      <SelectItem value="Private Practice">
+                        Private Practice
+                      </SelectItem>
                       <SelectItem value="Hospital">Hospital</SelectItem>
                       <SelectItem value="Clinic">Clinic</SelectItem>
-                      <SelectItem value="Group Practice">Group Practice</SelectItem>
+                      <SelectItem value="Group Practice">
+                        Group Practice
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -449,7 +562,13 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="clinicPhone"
                     value={formData.business.clinicPhone}
-                    onChange={(e) => handleInputChange('business', 'clinicPhone', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "business",
+                        "clinicPhone",
+                        e.target.value,
+                      )
+                    }
                     disabled={!editStates.business}
                   />
                 </div>
@@ -459,7 +578,13 @@ const DoctorSettingsPage = () => {
                     id="clinicEmail"
                     type="email"
                     value={formData.business.clinicEmail}
-                    onChange={(e) => handleInputChange('business', 'clinicEmail', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "business",
+                        "clinicEmail",
+                        e.target.value,
+                      )
+                    }
                     disabled={!editStates.business}
                   />
                 </div>
@@ -468,7 +593,9 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="website"
                     value={formData.business.website}
-                    onChange={(e) => handleInputChange('business', 'website', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("business", "website", e.target.value)
+                    }
                     disabled={!editStates.business}
                   />
                 </div>
@@ -477,7 +604,9 @@ const DoctorSettingsPage = () => {
                   <Input
                     id="taxId"
                     value={formData.business.taxId}
-                    onChange={(e) => handleInputChange('business', 'taxId', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("business", "taxId", e.target.value)
+                    }
                     disabled={!editStates.business}
                   />
                 </div>
@@ -488,7 +617,13 @@ const DoctorSettingsPage = () => {
                 <Textarea
                   id="clinicAddress"
                   value={formData.business.clinicAddress}
-                  onChange={(e) => handleInputChange('business', 'clinicAddress', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "business",
+                      "clinicAddress",
+                      e.target.value,
+                    )
+                  }
                   disabled={!editStates.business}
                   rows={3}
                 />
@@ -498,75 +633,112 @@ const DoctorSettingsPage = () => {
               <div className="space-y-4">
                 <Label>Operating Hours</Label>
                 <div className="space-y-3">
-                  {Object.entries(formData.business.operatingHours).map(([day, hours]) => (
-                    <div key={day} className="flex items-center gap-4">
-                      <div className="w-20 text-sm font-medium capitalize">{day}</div>
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={!hours.closed}
-                          onCheckedChange={(checked) => 
-                            handleNestedInputChange('business', 'operatingHours', day, {
-                              ...hours,
-                              closed: !checked
-                            })
-                          }
-                          disabled={!editStates.business}
-                        />
-                        {!hours.closed ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="time"
-                              value={hours.start}
-                              onChange={(e) => 
-                                handleNestedInputChange('business', 'operatingHours', day, {
+                  {Object.entries(formData.business.operatingHours).map(
+                    ([day, hours]) => (
+                      <div key={day} className="flex items-center gap-4">
+                        <div className="w-20 text-sm font-medium capitalize">
+                          {day}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={!hours.closed}
+                            onCheckedChange={(checked) =>
+                              handleNestedInputChange(
+                                "business",
+                                "operatingHours",
+                                day,
+                                {
                                   ...hours,
-                                  start: e.target.value
-                                })
-                              }
-                              disabled={!editStates.business}
-                              className="w-24"
-                            />
-                            <span>to</span>
-                            <Input
-                              type="time"
-                              value={hours.end}
-                              onChange={(e) => 
-                                handleNestedInputChange('business', 'operatingHours', day, {
-                                  ...hours,
-                                  end: e.target.value
-                                })
-                              }
-                              disabled={!editStates.business}
-                              className="w-24"
-                            />
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">Closed</span>
-                        )}
+                                  closed: !checked,
+                                },
+                              )
+                            }
+                            disabled={!editStates.business}
+                          />
+                          {!hours.closed ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="time"
+                                value={hours.start}
+                                onChange={(e) =>
+                                  handleNestedInputChange(
+                                    "business",
+                                    "operatingHours",
+                                    day,
+                                    {
+                                      ...hours,
+                                      start: e.target.value,
+                                    },
+                                  )
+                                }
+                                disabled={!editStates.business}
+                                className="w-24"
+                              />
+                              <span>to</span>
+                              <Input
+                                type="time"
+                                value={hours.end}
+                                onChange={(e) =>
+                                  handleNestedInputChange(
+                                    "business",
+                                    "operatingHours",
+                                    day,
+                                    {
+                                      ...hours,
+                                      end: e.target.value,
+                                    },
+                                  )
+                                }
+                                disabled={!editStates.business}
+                                className="w-24"
+                              />
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              Closed
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ),
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="appointmentDuration">Appointment Duration (minutes)</Label>
+                  <Label htmlFor="appointmentDuration">
+                    Appointment Duration (minutes)
+                  </Label>
                   <Input
                     id="appointmentDuration"
                     type="number"
                     value={formData.business.appointmentDuration}
-                    onChange={(e) => handleInputChange('business', 'appointmentDuration', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "business",
+                        "appointmentDuration",
+                        parseInt(e.target.value),
+                      )
+                    }
                     disabled={!editStates.business}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="maxPatientsPerDay">Max Patients Per Day</Label>
+                  <Label htmlFor="maxPatientsPerDay">
+                    Max Patients Per Day
+                  </Label>
                   <Input
                     id="maxPatientsPerDay"
                     type="number"
                     value={formData.business.maxPatientsPerDay}
-                    onChange={(e) => handleInputChange('business', 'maxPatientsPerDay', parseInt(e.target.value))}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "business",
+                        "maxPatientsPerDay",
+                        parseInt(e.target.value),
+                      )
+                    }
                     disabled={!editStates.business}
                   />
                 </div>
@@ -575,11 +747,19 @@ const DoctorSettingsPage = () => {
                   <div className="flex items-center space-x-2">
                     <Switch
                       checked={formData.business.emergencyAvailability}
-                      onCheckedChange={(checked) => handleInputChange('business', 'emergencyAvailability', checked)}
+                      onCheckedChange={(checked) =>
+                        handleInputChange(
+                          "business",
+                          "emergencyAvailability",
+                          checked,
+                        )
+                      }
                       disabled={!editStates.business}
                     />
                     <span className="text-sm text-muted-foreground">
-                      {formData.business.emergencyAvailability ? 'Available' : 'Not Available'}
+                      {formData.business.emergencyAvailability
+                        ? "Available"
+                        : "Not Available"}
                     </span>
                   </div>
                 </div>
@@ -602,11 +782,17 @@ const DoctorSettingsPage = () => {
                 <div className="flex items-center gap-2">
                   {editStates.security ? (
                     <>
-                      <Button variant="outline" onClick={() => handleCancel('security')}>
+                      <Button
+                        variant="outline"
+                        onClick={() => handleCancel("security")}
+                      >
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
-                      <Button onClick={() => handleSave('security')} disabled={isLoading}>
+                      <Button
+                        onClick={() => handleSave("security")}
+                        disabled={isLoading}
+                      >
                         {isLoading ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
@@ -616,7 +802,7 @@ const DoctorSettingsPage = () => {
                       </Button>
                     </>
                   ) : (
-                    <Button onClick={() => handleEdit('security')}>
+                    <Button onClick={() => handleEdit("security")}>
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Security
                     </Button>
@@ -635,7 +821,9 @@ const DoctorSettingsPage = () => {
                   </div>
                   <Switch
                     checked={formData.security.twoFactorAuth}
-                    onCheckedChange={(checked) => handleInputChange('security', 'twoFactorAuth', checked)}
+                    onCheckedChange={(checked) =>
+                      handleInputChange("security", "twoFactorAuth", checked)
+                    }
                     disabled={!editStates.security}
                   />
                 </div>
@@ -649,20 +837,19 @@ const DoctorSettingsPage = () => {
                   </div>
                   <Switch
                     checked={formData.security.loginAlerts}
-                    onCheckedChange={(checked) => handleInputChange('security', 'loginAlerts', checked)}
+                    onCheckedChange={(checked) =>
+                      handleInputChange("security", "loginAlerts", checked)
+                    }
                     disabled={!editStates.security}
                   />
                 </div>
-
-                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
-
       </Tabs>
     </div>
-  )
-}
+  );
+};
 
-export default DoctorSettingsPage
-                
+export default DoctorSettingsPage;

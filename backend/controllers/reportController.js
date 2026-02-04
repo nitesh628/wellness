@@ -52,14 +52,21 @@ export const getOverviewReport = async (req, res) => {
             User.countDocuments(patientDateFilter),
             Prescription.countDocuments(dateFilter),
             Appointment.aggregate([
-                { $match: { doctor: new mongoose.Types.ObjectId(doctorId), createdAt: { $gte: startDate, $lte: endDate } } },
+                {
+                    $match: {
+                        doctor: new mongoose.Types.ObjectId(doctorId),
+                        createdAt: { $gte: startDate, $lte: endDate },
+                        status: 'completed',
+                        paymentStatus: 'paid'
+                    }
+                },
                 { $group: { _id: null, totalRevenue: { $sum: '$fee' } } }
             ]),
             Appointment.countDocuments({ ...dateFilter, type: 'emergency' }),
         ]);
 
         const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
-        
+
         res.json({
             success: true,
             data: {
@@ -68,7 +75,7 @@ export const getOverviewReport = async (req, res) => {
                 totalPrescriptions,
                 totalRevenue,
                 emergencyCases,
-                patientSatisfaction: 4.8, 
+                patientSatisfaction: 4.8,
                 avgConsultationTime: 25,
                 followUpRate: 78
             }
@@ -188,8 +195,8 @@ export const exportReport = async (req, res) => {
 
         let data;
         let reportName = 'Report';
-        
-        switch(reportType) {
+
+        switch (reportType) {
             case 'overview':
                 const overviewRes = await getOverviewReport({ user: req.user, query: queryParams }, { json: d => data = d, status: () => ({ json: e => { throw new Error(e.message) } }) });
                 reportName = 'Overview_Report';
@@ -199,17 +206,17 @@ export const exportReport = async (req, res) => {
                 reportName = 'Appointment_Trends';
                 break;
             case 'patients':
-                 const patientRes = await getPatientReport({ user: req.user, query: queryParams }, { json: d => data = d, status: () => ({ json: e => { throw new Error(e.message) } }) });
-                 reportName = 'Patient_Analytics';
-                 break;
+                const patientRes = await getPatientReport({ user: req.user, query: queryParams }, { json: d => data = d, status: () => ({ json: e => { throw new Error(e.message) } }) });
+                reportName = 'Patient_Analytics';
+                break;
             case 'prescriptions':
-                 const presRes = await getPrescriptionReport({ user: req.user, query: queryParams }, { json: d => data = d, status: () => ({ json: e => { throw new Error(e.message) } }) });
-                 reportName = 'Prescription_Analytics';
-                 break;
+                const presRes = await getPrescriptionReport({ user: req.user, query: queryParams }, { json: d => data = d, status: () => ({ json: e => { throw new Error(e.message) } }) });
+                reportName = 'Prescription_Analytics';
+                break;
             default:
                 return res.status(400).json({ success: false, message: "Invalid report type" });
         }
-        
+
         const fileName = `${reportName}_${new Date().toISOString().split('T')[0]}`;
 
         if (format === 'json') {
@@ -217,7 +224,7 @@ export const exportReport = async (req, res) => {
             res.attachment(`${fileName}.json`);
             return res.send(JSON.stringify(data.data, null, 2));
         }
-        
+
         if (format === 'csv') {
             const { Parser } = await import('json2csv');
             const parser = new Parser();
@@ -226,13 +233,13 @@ export const exportReport = async (req, res) => {
             res.attachment(`${fileName}.csv`);
             return res.send(csv);
         }
-        
-        if(format === 'pdf'){
-             res.header('Content-Type', 'text/plain');
-             res.attachment(`${fileName}.txt`);
-             return res.send(`PDF export is a complex feature requiring a dedicated library. Here is your data in JSON format:\n\n${JSON.stringify(data.data, null, 2)}`);
+
+        if (format === 'pdf') {
+            res.header('Content-Type', 'text/plain');
+            res.attachment(`${fileName}.txt`);
+            return res.send(`PDF export is a complex feature requiring a dedicated library. Here is your data in JSON format:\n\n${JSON.stringify(data.data, null, 2)}`);
         }
-        
+
         return res.status(400).json({ success: false, message: 'Unsupported format' });
 
     } catch (error) {

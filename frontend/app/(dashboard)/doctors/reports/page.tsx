@@ -104,7 +104,7 @@ const DoctorReportsPage = () => {
         from: dateRange.from,
         to: dateRange.to,
         format: exportFormat,
-      })
+      }),
     );
   };
 
@@ -238,7 +238,7 @@ const DoctorReportsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${medicalStats.totalRevenue?.toLocaleString() || 0}
+              ₹{medicalStats.totalRevenue?.toLocaleString() || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Calculated from completed visits
@@ -374,7 +374,7 @@ const DoctorReportsPage = () => {
                                 <div>
                                   <p className="font-medium">
                                     {new Date(
-                                      day.date || day._id
+                                      day.date || day._id,
                                     ).toLocaleDateString()}
                                   </p>
                                 </div>
@@ -384,7 +384,7 @@ const DoctorReportsPage = () => {
                                   </p>
                                   {day.revenue && (
                                     <p className="text-sm text-green-600">
-                                      ${day.revenue}
+                                      ₹{day.revenue}
                                     </p>
                                   )}
                                 </div>
@@ -468,11 +468,21 @@ const DoctorReportsPage = () => {
                                 <p className="font-medium">
                                   {med.medication || med.productName}
                                 </p>
+                                {med.patients && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {med.patients} patients
+                                  </p>
+                                )}
                               </div>
                               <div className="text-right">
                                 <p className="font-medium">
-                                  {med.count} times prescribed
+                                  {med.prescriptions || med.count || 0} times
                                 </p>
+                                {med.cost && (
+                                  <p className="text-sm text-green-600">
+                                    ₹{med.cost.toLocaleString()}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           ))

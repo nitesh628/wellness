@@ -133,9 +133,13 @@ export const exportReportData = createAsyncThunk(
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
+
+      // Use .txt extension for PDF format since backend doesn't generate real PDFs yet
+      const fileExtension =
+        params.format === "pdf" ? "txt" : params.format || "csv";
       link.setAttribute(
         "download",
-        `report-${params.type}-${Date.now()}.${params.format || "csv"}`,
+        `report-${params.type}-${Date.now()}.${fileExtension}`,
       );
       document.body.appendChild(link);
       link.click();
