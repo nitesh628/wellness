@@ -1,7 +1,6 @@
 import { model, Schema } from "mongoose";
 
 const appointmentSchema = new Schema({
-  // Original `user` field ko `patient` naam de diya hai for clarity
   patient: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -22,7 +21,7 @@ const appointmentSchema = new Schema({
   },
   duration: {
     type: Number,
-    required: true, // Frontend se aayega (e.g., 30 for 30 minutes)
+    default: 30, // Default 30 minutes
   },
   type: {
     type: String,
@@ -48,7 +47,7 @@ const appointmentSchema = new Schema({
   },
   fee: {
     type: Number,
-    required: true,
+    default: 0,
   },
   paymentStatus: {
     type: String,
