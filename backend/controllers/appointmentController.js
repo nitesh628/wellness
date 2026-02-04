@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Appointment from '../models/appointmentModel.js';
+import Customer from '../models/customerModel.js';
 import User from '../models/userModel.js';
 import { Parser } from 'json2csv';
 
@@ -15,26 +16,31 @@ export const createAppointment = async (req, res) => {
     // If patientId not provided, try to find or create patient by email
     if (!patientId && patientEmail) {
       try {
-        // Try to find existing patient by email
-        const existingPatient = await User.findOne({ email: patientEmail });
-        if (existingPatient) {
-          actualPatientId = existingPatient._id;
+        // Try to find existing patient by email in Customer
+        const existingCustomer = await Customer.findOne({ email: patientEmail });
+        if (existingCustomer) {
+          actualPatientId = existingCustomer._id;
         } else {
-          // Create new patient if doesn't exist
-          const nameParts = patientName ? patientName.split(' ') : ['Patient', 'User'];
-          const newPatient = await User.create({
-            firstName: nameParts[0],
-            lastName: nameParts.slice(1).join(' ') || nameParts[0],
-            email: patientEmail,
-            phone: patientPhone || '0000000000',
-            role: 'Customer',
-            password: 'temp123', // Temporary password, should be changed by patient
-            dateOfBirth: new Date('1990-01-01'), // Default date of birth
-            gender: 'Other',
-            bloodGroup: 'O+',
-            status: 'active'
-          });
-          actualPatientId = newPatient._id;
+          // Fallback to legacy User collection
+          const existingLegacyUser = await User.findOne({ email: patientEmail });
+          if (existingLegacyUser) {
+            actualPatientId = existingLegacyUser._id;
+          } else {
+            // Create new patient if doesn't exist
+            const nameParts = patientName ? patientName.split(' ') : ['Patient', 'User'];
+            const newCustomer = await Customer.create({
+              firstName: nameParts[0],
+              lastName: nameParts.slice(1).join(' ') || nameParts[0],
+              email: patientEmail,
+              phone: patientPhone || '0000000000',
+              password: 'temp123', // Temporary password, should be changed by patient
+              dateOfBirth: new Date('1990-01-01'), // Default date of birth
+              gender: 'Other',
+              bloodGroup: 'O+',
+              status: 'active'
+            });
+            actualPatientId = newCustomer._id;
+          }
         }
       } catch (error) {
         return res.status(400).json({ success: false, message: 'Failed to find or create patient: ' + error.message });
@@ -45,7 +51,8 @@ export const createAppointment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid patient ID is required' });
     }
 
-    const patientExists = await User.findById(actualPatientId);
+    let patientExists = await Customer.findById(actualPatientId);
+    if (!patientExists) patientExists = await User.findById(actualPatientId);
     if (!patientExists) {
       return res.status(404).json({ success: false, message: 'Patient not found' });
     }
@@ -84,6 +91,10 @@ export const createAppointment = async (req, res) => {
 export const getAppointments = async (req, res) => {
   try {
     const doctorId = req.user._id;
+    console.log('🔍 GET APPOINTMENTS');
+    console.log('  Doctor ID:', doctorId);
+    console.log('  Doctor Email:', req.user.email);
+
     const {
       page = 1,
       limit = 10,
@@ -95,7 +106,6 @@ export const getAppointments = async (req, res) => {
       date
     } = req.query;
 
-    console.log('GET Appointments - Doctor ID:', doctorId);
     const filter = { doctor: new mongoose.Types.ObjectId(doctorId) };
     if (status && status !== 'all') filter.status = status;
     if (type && type !== 'all') filter.type = type;
@@ -106,6 +116,18 @@ export const getAppointments = async (req, res) => {
       endDate.setUTCHours(23, 59, 59, 999);
       filter.appointmentDate = { $gte: startDate, $lte: endDate };
     }
+
+    console.log('  Query:', {
+      page,
+      limit,
+      status,
+      type,
+      search,
+      sortBy,
+      sortOrder,
+      date
+    });
+    console.log('  Filter:', filter);
 
     const sortOptions = {};
     if (sortBy === 'patientName') {
@@ -119,22 +141,56 @@ export const getAppointments = async (req, res) => {
       { $match: filter },
       {
         $lookup: {
+          from: 'customers',
+          localField: 'patient',
+          foreignField: '_id',
+          as: 'patientCustomer'
+        }
+      },
+      {
+        $lookup: {
           from: 'users',
           localField: 'patient',
           foreignField: '_id',
-          as: 'patient'
+          as: 'patientUser'
         }
       },
-      { $unwind: '$patient' },
+      {
+        $addFields: {
+          patient: {
+            $ifNull: [
+              { $arrayElemAt: ['$patientCustomer', 0] },
+              { $arrayElemAt: ['$patientUser', 0] }
+            ]
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'doctors',
+          localField: 'doctor',
+          foreignField: '_id',
+          as: 'doctorDoctor'
+        }
+      },
       {
         $lookup: {
           from: 'users',
           localField: 'doctor',
           foreignField: '_id',
-          as: 'doctor'
+          as: 'doctorUser'
         }
       },
-      { $unwind: '$doctor' },
+      {
+        $addFields: {
+          doctor: {
+            $ifNull: [
+              { $arrayElemAt: ['$doctorDoctor', 0] },
+              { $arrayElemAt: ['$doctorUser', 0] }
+            ]
+          }
+        }
+      }
     ];
 
     if (search) {
@@ -156,10 +212,14 @@ export const getAppointments = async (req, res) => {
     const dataPipeline = [
       ...aggregationPipeline,
       { $sort: sortOptions },
-      { $skip: (page - 1) * limit },
+      { $skip: (Number(page) - 1) * Number(limit) },
       { $limit: Number(limit) },
       {
         $project: {
+          patientCustomer: 0,
+          patientUser: 0,
+          doctorDoctor: 0,
+          doctorUser: 0,
           'patient.password': 0,
           'doctor.password': 0
         }
@@ -171,9 +231,15 @@ export const getAppointments = async (req, res) => {
       Appointment.aggregate(dataPipeline)
     ]);
 
-    console.log('Total appointments:', total);
-    console.log('Appointments fetched:', appointments.length);
-    console.log('Sample appointment:', appointments[0] || 'None');
+    console.log('  Found appointments:', appointments.length);
+    if (appointments.length > 0) {
+      console.log('  First appointment:', {
+        id: appointments[0]._id,
+        doctorId: appointments[0].doctor?._id,
+        patientName: `${appointments[0].patient?.firstName} ${appointments[0].patient?.lastName}`,
+        date: appointments[0].appointmentDate
+      });
+    }
 
     res.json({
       success: true,
@@ -182,15 +248,14 @@ export const getAppointments = async (req, res) => {
         page: Number(page),
         limit: Number(limit),
         total,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / Number(limit))
       }
     });
   } catch (error) {
-    console.error('GET appointments error:', error);
-    res.status(400).json({ success: false, message: error.message, error: error.toString() });
+    console.error('❌ GET APPOINTMENTS ERROR:', error);
+    res.status(400).json({ success: false, message: error.message });
   }
 };
-
 
 export const getAppointmentById = async (req, res) => {
   try {
@@ -295,6 +360,14 @@ export const exportAppointments = async (req, res) => {
     const doctorId = req.user._id;
     // Hum wahi filters/search use karenge jo getAppointments mein hain
     const { status, type, search, sortBy = 'appointmentDate', sortOrder = 'asc', date } = req.query;
+    console.log('GET Appointments - Export Query:', {
+      status,
+      type,
+      search,
+      sortBy,
+      sortOrder,
+      date
+    });
 
     const filter = { doctor: new mongoose.Types.ObjectId(doctorId) };
     if (status && status !== 'all') filter.status = status;
@@ -316,9 +389,20 @@ export const exportAppointments = async (req, res) => {
 
     const aggregationPipeline = [
       { $match: filter },
-      { $lookup: { from: 'users', localField: 'patient', foreignField: '_id', as: 'patient' } },
-      { $unwind: '$patient' },
-      { $sort: sortOptions }
+      { $lookup: { from: 'customers', localField: 'patient', foreignField: '_id', as: 'patientCustomer' } },
+      { $lookup: { from: 'users', localField: 'patient', foreignField: '_id', as: 'patientUser' } },
+      {
+        $addFields: {
+          patient: {
+            $ifNull: [
+              { $arrayElemAt: ['$patientCustomer', 0] },
+              { $arrayElemAt: ['$patientUser', 0] }
+            ]
+          }
+        }
+      },
+      { $sort: sortOptions },
+      { $project: { patientCustomer: 0, patientUser: 0, 'patient.password': 0 } }
     ];
 
     if (search) {
@@ -358,14 +442,19 @@ export const exportAppointments = async (req, res) => {
     ];
 
     // Har appointment object ko flat karna
-    const formattedData = appointments.map(app => ({
-      ...app,
-      patient: {
-        ...app.patient,
-        fullName: `${app.patient.firstName} ${app.patient.lastName}`
-      },
-      appointmentDate: new Date(app.appointmentDate).toLocaleDateString()
-    }));
+    const formattedData = appointments.map(app => {
+      const firstName = app.patient?.firstName || '';
+      const lastName = app.patient?.lastName || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      return {
+        ...app,
+        patient: {
+          ...app.patient,
+          fullName: fullName || 'Unknown'
+        },
+        appointmentDate: new Date(app.appointmentDate).toLocaleDateString()
+      };
+    });
 
     const json2csvParser = new Parser({ fields });
     const csv = json2csvParser.parse(formattedData);

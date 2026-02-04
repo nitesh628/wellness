@@ -4,17 +4,40 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Mail, Eye, EyeOff, Lock, UserPlus, KeyRound, ArrowRight, Loader2, Sparkles, Shield, Zap } from "lucide-react";
+import {
+  Mail,
+  Eye,
+  EyeOff,
+  Lock,
+  UserPlus,
+  KeyRound,
+  ArrowRight,
+  Loader2,
+  Sparkles,
+  Shield,
+  Zap,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { loginUser, selectAuthError, selectAuthLoading, setUser } from "@/lib/redux/features/authSlice";
-import { storeAuthData, isAuthenticated, fetchUserDetails, updateUserRole, getDashboardForRole } from "@/lib/utils/auth";
+import {
+  loginUser,
+  selectAuthError,
+  selectAuthLoading,
+  setUser,
+} from "@/lib/redux/features/authSlice";
+import {
+  storeAuthData,
+  isAuthenticated,
+  fetchUserDetails,
+  updateUserRole,
+  getDashboardForRole,
+} from "@/lib/utils/auth";
 import Image from "next/image";
 
 const LoginPage = () => {
   const router = useRouter();
-  const dispatch = useAppDispatch()
-  const error = useAppSelector(selectAuthError)
-  const loading = useAppSelector(selectAuthLoading)
+  const dispatch = useAppDispatch();
+  const error = useAppSelector(selectAuthError);
+  const loading = useAppSelector(selectAuthLoading);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,20 +46,20 @@ const LoginPage = () => {
   useEffect(() => {
     if (isAuthenticated()) {
       const userCookie = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('user='))
+        .split("; ")
+        .find((row) => row.startsWith("user="));
 
       if (userCookie) {
         try {
-          const user = JSON.parse(decodeURIComponent(userCookie.split('=')[1]))
-          const dashboardUrl = getDashboardForRole(user.role)
-          router.push(dashboardUrl)
+          const user = JSON.parse(decodeURIComponent(userCookie.split("=")[1]));
+          const dashboardUrl = getDashboardForRole(user.role);
+          router.push(dashboardUrl);
         } catch (error) {
-          console.error('Error parsing user cookie:', error)
-          router.push('/profile')
+          console.error("Error parsing user cookie:", error);
+          router.push("/profile");
         }
       } else {
-        router.push('/profile')
+        router.push("/profile");
       }
     }
   }, [router]);
@@ -46,11 +69,15 @@ const LoginPage = () => {
 
     try {
       const result = await dispatch(loginUser(email, password));
-      console.log('Login result:', result);
+      console.log("Login result:", result);
 
-      if (result && (result.success || (result.message === "login successful" && result.session))) {
+      if (
+        result &&
+        (result.success ||
+          (result.message === "login successful" && result.session))
+      ) {
         const { session } = result;
-        console.log('Login successful, session:', session);
+        console.log("Login successful, session:", session);
 
         storeAuthData(session);
 
@@ -67,23 +94,22 @@ const LoginPage = () => {
         if (userDetails && userDetails.role) {
           dispatch(setUser(userDetails));
           updateUserRole(userDetails.role);
-          console.log('Updated user role to:', userDetails.role);
+          console.log("Updated user role to:", userDetails.role);
 
           const dashboardUrl = getDashboardForRole(userDetails.role);
-          console.log('Redirecting to:', dashboardUrl);
+          console.log("Redirecting to:", dashboardUrl);
 
           router.replace(dashboardUrl);
         } else {
-          console.log('Using fallback role: user');
-          updateUserRole('user');
-          router.replace('/profile');
+          console.log("Using fallback role: user");
+          updateUserRole("user");
+          router.replace("/profile");
         }
-
       } else {
-        console.log('Login failed or invalid response:', result);
+        console.log("Login failed or invalid response:", result);
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
     }
   };
 
@@ -112,7 +138,9 @@ const LoginPage = () => {
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   Wellness Fuel
                 </h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Your Health, Elevated</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Your Health, Elevated
+                </p>
               </div>
             </div>
 
@@ -125,7 +153,8 @@ const LoginPage = () => {
                 </span>
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
-                Access your personalized health dashboard and continue your path to optimal wellness.
+                Access your personalized health dashboard and continue your path
+                to optimal wellness.
               </p>
             </div>
 
@@ -136,8 +165,12 @@ const LoginPage = () => {
                   <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Secure & Private</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Your health data is encrypted and protected</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Secure & Private
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Your health data is encrypted and protected
+                  </p>
                 </div>
               </div>
 
@@ -146,8 +179,12 @@ const LoginPage = () => {
                   <Zap className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Personalized Experience</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Tailored recommendations just for you</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Personalized Experience
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Tailored recommendations just for you
+                  </p>
                 </div>
               </div>
 
@@ -156,8 +193,12 @@ const LoginPage = () => {
                   <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Premium Quality</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Science-backed wellness solutions</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                    Premium Quality
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Science-backed wellness solutions
+                  </p>
                 </div>
               </div>
             </div>
@@ -202,7 +243,10 @@ const LoginPage = () => {
 
                   {/* Email Field */}
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="email"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >
                       Email Address
                     </Label>
                     <div className="relative group">
@@ -211,7 +255,7 @@ const LoginPage = () => {
                         id="email"
                         type="email"
                         value={email}
-                        onChange={e => setEmail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value)}
                         autoComplete="username"
                         required
                         disabled={loading}
@@ -224,7 +268,10 @@ const LoginPage = () => {
 
                   {/* Password Field */}
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <Label
+                      htmlFor="password"
+                      className="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >
                       Password
                     </Label>
                     <div className="relative group">
@@ -233,7 +280,7 @@ const LoginPage = () => {
                         id="password"
                         type={showPassword ? "text" : "password"}
                         value={password}
-                        onChange={e => setPassword(e.target.value)}
+                        onChange={(e) => setPassword(e.target.value)}
                         autoComplete="current-password"
                         required
                         disabled={loading}
@@ -247,7 +294,9 @@ const LoginPage = () => {
                         onClick={() => setShowPassword((v) => !v)}
                         disabled={loading}
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 focus:outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        aria-label={
+                          showPassword ? "Hide password" : "Show password"
+                        }
                       >
                         {showPassword ? (
                           <EyeOff className="w-5 h-5" />
@@ -272,6 +321,7 @@ const LoginPage = () => {
                   {/* Submit Button */}
                   <Button
                     type="submit"
+                    suppressHydrationWarning
                     disabled={loading}
                     className="w-full h-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/60 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
@@ -304,7 +354,8 @@ const LoginPage = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => router.push('/signup')}
+                    onClick={() => router.push("/signup")}
+                    suppressHydrationWarning
                     className="w-full h-12 border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 bg-transparent hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl transition-all duration-300 font-semibold group"
                   >
                     <UserPlus className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
@@ -316,11 +367,17 @@ const LoginPage = () => {
                 <div className="text-center mt-8">
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     By signing in, you agree to our{" "}
-                    <a href="/terms" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline">
+                    <a
+                      href="/terms"
+                      className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline"
+                    >
                       Terms
                     </a>{" "}
                     and{" "}
-                    <a href="/privacy-policy" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline">
+                    <a
+                      href="/privacy-policy"
+                      className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline"
+                    >
                       Privacy Policy
                     </a>
                   </p>

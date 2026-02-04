@@ -89,11 +89,27 @@ const initialState: AppointmentState = {
   },
 };
 
+const sanitizeBaseUrl = (url?: string) => {
+  if (!url) return "";
+  return url.endsWith("/") ? url.slice(0, -1) : url;
+};
+
+const API_BASE_URL =
+  sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL) ||
+  `${sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) || "http://localhost:5000"}/v1`;
+
 // --- Helper for Auth Headers ---
 const getAuthConfig = () => {
   // Added window check for Next.js SSR safety
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+  let token: string | null = null;
+  if (typeof window !== "undefined") {
+    token =
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken") ||
+      localStorage.getItem("accessToken");
+    if (token) token = token.replace(/^"|"$/g, "");
+  }
+
   return {
     withCredentials: true,
     headers: {
@@ -198,7 +214,7 @@ export const fetchAppointments =
     dispatch(setLoading());
     try {
       const { page, limit } = getState().appointments.pagination;
-      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments?page=${page}&limit=${limit}`;
+      const url = `${API_BASE_URL}/appointments?page=${page}&limit=${limit}`;
 
       console.log("Fetching appointments from:", url);
       const response = await axios.get(url, getAuthConfig());
@@ -239,7 +255,7 @@ export const createAppointment =
     dispatch(setLoading());
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments`,
+        `${API_BASE_URL}/appointments`,
         formData,
         getAuthConfig(),
       );
@@ -269,7 +285,7 @@ export const updateAppointment =
       };
 
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/${id}`,
+        `${API_BASE_URL}/appointments/${id}`,
         payload,
         getAuthConfig(),
       );
@@ -293,7 +309,7 @@ export const deleteAppointment =
     dispatch(setLoading());
     try {
       const response = await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/${id}`,
+        `${API_BASE_URL}/appointments/${id}`,
         getAuthConfig(),
       );
 
@@ -314,7 +330,7 @@ export const deleteAppointment =
 export const fetchAppointmentStats = () => async (dispatch: AppDispatch) => {
   try {
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/stats`,
+      `${API_BASE_URL}/appointments/stats`,
       getAuthConfig(),
     );
 
@@ -335,7 +351,7 @@ export const exportAppointments = async (
   try {
     const queryParams = new URLSearchParams(filters || {}).toString();
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/export${queryParams ? `?${queryParams}` : ""}`,
+      `${API_BASE_URL}/appointments/export${queryParams ? `?${queryParams}` : ""}`,
       {
         ...getAuthConfig(),
         responseType: "blob",
