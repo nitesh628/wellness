@@ -21,6 +21,7 @@ export interface Prescription {
     _id: string;
     firstName: string;
     lastName: string;
+    patientId?: string;
     email?: string;
     phone?: string;
   };

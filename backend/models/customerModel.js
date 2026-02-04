@@ -22,6 +22,13 @@ const CustomerSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        patientId: {
+            type: String,
+            unique: true,
+            index: true,
+            sparse: true,
+            trim: true,
+        },
         role: {
             type: String,
             enum: ["Customer"],
@@ -142,6 +149,28 @@ const CustomerSchema = new mongoose.Schema(
 );
 
 import bcrypt from "bcrypt";
+
+CustomerSchema.pre("validate", async function (next) {
+    if (this.patientId) {
+        return next();
+    }
+    try {
+        const Customer = this.constructor;
+        let patientId;
+        let exists = true;
+        while (exists) {
+            const random = Math.floor(Math.random() * 1000000)
+                .toString()
+                .padStart(6, "0");
+            patientId = `PI${random}`;
+            exists = await Customer.exists({ patientId });
+        }
+        this.patientId = patientId;
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
 
 CustomerSchema.pre("save", async function (next) {
     if (!this.isModified("password")) {

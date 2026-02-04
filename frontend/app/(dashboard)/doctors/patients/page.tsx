@@ -80,6 +80,7 @@ import {
 // Patient UI interface
 interface PatientUI {
   id: string;
+  patientId?: string;
   name: string;
   email: string;
   phone: string;
@@ -138,6 +139,7 @@ const PatientsPage = () => {
   const patients: PatientUI[] = rawPatients.map((patient) => {
     return {
       id: patient._id,
+      patientId: patient.patientId,
       name: `${patient.firstName}${patient.lastName ? " " + patient.lastName : ""}`.trim(),
       email: patient.email,
       phone: patient.phone,
@@ -174,6 +176,8 @@ const PatientsPage = () => {
         patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         patient.phone.includes(searchTerm) ||
+        (patient.patientId &&
+          patient.patientId.toLowerCase().includes(searchTerm.toLowerCase())) ||
         patient.bloodGroup.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus =
         statusFilter === "all" || normalizedStatus === statusFilter;
@@ -632,6 +636,7 @@ const PatientsPage = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Patient ID</TableHead>
                         <TableHead>Patient</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Status</TableHead>
@@ -643,6 +648,11 @@ const PatientsPage = () => {
                     <TableBody>
                       {paginatedPatients.map((patient) => (
                         <TableRow key={patient.id}>
+                          <TableCell>
+                            <div className="font-mono font-bold text-primary">
+                              {patient.patientId || "N/A"}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="w-10 h-10">
@@ -1033,6 +1043,19 @@ const PatientsPage = () => {
                 <TabsContent value="details" className="space-y-4">
                   <form onSubmit={handleUpdatePatient} id="editPatientForm">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="editPatientId">Patient ID</Label>
+                        <Input
+                          id="editPatientId"
+                          type="text"
+                          value={selectedPatient.patientId || ""}
+                          disabled
+                          className="bg-muted text-muted-foreground"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Auto-generated and cannot be changed
+                        </p>
+                      </div>
                       <div>
                         <Label htmlFor="editName">Full Name</Label>
                         <Input

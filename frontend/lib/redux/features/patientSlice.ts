@@ -4,6 +4,7 @@ import { AppDispatch, RootState } from "../store";
 
 export interface Patient {
   _id: string;
+  patientId?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -138,6 +139,7 @@ export const {
 
 const mapApiPatientToPatient = (apiPatient: any): Patient => ({
   _id: apiPatient._id,
+  patientId: apiPatient.patientId,
   firstName: apiPatient.firstName || "",
   lastName: apiPatient.lastName || "",
   email: apiPatient.email || "",

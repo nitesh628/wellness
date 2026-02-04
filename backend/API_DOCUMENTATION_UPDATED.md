@@ -1615,27 +1615,62 @@ Download customer's personal data.
 
 **POST** `/v1/prescriptions`
 
-Create a medical prescription.
+Create a medical prescription. Patient can be identified by either Patient ID (PI######) or MongoDB ObjectId.
 
 **Request Body:**
 
 ```json
 {
-  "doctorId": "doctor_id",
-  "patientId": "patient_id",
-  "medicines": [
+  "patientId": "PI000123",
+  "diagnosis": "Type 2 Diabetes",
+  "symptoms": "Increased thirst, frequent urination",
+  "medications": [
     {
-      "name": "Aspirin",
+      "product": "product_id",
+      "productName": "Metformin 500mg",
       "dosage": "500mg",
-      "frequency": "2 times daily",
-      "duration": "7 days"
+      "frequency": "Twice daily",
+      "duration": "30 days",
+      "quantity": 60,
+      "instructions": "Take with meals"
     }
   ],
-  "notes": "Take with water after meals"
+  "generalInstructions": "Follow regular diet and exercise",
+  "followUpDate": "2026-03-04"
 }
 ```
 
 **Response:** `201 Created`
+
+```json
+{
+  "success": true,
+  "data": {
+    "_id": "prescription_id",
+    "patient": {
+      "_id": "patient_mongo_id",
+      "firstName": "John",
+      "lastName": "Doe",
+      "patientId": "PI000123"
+    },
+    "doctor": {
+      "_id": "doctor_id",
+      "firstName": "Dr.",
+      "lastName": "Smith"
+    },
+    "diagnosis": "Type 2 Diabetes",
+    "prescriptionDate": "2026-02-04T10:30:00Z",
+    "status": "active",
+    "medications": [...]
+  }
+}
+```
+
+**Notes:**
+
+- `patientId` can be either the Patient ID (PI######) or MongoDB ObjectId
+- Automatically searches by Patient ID first, then falls back to ObjectId
+- Patient ID is displayed as `PI######` format (e.g., PI000123, PI348921)
 
 ---
 
@@ -1643,20 +1678,104 @@ Create a medical prescription.
 
 **GET** `/v1/prescriptions`
 
-Retrieve all prescriptions.
+Retrieve all prescriptions created by the doctor.
 
 **Query Parameters:**
 
-- `patientId`: string
-- `doctorId`: string
-- `page`: number
-- `limit`: number
+- `page`: number (default: 1)
+- `limit`: number (default: 10)
+- `status`: string (active, completed, cancelled)
+- `search`: string (searches by patient name, patientId, email, or diagnosis)
+- `sortBy`: string (default: prescriptionDate)
+- `sortOrder`: string (asc or desc)
+
+**Response:** `200 OK`
+
+**Example Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "prescription_id",
+      "patient": {
+        "_id": "patient_id",
+        "firstName": "John",
+        "lastName": "Doe",
+        "patientId": "PI000123",
+        "email": "john@example.com"
+      },
+      "diagnosis": "Type 2 Diabetes",
+      "prescriptionDate": "2026-02-04T10:30:00Z",
+      "status": "active",
+      "medications": [...]
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "pages": 3
+  }
+}
+```
+
+---
+
+### Get Prescription by ID
+
+**GET** `/v1/prescriptions/:id`
+
+Retrieve a specific prescription.
 
 **Response:** `200 OK`
 
 ---
 
-### Get Prescription by ID
+### Update Prescription
+
+**PUT** `/v1/prescriptions/:id`
+
+Update a prescription.
+
+**Response:** `200 OK`
+
+---
+
+### Delete Prescription
+
+**DELETE** `/v1/prescriptions/:id`
+
+Delete a prescription.
+
+**Response:** `200 OK`
+
+---
+
+### Export Prescriptions
+
+**GET** `/v1/prescriptions/export`
+
+Export all prescriptions as CSV file. Includes Patient ID in export.
+
+**Response:** CSV file download
+
+**CSV Columns:**
+
+- ID
+- Patient ID (PI######)
+- Patient Name
+- Patient Email
+- Date
+- Diagnosis
+- Status
+- Medications
+- Follow Up
+
+---
+
+## Patients & Patient Management
 
 **GET** `/v1/prescriptions/:id`
 

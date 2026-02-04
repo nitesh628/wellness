@@ -11,14 +11,19 @@ export const createPrescription = async (req, res) => {
         const doctorId = req.user._id;
         const { patientId, ...restOfBody } = req.body;
 
-        if (!isId(patientId)) {
-            return res.status(400).json({ success: false, message: 'Invalid Patient ID' });
+        if (!patientId) {
+            return res.status(400).json({ success: false, message: 'Patient ID is required' });
         }
 
-        // Fetch patient from customers first, then users
-        let patient = await Customer.findById(patientId).select('firstName lastName');
-        if (!patient) {
-            patient = await User.findById(patientId).select('firstName lastName');
+        // Fetch patient by Patient ID (PI######) or fallback to Mongo ObjectId
+        let patient = null;
+        if (isId(patientId)) {
+            patient = await Customer.findById(patientId).select('firstName lastName patientId');
+            if (!patient) {
+                patient = await User.findById(patientId).select('firstName lastName');
+            }
+        } else {
+            patient = await Customer.findOne({ patientId }).select('firstName lastName patientId');
         }
 
         if (!patient) {
@@ -30,13 +35,13 @@ export const createPrescription = async (req, res) => {
         const prescriptionData = {
             ...restOfBody,
             doctor: doctorId,
-            patient: patientId,
+            patient: patient._id,
             patientName: patientName,
         };
 
         const newPrescription = await Prescription.create(prescriptionData);
         const populatedPrescription = await Prescription.findById(newPrescription._id)
-            .populate('patient', 'firstName lastName')
+            .populate('patient', 'firstName lastName patientId')
             .populate('doctor', 'firstName lastName');
 
         res.status(201).json({ success: true, data: populatedPrescription });
@@ -85,6 +90,7 @@ export const getPrescriptions = async (req, res) => {
                         { 'patientInfo.firstName': searchRegex },
                         { 'patientInfo.lastName': searchRegex },
                         { 'patientInfo.email': searchRegex },
+                        { 'patientInfo.patientId': searchRegex },
                         { diagnosis: searchRegex }
                     ]
                 }
@@ -159,7 +165,7 @@ export const updatePrescription = async (req, res) => {
             { _id: id, doctor: req.user._id },
             req.body,
             { new: true, runValidators: true }
-        ).populate('patient', 'firstName lastName');
+        ).populate('patient', 'firstName lastName patientId');
 
         if (!updatedPrescription) return res.status(404).json({ success: false, message: 'Prescription not found' });
         res.json({ success: true, data: updatedPrescription });
@@ -211,7 +217,7 @@ export const exportPrescriptions = async (req, res) => {
     try {
         const doctorId = req.user._id;
         const prescriptions = await Prescription.find({ doctor: doctorId })
-            .populate('patient', 'firstName lastName email')
+            .populate('patient', 'firstName lastName email patientId')
             .lean();
 
         if (prescriptions.length === 0) {
@@ -220,6 +226,7 @@ export const exportPrescriptions = async (req, res) => {
 
         const formattedData = prescriptions.map(p => ({
             prescriptionId: p._id,
+            patientId: p.patient.patientId,
             patientName: `${p.patient.firstName} ${p.patient.lastName}`,
             patientEmail: p.patient.email,
             date: new Date(p.prescriptionDate).toLocaleDateString(),
@@ -231,6 +238,7 @@ export const exportPrescriptions = async (req, res) => {
 
         const fields = [
             { label: 'ID', value: 'prescriptionId' },
+            { label: 'Patient ID', value: 'patientId' },
             { label: 'Patient Name', value: 'patientName' },
             { label: 'Patient Email', value: 'patientEmail' },
             { label: 'Date', value: 'date' },

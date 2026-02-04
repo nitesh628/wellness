@@ -150,7 +150,8 @@ export const getPatients = async (req, res) => {
                 { lastName: searchRegex },
                 { email: searchRegex },
                 { phone: searchRegex },
-                { bloodGroup: searchRegex }
+                { bloodGroup: searchRegex },
+                { patientId: searchRegex }
             ];
         }
 
@@ -162,6 +163,15 @@ export const getPatients = async (req, res) => {
             .skip((page - 1) * limit)
             .limit(Number(limit))
             .select('-password');
+
+        await Promise.all(
+            patients
+                .filter((patient) => !patient.patientId)
+                .map(async (patient) => {
+                    patient.markModified("patientId");
+                    await patient.save();
+                })
+        );
 
         const total = await Customer.countDocuments(filter);
 
@@ -216,6 +226,11 @@ export const getPatientById = async (req, res) => {
         const patient = await Customer.findOne({ _id: id, createdBy: req.user._id }).select('-password');
         if (!patient) return res.status(404).json({ success: false, message: 'Patient not found or access denied' });
 
+        if (!patient.patientId) {
+            patient.markModified("patientId");
+            await patient.save();
+        }
+
         const stats = await Appointment.aggregate([
             { $match: { patient: patient._id } },
             {
@@ -248,6 +263,7 @@ export const updatePatient = async (req, res) => {
         const updateData = req.body;
         delete updateData.password; // Prevent password update through this route
         delete updateData.createdBy; // Prevent changing who created the patient
+        delete updateData.patientId; // Prevent changing patient ID
 
         const updatedPatient = await Customer.findOneAndUpdate(
             { _id: id, createdBy: req.user._id },

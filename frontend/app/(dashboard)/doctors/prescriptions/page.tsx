@@ -142,6 +142,9 @@ const PrescriptionsPage = () => {
       // Reset Form
       setPatientId("");
       setDiagnosis("");
+      setSymptoms("");
+      setGeneralInstructions("");
+      setFollowUpDate("");
       setSelectedProducts([]);
       dispatch(fetchPrescriptions({ page: 1 }));
       dispatch(fetchPrescriptionStats());
@@ -457,13 +460,14 @@ const PrescriptionsPage = () => {
                     <Label>Select Patient</Label>
                     <Select value={patientId} onValueChange={setPatientId}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Choose a patient..." />
+                        <SelectValue placeholder="Choose a patient by ID..." />
                       </SelectTrigger>
                       <SelectContent className="max-h-60">
                         {patients.map((patient) => (
                           <SelectItem key={patient._id} value={patient._id}>
-                            {patient.firstName} {patient.lastName} (
-                            {patient.email})
+                            {patient.patientId ? `${patient.patientId} – ` : ""}
+                            {patient.firstName} {patient.lastName}
+                            {patient.email ? ` (${patient.email})` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
