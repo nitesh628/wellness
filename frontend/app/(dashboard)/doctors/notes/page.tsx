@@ -102,6 +102,14 @@ const NotesPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editorContent, setEditorContent] = useState("");
 
+  // Form state for Add/Edit modals
+  const [formTitle, setFormTitle] = useState("");
+  const [formCategory, setFormCategory] = useState("General");
+  const [formPriority, setFormPriority] = useState("medium");
+  const [formStatus, setFormStatus] = useState("draft");
+  const [formTags, setFormTags] = useState("");
+  const [formIsPrivate, setFormIsPrivate] = useState("true");
+
   // Fetch notes on mount and when filters change
   useEffect(() => {
     dispatch(fetchNotes());
@@ -116,7 +124,7 @@ const NotesPage = () => {
         status: statusFilter,
         priority: priorityFilter,
         search: searchTerm,
-      })
+      }),
     );
   }, [categoryFilter, statusFilter, priorityFilter, searchTerm, dispatch]);
 
@@ -132,7 +140,7 @@ const NotesPage = () => {
         note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
         note.tags.some((tag) =>
-          tag.toLowerCase().includes(searchTerm.toLowerCase())
+          tag.toLowerCase().includes(searchTerm.toLowerCase()),
         ) ||
         (note.authorName &&
           note.authorName.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -166,7 +174,7 @@ const NotesPage = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedNotes = filteredNotes.slice(
     startIndex,
-    startIndex + itemsPerPage
+    startIndex + itemsPerPage,
   );
 
   const getCategoryIcon = (category: string) => {
@@ -231,6 +239,12 @@ const NotesPage = () => {
 
   const handleEditNote = (note: Note) => {
     setSelectedNote(note);
+    setFormTitle(note.title);
+    setFormCategory(note.category);
+    setFormPriority(note.priority);
+    setFormStatus(note.status);
+    setFormTags(note.tags.join(", "));
+    setFormIsPrivate(note.isPrivate ? "true" : "false");
     setEditorContent(note.content);
     setIsEditModalOpen(true);
   };
@@ -254,20 +268,19 @@ const NotesPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const formData = new FormData(e.currentTarget);
-    const tags = (formData.get("tags") as string)
-      ?.split(",")
+    const tags = formTags
+      .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
 
     const newNote = {
-      title: formData.get("title") as string,
+      title: formTitle,
       content: editorContent,
-      category: formData.get("category") as string,
-      priority: formData.get("priority") as any,
-      status: formData.get("status") as any,
+      category: formCategory,
+      priority: formPriority as "low" | "medium" | "high",
+      status: formStatus as "draft" | "published" | "archived",
       tags: tags || [],
-      isPrivate: formData.get("isPrivate") === "true",
+      isPrivate: formIsPrivate === "true",
     };
 
     const success = await dispatch(createNote(newNote));
@@ -275,7 +288,15 @@ const NotesPage = () => {
 
     if (success) {
       setIsAddModalOpen(false);
+      setFormTitle("");
+      setFormCategory("General");
+      setFormPriority("medium");
+      setFormStatus("draft");
+      setFormTags("");
+      setFormIsPrivate("true");
       setEditorContent("");
+      setCurrentPage(1); // Reset to page 1 to see new note
+      dispatch(setPagination({ page: 1, limit: itemsPerPage }));
       dispatch(fetchNotes());
       dispatch(fetchNoteStats());
     }
@@ -287,20 +308,19 @@ const NotesPage = () => {
 
     setIsSubmitting(true);
 
-    const formData = new FormData(e.currentTarget);
-    const tags = (formData.get("tags") as string)
-      ?.split(",")
+    const tags = formTags
+      .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
 
     const updatedData = {
-      title: formData.get("title") as string,
+      title: formTitle,
       content: editorContent,
-      category: formData.get("category") as string,
-      priority: formData.get("priority") as any,
-      status: formData.get("status") as any,
+      category: formCategory,
+      priority: formPriority as "low" | "medium" | "high",
+      status: formStatus as "draft" | "published" | "archived",
       tags: tags || [],
-      isPrivate: formData.get("isPrivate") === "true",
+      isPrivate: formIsPrivate === "true",
     };
 
     const success = await dispatch(updateNote(selectedNote._id, updatedData));
@@ -308,7 +328,15 @@ const NotesPage = () => {
 
     if (success) {
       setIsEditModalOpen(false);
+      setFormTitle("");
+      setFormCategory("General");
+      setFormPriority("medium");
+      setFormStatus("draft");
+      setFormTags("");
+      setFormIsPrivate("true");
       setEditorContent("");
+      setCurrentPage(1); // Reset to page 1
+      dispatch(setPagination({ page: 1, limit: itemsPerPage }));
       dispatch(fetchNotes());
       dispatch(fetchNoteStats());
     }
@@ -344,6 +372,12 @@ const NotesPage = () => {
             </Button>
             <Button
               onClick={() => {
+                setFormTitle("");
+                setFormCategory("General");
+                setFormPriority("medium");
+                setFormStatus("draft");
+                setFormTags("");
+                setFormIsPrivate("true");
                 setEditorContent("");
                 setIsAddModalOpen(true);
               }}
@@ -594,6 +628,12 @@ const NotesPage = () => {
                 </p>
                 <Button
                   onClick={() => {
+                    setFormTitle("");
+                    setFormCategory("General");
+                    setFormPriority("medium");
+                    setFormStatus("draft");
+                    setFormTags("");
+                    setFormIsPrivate("true");
                     setEditorContent("");
                     setIsAddModalOpen(true);
                   }}
@@ -913,14 +953,18 @@ const NotesPage = () => {
                       <Label htmlFor="noteTitle">Note Title *</Label>
                       <Input
                         id="noteTitle"
-                        name="title"
                         placeholder="Enter note title"
+                        value={formTitle}
+                        onChange={(e) => setFormTitle(e.target.value)}
                         required
                       />
                     </div>
                     <div>
                       <Label htmlFor="noteCategory">Category *</Label>
-                      <Select name="category" defaultValue="General" required>
+                      <Select
+                        value={formCategory}
+                        onValueChange={setFormCategory}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
@@ -936,7 +980,10 @@ const NotesPage = () => {
                     </div>
                     <div>
                       <Label htmlFor="notePriority">Priority</Label>
-                      <Select name="priority" defaultValue="medium">
+                      <Select
+                        value={formPriority}
+                        onValueChange={setFormPriority}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
@@ -949,7 +996,7 @@ const NotesPage = () => {
                     </div>
                     <div>
                       <Label htmlFor="noteStatus">Status</Label>
-                      <Select name="status" defaultValue="draft">
+                      <Select value={formStatus} onValueChange={setFormStatus}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -964,13 +1011,17 @@ const NotesPage = () => {
                       <Label htmlFor="noteTags">Tags (comma separated)</Label>
                       <Input
                         id="noteTags"
-                        name="tags"
                         placeholder="work, project, important"
+                        value={formTags}
+                        onChange={(e) => setFormTags(e.target.value)}
                       />
                     </div>
                     <div>
                       <Label htmlFor="isPrivate">Privacy</Label>
-                      <Select name="isPrivate" defaultValue="true">
+                      <Select
+                        value={formIsPrivate}
+                        onValueChange={setFormIsPrivate}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -1042,17 +1093,16 @@ const NotesPage = () => {
                         <Label htmlFor="editNoteTitle">Note Title *</Label>
                         <Input
                           id="editNoteTitle"
-                          name="title"
-                          defaultValue={selectedNote.title}
+                          value={formTitle}
+                          onChange={(e) => setFormTitle(e.target.value)}
                           required
                         />
                       </div>
                       <div>
                         <Label htmlFor="editNoteCategory">Category *</Label>
                         <Select
-                          name="category"
-                          defaultValue={selectedNote.category}
-                          required
+                          value={formCategory}
+                          onValueChange={setFormCategory}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -1070,8 +1120,8 @@ const NotesPage = () => {
                       <div>
                         <Label htmlFor="editNotePriority">Priority</Label>
                         <Select
-                          name="priority"
-                          defaultValue={selectedNote.priority}
+                          value={formPriority}
+                          onValueChange={setFormPriority}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -1086,8 +1136,8 @@ const NotesPage = () => {
                       <div>
                         <Label htmlFor="editNoteStatus">Status</Label>
                         <Select
-                          name="status"
-                          defaultValue={selectedNote.status}
+                          value={formStatus}
+                          onValueChange={setFormStatus}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -1103,15 +1153,15 @@ const NotesPage = () => {
                         <Label htmlFor="editNoteTags">Tags</Label>
                         <Input
                           id="editNoteTags"
-                          name="tags"
-                          defaultValue={selectedNote.tags.join(", ")}
+                          value={formTags}
+                          onChange={(e) => setFormTags(e.target.value)}
                         />
                       </div>
                       <div>
                         <Label htmlFor="editIsPrivate">Privacy</Label>
                         <Select
-                          name="isPrivate"
-                          defaultValue={selectedNote.isPrivate.toString()}
+                          value={formIsPrivate}
+                          onValueChange={setFormIsPrivate}
                         >
                           <SelectTrigger>
                             <SelectValue />

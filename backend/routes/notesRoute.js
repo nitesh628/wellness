@@ -16,9 +16,9 @@ const router = Router();
 router.use(isLogin);
 
 router.post('/', createNote);
-router.get('/', listNotes);
 router.get('/stats', getNoteStats);
 router.get('/export', exportNotes);
+router.get('/', listNotes);
 router.get('/:id', getNoteById);
 router.put('/:id', updateNote);
 router.delete('/:id', deleteNote);

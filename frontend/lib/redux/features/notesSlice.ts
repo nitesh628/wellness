@@ -39,11 +39,15 @@ interface ApiNote {
 }
 
 interface NoteStats {
-  total: number;
-  published: number;
-  draft: number;
-  archived: number;
-  favorites: number;
+  totalNotes?: number;
+  publishedNotes?: number;
+  draftNotes?: number;
+  favoriteNotes?: number;
+  total?: number;
+  published?: number;
+  draft?: number;
+  archived?: number;
+  favorites?: number;
 }
 
 interface NoteState {
@@ -90,7 +94,7 @@ const noteSlice = createSlice({
   reducers: {
     setNoteData: (
       state,
-      action: PayloadAction<{ data: Note[]; total: number }>
+      action: PayloadAction<{ data: Note[]; total: number }>,
     ) => {
       state.data = action.payload.data;
       state.pagination.total = action.payload.total;
@@ -115,14 +119,14 @@ const noteSlice = createSlice({
     },
     setFilters: (
       state,
-      action: PayloadAction<Partial<NoteState["filters"]>>
+      action: PayloadAction<Partial<NoteState["filters"]>>,
     ) => {
       state.filters = { ...state.filters, ...action.payload };
       state.pagination.page = 1;
     },
     setPagination: (
       state,
-      action: PayloadAction<Partial<NoteState["pagination"]>>
+      action: PayloadAction<Partial<NoteState["pagination"]>>,
     ) => {
       state.pagination = { ...state.pagination, ...action.payload };
     },
@@ -131,7 +135,7 @@ const noteSlice = createSlice({
     },
     updateNoteInList: (state, action: PayloadAction<Note>) => {
       const index = state.data.findIndex(
-        (note) => note._id === action.payload._id
+        (note) => note._id === action.payload._id,
       );
       if (index !== -1) {
         state.data[index] = action.payload;
@@ -164,11 +168,15 @@ const mapApiNoteToNote = (apiNote: ApiNote): Note => ({
   category: apiNote.category,
   tags: apiNote.tags,
   author:
-    typeof apiNote.author === "string" ? apiNote.author : apiNote.author._id,
+    typeof apiNote.author === "string"
+      ? apiNote.author
+      : apiNote.author?._id || "",
   authorName:
     typeof apiNote.author === "string"
       ? "Unknown"
-      : `${apiNote.author.firstName} ${apiNote.author.lastName}`,
+      : apiNote.author
+        ? `${apiNote.author.firstName} ${apiNote.author.lastName}`
+        : "Unknown",
   createdAt: apiNote.createdAt,
   updatedAt: apiNote.updatedAt,
   isFavorite: apiNote.isFavorite,
@@ -227,20 +235,20 @@ export const fetchNotes =
       }
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/notes?${queryParams}`,
-        getAuthConfig() // <--- UPDATED
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes?${queryParams}`,
+        getAuthConfig(), // <--- UPDATED
       );
 
       if (response.data?.success) {
         const mappedNotes = response.data.data.map((note: ApiNote) =>
-          mapApiNoteToNote(note)
+          mapApiNoteToNote(note),
         );
 
         dispatch(
           setNoteData({
             data: mappedNotes,
             total: response.data.pagination?.total || mappedNotes.length,
-          })
+          }),
         );
       } else {
         throw new Error(response.data?.message || "Failed to fetch notes");
@@ -259,8 +267,8 @@ export const fetchNoteById =
     dispatch(setNoteLoading());
     try {
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/notes/${noteId}`,
-        getAuthConfig() // <--- UPDATED
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/${noteId}`,
+        getAuthConfig(), // <--- UPDATED
       );
 
       if (response.data?.success) {
@@ -281,12 +289,20 @@ export const fetchNoteById =
 export const fetchNoteStats = () => async (dispatch: AppDispatch) => {
   try {
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/notes/stats`,
-      getAuthConfig() // <--- UPDATED
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/stats`,
+      getAuthConfig(), // <--- UPDATED
     );
 
     if (response.data?.success) {
-      dispatch(setNoteStats(response.data.data));
+      // Map backend response format to frontend stats format
+      const statsData = response.data.data;
+      const mappedStats: NoteStats = {
+        totalNotes: statsData.totalNotes || 0,
+        publishedNotes: statsData.publishedNotes || 0,
+        draftNotes: statsData.draftNotes || 0,
+        favoriteNotes: statsData.favoriteNotes || 0,
+      };
+      dispatch(setNoteStats(mappedStats));
     }
     return true;
   } catch (error: unknown) {
@@ -301,9 +317,9 @@ export const createNote =
     dispatch(setNoteLoading());
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/notes`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes`,
         newNote,
-        getAuthConfig() // <--- UPDATED
+        getAuthConfig(), // <--- UPDATED
       );
 
       if (response.data?.success) {
@@ -327,9 +343,9 @@ export const updateNote =
     dispatch(setNoteLoading());
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/notes/${noteId}`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/${noteId}`,
         updatedData,
-        getAuthConfig() // <--- UPDATED
+        getAuthConfig(), // <--- UPDATED
       );
 
       if (response.data?.success) {
@@ -353,8 +369,8 @@ export const deleteNote = (noteId: string) => async (dispatch: AppDispatch) => {
   dispatch(setNoteLoading());
   try {
     const response = await axios.delete(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/notes/${noteId}`,
-      getAuthConfig() // <--- UPDATED
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/${noteId}`,
+      getAuthConfig(), // <--- UPDATED
     );
 
     if (response.data?.success) {
@@ -375,9 +391,9 @@ export const toggleFavorite =
   (noteId: string) => async (dispatch: AppDispatch) => {
     try {
       const response = await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/notes/${noteId}/favorite`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/${noteId}/favorite`,
         {},
-        getAuthConfig() // <--- UPDATED
+        getAuthConfig(), // <--- UPDATED
       );
 
       if (response.data?.success && response.data.data) {
@@ -402,16 +418,20 @@ export const exportNotes = () => async () => {
     };
 
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/notes/export`,
-      exportConfig
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/export`,
+      exportConfig,
     );
+
+    // Create blob and download
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `notes-export-${Date.now()}.json`);
+    // File should be CSV based on backend
+    link.setAttribute("download", `notes-export-${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     link.remove();
+    window.URL.revokeObjectURL(url);
 
     return true;
   } catch (error: unknown) {
