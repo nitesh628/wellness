@@ -374,7 +374,7 @@ const PrescriptionsPage = () => {
                                 size="sm"
                                 onClick={() =>
                                   router.push(
-                                    `/prescriptions/${prescription._id}`,
+                                    `/doctors/prescriptions/${prescription._id}`,
                                   )
                                 }
                               >

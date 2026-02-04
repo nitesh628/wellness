@@ -74,10 +74,16 @@ export const getPrescriptions = async (req, res) => {
             },
             { $unwind: { path: '$patientInfo', preserveNullAndEmptyArrays: true } },
             {
+                $addFields: {
+                    patient: '$patientInfo'
+                }
+            },
+            {
                 $project: {
                     patientCustomer: 0,
                     patientUser: 0,
-                    'patientInfo.password': 0
+                    patientInfo: 0,
+                    'patient.password': 0
                 }
             }
         ];
@@ -87,10 +93,10 @@ export const getPrescriptions = async (req, res) => {
             aggregationPipeline.push({
                 $match: {
                     $or: [
-                        { 'patientInfo.firstName': searchRegex },
-                        { 'patientInfo.lastName': searchRegex },
-                        { 'patientInfo.email': searchRegex },
-                        { 'patientInfo.patientId': searchRegex },
+                        { 'patient.firstName': searchRegex },
+                        { 'patient.lastName': searchRegex },
+                        { 'patient.email': searchRegex },
+                        { 'patient.patientId': searchRegex },
                         { diagnosis: searchRegex }
                     ]
                 }
@@ -98,7 +104,7 @@ export const getPrescriptions = async (req, res) => {
         }
 
         const sortOptions = {};
-        sortOptions[sortBy === 'patientName' ? 'patientInfo.firstName' : sortBy] = sortOrder === 'asc' ? 1 : -1;
+        sortOptions[sortBy === 'patientName' ? 'patient.firstName' : sortBy] = sortOrder === 'asc' ? 1 : -1;
 
         const countPipeline = [...aggregationPipeline, { $count: 'total' }];
         const dataPipeline = [
@@ -122,7 +128,8 @@ export const getPrescriptions = async (req, res) => {
                 id: prescriptions[0]._id,
                 diagnosis: prescriptions[0].diagnosis,
                 patientName: prescriptions[0].patientName,
-                patientInfo: prescriptions[0].patientInfo?.firstName
+                patientEmail: prescriptions[0].patient?.email,
+                patientFirstName: prescriptions[0].patient?.firstName
             });
         }
 
