@@ -120,7 +120,7 @@ const PatientsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [selectedPatient, setSelectedPatient] = useState<PatientUI | null>(
-    null
+    null,
   );
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -138,7 +138,7 @@ const PatientsPage = () => {
   const patients: PatientUI[] = rawPatients.map((patient) => {
     return {
       id: patient._id,
-      name: `${patient.firstName} ${patient.lastName}`.trim(),
+      name: `${patient.firstName}${patient.lastName ? " " + patient.lastName : ""}`.trim(),
       email: patient.email,
       phone: patient.phone,
       avatar: patient.avatar || "",
@@ -150,7 +150,9 @@ const PatientsPage = () => {
       location: patient.location || "Not specified",
       patientType: patient.patientType || "new",
       age: patient.age || 0,
-      dateOfBirth: patient.dateOfBirth ? new Date(patient.dateOfBirth).toISOString().split('T')[0] : "",
+      dateOfBirth: patient.dateOfBirth
+        ? new Date(patient.dateOfBirth).toISOString().split("T")[0]
+        : "",
       gender: patient.gender || "",
       bloodGroup: patient.bloodGroup || "Unknown",
       medicalHistory: patient.medicalHistory || [],
@@ -160,7 +162,7 @@ const PatientsPage = () => {
       insuranceProvider: patient.insuranceProvider || "None",
       tags: patient.tags || [],
       notes: patient.note || "",
-    }
+    };
   });
 
   // Filter and sort patients
@@ -199,7 +201,7 @@ const PatientsPage = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedPatients = filteredPatients.slice(
     startIndex,
-    startIndex + itemsPerPage
+    startIndex + itemsPerPage,
   );
 
   const handleImageError = (patientId: string): void => {
@@ -292,7 +294,7 @@ const PatientsPage = () => {
     const nameParts = (formData.get("name") as string).split(" ");
     const updatedData = {
       firstName: nameParts[0],
-      lastName: nameParts.slice(1).join(" ") || nameParts[0],
+      lastName: nameParts.slice(1).join(" ") || "",
       email: formData.get("email") as string,
       phone: formData.get("phone") as string,
       age: parseInt(formData.get("age") as string),
@@ -322,7 +324,7 @@ const PatientsPage = () => {
     };
 
     const success = await dispatch(
-      updatePatientRecord(selectedPatient.id, updatedData)
+      updatePatientRecord(selectedPatient.id, updatedData),
     );
     setIsSubmitting(false);
     if (success) {
@@ -427,7 +429,9 @@ const PatientsPage = () => {
                   <p className="text-sm text-blue-600 flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
                     {totalPatientsCount > 0
-                      ? Math.round((activePatientsCount / totalPatientsCount) * 100)
+                      ? Math.round(
+                          (activePatientsCount / totalPatientsCount) * 100,
+                        )
                       : 0}
                     % of total
                   </p>
@@ -904,7 +908,12 @@ const PatientsPage = () => {
                 </div>
                 <div>
                   <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                  <Input id="dateOfBirth" name="dateOfBirth" type="date" required />
+                  <Input
+                    id="dateOfBirth"
+                    name="dateOfBirth"
+                    type="date"
+                    required
+                  />
                 </div>
                 <div>
                   <Label htmlFor="gender">Gender *</Label>
@@ -946,7 +955,9 @@ const PatientsPage = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
+                  <Label htmlFor="emergencyContactName">
+                    Emergency Contact Name
+                  </Label>
                   <Input
                     id="emergencyContactName"
                     name="emergencyContactName"
@@ -954,7 +965,9 @@ const PatientsPage = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
+                  <Label htmlFor="emergencyContactPhone">
+                    Emergency Contact Phone
+                  </Label>
                   <Input
                     id="emergencyContactPhone"
                     name="emergencyContactPhone"
@@ -1159,9 +1172,9 @@ const PatientsPage = () => {
                           id="editEmergencyContactName"
                           name="emergencyContactName"
                           defaultValue={
-                            typeof selectedPatient.emergencyContact === 'string'
+                            typeof selectedPatient.emergencyContact === "string"
                               ? selectedPatient.emergencyContact
-                              : selectedPatient.emergencyContact?.name || ''
+                              : selectedPatient.emergencyContact?.name || ""
                           }
                         />
                       </div>
@@ -1173,9 +1186,9 @@ const PatientsPage = () => {
                           id="editEmergencyContactPhone"
                           name="emergencyContactPhone"
                           defaultValue={
-                            typeof selectedPatient.emergencyContact === 'string'
-                              ? ''
-                              : selectedPatient.emergencyContact?.phone || ''
+                            typeof selectedPatient.emergencyContact === "string"
+                              ? ""
+                              : selectedPatient.emergencyContact?.phone || ""
                           }
                         />
                       </div>

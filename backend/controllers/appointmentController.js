@@ -30,7 +30,7 @@ export const createAppointment = async (req, res) => {
             const nameParts = patientName ? patientName.split(' ') : ['Patient', 'User'];
             const newCustomer = await Customer.create({
               firstName: nameParts[0],
-              lastName: nameParts.slice(1).join(' ') || nameParts[0],
+              lastName: nameParts.slice(1).join(' ') || '',
               email: patientEmail,
               phone: patientPhone || '0000000000',
               password: 'temp123', // Temporary password, should be changed by patient
@@ -64,6 +64,7 @@ export const createAppointment = async (req, res) => {
 
     const appointment = await Appointment.create({
       patient: actualPatientId,
+      patientName: patientName || `${patientExists.firstName} ${patientExists.lastName}`.trim(),
       doctor: doctorId,
       appointmentDate: parsedDate,
       appointmentTime,
@@ -237,8 +238,12 @@ export const getAppointments = async (req, res) => {
         id: appointments[0]._id,
         doctorId: appointments[0].doctor?._id,
         patientName: `${appointments[0].patient?.firstName} ${appointments[0].patient?.lastName}`,
+        patientId: appointments[0].patient?._id,
+        patientFirstName: appointments[0].patient?.firstName,
+        patientLastName: appointments[0].patient?.lastName,
         date: appointments[0].appointmentDate
       });
+      console.log('  All patient names:', appointments.map(a => `${a.patient?.firstName} ${a.patient?.lastName}`));
     }
 
     res.json({

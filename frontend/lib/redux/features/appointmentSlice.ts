@@ -2,8 +2,6 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch, RootState } from "../store";
 import axios from "axios";
 
-// --- Interfaces ---
-
 export interface User {
   _id: string;
   firstName: string;
@@ -13,10 +11,10 @@ export interface User {
   avatar?: string;
 }
 
-// The shape of data coming FROM the API
 interface ApiAppointment {
   _id: string;
   patient: User | string;
+  patientName: string;
   doctor: User | string;
   appointmentDate: string;
   appointmentTime: string;
@@ -32,8 +30,6 @@ interface ApiAppointment {
   updatedAt: string;
 }
 
-// The shape of data used in the UI
-// Renamed from UIAppointment to Appointment to match Page Component import
 export interface Appointment {
   id: string;
   patientId: string;
@@ -44,8 +40,8 @@ export interface Appointment {
   date: string;
   time: string;
   duration: number;
-  type: string;
-  status: string;
+  type: "consultation" | "follow-up" | "emergency" | "checkup" | string;
+  status: "pending" | "confirmed" | "completed" | "cancelled" | string;
   reason: string;
   notes: string;
   doctor: string;
@@ -126,9 +122,11 @@ const mapApiToUI = (apiAppt: ApiAppointment): Appointment => {
   return {
     id: apiAppt._id,
     patientId: patientObj ? patientObj._id : (apiAppt.patient as string),
-    patientName: patientObj
-      ? `${patientObj.firstName} ${patientObj.lastName}`
-      : "Unknown",
+    patientName:
+      apiAppt.patientName ||
+      (patientObj
+        ? `${patientObj.firstName}${patientObj.lastName ? " " + patientObj.lastName : ""}`.trim()
+        : "Unknown"),
     patientEmail: patientObj ? patientObj.email : "",
     patientPhone: patientObj?.phone || "",
     patientAvatar: patientObj?.avatar || "",
