@@ -112,6 +112,13 @@ const PrescriptionsPage = () => {
     dispatch(fetchPatients()); // Loading patients
   }, [dispatch, statusFilter, searchTerm]);
 
+  // Debug logging
+  useEffect(() => {
+    console.log("Prescriptions Data:", prescriptions);
+    console.log("Is Loading:", isLoading);
+    console.log("Stats:", stats);
+  }, [prescriptions, isLoading, stats]);
+
   // --- Handlers ---
 
   const handleAddPrescription = async () => {
@@ -309,6 +316,14 @@ const PrescriptionsPage = () => {
           </div>
         ) : (
           <>
+            {/* Error Display */}
+            {/* {error && (
+              <Card className="border-red-500">
+                <CardContent className="p-6 text-red-600">
+                  Error: {error}
+                </CardContent>
+              </Card>
+            )} */}
             {viewMode === "prescriptions" && (
               <Card>
                 <CardContent className="p-0">
@@ -327,11 +342,11 @@ const PrescriptionsPage = () => {
                         <TableRow key={prescription._id}>
                           <TableCell>
                             <p className="font-medium">
-                              {prescription.patient.firstName}{" "}
-                              {prescription.patient.lastName}
+                              {prescription.patientName ||
+                                `${prescription.patient?.firstName || ""} ${prescription.patient?.lastName || ""}`.trim()}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {prescription.patient.email}
+                              {prescription.patient?.email || "N/A"}
                             </p>
                           </TableCell>
                           <TableCell>
@@ -377,6 +392,17 @@ const PrescriptionsPage = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  {prescriptions.length === 0 && (
+                    <div className="p-12 text-center">
+                      <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                      <p className="text-lg font-medium mb-2">
+                        No prescriptions found
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Start by creating a new prescription
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

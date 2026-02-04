@@ -55,10 +55,23 @@ export const getPrescriptions = async (req, res) => {
 
         const aggregationPipeline = [
             { $match: filter },
-            { $lookup: { from: 'users', localField: 'patient', foreignField: '_id', as: 'patientInfo' } },
-            { $unwind: '$patientInfo' },
+            { $lookup: { from: 'customers', localField: 'patient', foreignField: '_id', as: 'patientCustomer' } },
+            { $lookup: { from: 'users', localField: 'patient', foreignField: '_id', as: 'patientUser' } },
+            {
+                $addFields: {
+                    patientInfo: {
+                        $ifNull: [
+                            { $arrayElemAt: ['$patientCustomer', 0] },
+                            { $arrayElemAt: ['$patientUser', 0] }
+                        ]
+                    }
+                }
+            },
+            { $unwind: { path: '$patientInfo', preserveNullAndEmptyArrays: true } },
             {
                 $project: {
+                    patientCustomer: 0,
+                    patientUser: 0,
                     'patientInfo.password': 0
                 }
             }
@@ -94,12 +107,26 @@ export const getPrescriptions = async (req, res) => {
             Prescription.aggregate(dataPipeline)
         ]);
 
+        console.log('📋 GET PRESCRIPTIONS');
+        console.log('  Doctor ID:', doctorId);
+        console.log('  Total found:', total);
+        console.log('  Prescriptions returned:', prescriptions.length);
+        if (prescriptions.length > 0) {
+            console.log('  First prescription:', {
+                id: prescriptions[0]._id,
+                diagnosis: prescriptions[0].diagnosis,
+                patientName: prescriptions[0].patientName,
+                patientInfo: prescriptions[0].patientInfo?.firstName
+            });
+        }
+
         res.json({
             success: true,
             data: prescriptions,
             pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / limit) }
         });
     } catch (error) {
+        console.error('❌ GET PRESCRIPTIONS ERROR:', error);
         res.status(400).json({ success: false, message: error.message });
     }
 };
