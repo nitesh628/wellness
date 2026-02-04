@@ -21,16 +21,29 @@ const PrescriptionDetailPage = () => {
       setIsLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem("token");
-        const url = `${process.env.NEXT_PUBLIC_API_URL}/api/prescriptions/${params.id}`;
+        const token =
+          localStorage.getItem("authToken") || localStorage.getItem("token");
+
+        if (!token) {
+          setError("Authentication token not found. Please login again.");
+          setIsLoading(false);
+          return;
+        }
+
+        const apiUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const url = `${apiUrl}/v1/prescriptions/${params.id}`;
         console.log("Fetching prescription from:", url);
         console.log("With ID:", params.id);
+        console.log("Token:", token ? "Present" : "Missing");
 
         const response = await fetch(url, {
+          method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          credentials: "include",
         });
 
         console.log("Response status:", response.status);
