@@ -21,6 +21,11 @@ const PrescriptionSchema = new Schema({
         ref: 'User',
         required: true
     },
+    patientName: {
+        type: String,
+        required: true,
+        trim: true
+    },
     doctor: {
         type: Schema.Types.ObjectId,
         ref: 'User',

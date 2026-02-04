@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Prescription from '../models/prescriptionModel.js';
 import User from '../models/userModel.js';
+import Customer from '../models/customerModel.js';
 import { Parser } from 'json2csv';
 
 const isId = (id) => mongoose.isValidObjectId(id);
@@ -9,17 +10,30 @@ export const createPrescription = async (req, res) => {
     try {
         const doctorId = req.user._id;
         const { patientId, ...restOfBody } = req.body;
-        
+
         if (!isId(patientId)) {
             return res.status(400).json({ success: false, message: 'Invalid Patient ID' });
         }
-        
+
+        // Fetch patient from customers first, then users
+        let patient = await Customer.findById(patientId).select('firstName lastName');
+        if (!patient) {
+            patient = await User.findById(patientId).select('firstName lastName');
+        }
+
+        if (!patient) {
+            return res.status(404).json({ success: false, message: 'Patient not found' });
+        }
+
+        const patientName = `${patient.firstName}${patient.lastName ? ' ' + patient.lastName : ''}`.trim();
+
         const prescriptionData = {
             ...restOfBody,
             doctor: doctorId,
             patient: patientId,
+            patientName: patientName,
         };
-        
+
         const newPrescription = await Prescription.create(prescriptionData);
         const populatedPrescription = await Prescription.findById(newPrescription._id)
             .populate('patient', 'firstName lastName')
@@ -63,7 +77,7 @@ export const getPrescriptions = async (req, res) => {
                 }
             });
         }
-        
+
         const sortOptions = {};
         sortOptions[sortBy === 'patientName' ? 'patientInfo.firstName' : sortBy] = sortOrder === 'asc' ? 1 : -1;
 
@@ -100,7 +114,7 @@ export const getPrescriptionById = async (req, res) => {
             .populate('patient', '-password')
             .populate('doctor', 'firstName lastName specialization')
             .populate('medications.product');
-            
+
         if (!prescription) return res.status(404).json({ success: false, message: 'Prescription not found' });
         res.json({ success: true, data: prescription });
     } catch (error) {
@@ -113,13 +127,13 @@ export const updatePrescription = async (req, res) => {
     try {
         const { id } = req.params;
         if (!isId(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
-        
+
         const updatedPrescription = await Prescription.findOneAndUpdate(
             { _id: id, doctor: req.user._id },
             req.body,
             { new: true, runValidators: true }
         ).populate('patient', 'firstName lastName');
-        
+
         if (!updatedPrescription) return res.status(404).json({ success: false, message: 'Prescription not found' });
         res.json({ success: true, data: updatedPrescription });
     } catch (error) {
@@ -176,7 +190,7 @@ export const exportPrescriptions = async (req, res) => {
         if (prescriptions.length === 0) {
             return res.status(404).json({ success: false, message: 'No prescriptions to export' });
         }
-        
+
         const formattedData = prescriptions.map(p => ({
             prescriptionId: p._id,
             patientName: `${p.patient.firstName} ${p.patient.lastName}`,
@@ -198,7 +212,7 @@ export const exportPrescriptions = async (req, res) => {
             { label: 'Medications', value: 'medications' },
             { label: 'Follow Up', value: 'followUp' }
         ];
-        
+
         const json2csvParser = new Parser({ fields });
         const csv = json2csvParser.parse(formattedData);
 

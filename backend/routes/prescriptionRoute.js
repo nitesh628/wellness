@@ -15,11 +15,11 @@ const router = Router();
 router.use(isLogin);
 
 router.post('/', createPrescription);
-router.get('/', getPrescriptions);
 router.get('/stats', getPrescriptionStats);
 router.get('/export', exportPrescriptions);
 router.get('/:id', getPrescriptionById);
 router.put('/:id', updatePrescription);
 router.delete('/:id', deletePrescription);
+router.get('/', getPrescriptions);
 
 export default router;
