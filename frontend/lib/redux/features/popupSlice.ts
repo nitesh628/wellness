@@ -7,7 +7,7 @@ const sanitizeBaseUrl = (url?: string) => {
   return url.endsWith("/") ? url.slice(0, -1) : url;
 };
 
-const API_BASE_URL = `${sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL)}/popups`;
+const API_BASE_URL = `${sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL)}/v1/popups`;
 
 export interface Field {
   fieldName: string;
@@ -80,8 +80,8 @@ const initialState: PopupState = {
   error: null,
   selectedPopup: null,
   filters: {
-    status: '',
-    name: '',
+    status: "",
+    name: "",
   },
 };
 
@@ -116,7 +116,7 @@ const handleApiError = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 const popupSlice = createSlice({
@@ -141,7 +141,10 @@ const popupSlice = createSlice({
       state.isLoading = false;
       state.error = null;
     },
-    setPopupFilters: (state, action: PayloadAction<Partial<PopupState['filters']>>) => {
+    setPopupFilters: (
+      state,
+      action: PayloadAction<Partial<PopupState["filters"]>>,
+    ) => {
       state.filters = { ...state.filters, ...action.payload };
     },
     clearSelectedPopup: (state) => {
@@ -159,34 +162,37 @@ export const {
   clearSelectedPopup,
 } = popupSlice.actions;
 
-export const fetchPopupsData = () => async (dispatch: AppDispatch, getState: () => RootState) => {
-  dispatch(setPopupLoading());
-  try {
-    const { filters } = getState().popups;
-    const params: Record<string, string> = {};
+export const fetchPopupsData =
+  () => async (dispatch: AppDispatch, getState: () => RootState) => {
+    dispatch(setPopupLoading());
+    try {
+      const { filters } = getState().popups;
+      const params: Record<string, string> = {};
 
-    if (filters.status && filters.status !== 'all') {
-      params.status = filters.status;
-    }
-    if (filters.name) {
-      params.name = filters.name;
-    }
+      if (filters.status && filters.status !== "all") {
+        params.status = filters.status;
+      }
+      if (filters.name) {
+        params.name = filters.name;
+      }
 
-    const response = await axios.get(API_BASE_URL, { params });
+      const response = await axios.get(API_BASE_URL, { params });
 
-    if (response.data?.success && Array.isArray(response.data.data)) {
-      const mappedPopups = response.data.data.map((popup: ApiPopup) => mapApiPopupToPopup(popup));
-      dispatch(setPopupData(mappedPopups));
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch popups");
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        const mappedPopups = response.data.data.map((popup: ApiPopup) =>
+          mapApiPopupToPopup(popup),
+        );
+        dispatch(setPopupData(mappedPopups));
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch popups");
+      }
+      return true;
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setPopupError(errorMessage));
+      return false;
     }
-    return true;
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setPopupError(errorMessage));
-    return false;
-  }
-};
+  };
 
 export const fetchActivePopups = () => async (dispatch: AppDispatch) => {
   dispatch(setPopupLoading());
@@ -195,7 +201,9 @@ export const fetchActivePopups = () => async (dispatch: AppDispatch) => {
       params: { status: "Active" },
     });
     if (response.data?.success && Array.isArray(response.data.data)) {
-      const mappedPopups = response.data.data.map((popup: ApiPopup) => mapApiPopupToPopup(popup));
+      const mappedPopups = response.data.data.map((popup: ApiPopup) =>
+        mapApiPopupToPopup(popup),
+      );
       dispatch(setPopupData(mappedPopups));
     } else {
       throw new Error(response.data?.message || "Failed to fetch popups");
@@ -208,105 +216,118 @@ export const fetchActivePopups = () => async (dispatch: AppDispatch) => {
   }
 };
 
-export const fetchPopupById = (popupId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setPopupLoading());
-  try {
-    const response = await axios.get(`${API_BASE_URL}/${popupId}`);
-    if (response.data?.success) {
-      const popup = response.data.data;
-      const mappedPopup = mapApiPopupToPopup(popup);
-      dispatch(setSelectedPopup(mappedPopup));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch popup");
-    }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setPopupError(errorMessage));
-    return false;
-  }
-};
-
-export const createPopup = (newPopup: FormData) => async (dispatch: AppDispatch) => {
-  dispatch(setPopupLoading());
-  try {
-    const response = await axios.post(API_BASE_URL, newPopup, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    if (response.data?.success) {
-      dispatch(setPopupLoading());
-      return true;
-    } else {
-      const errorMessage = response.data?.message || "Failed to create popup";
+export const fetchPopupById =
+  (popupId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setPopupLoading());
+    try {
+      const response = await axios.get(`${API_BASE_URL}/${popupId}`);
+      if (response.data?.success) {
+        const popup = response.data.data;
+        const mappedPopup = mapApiPopupToPopup(popup);
+        dispatch(setSelectedPopup(mappedPopup));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch popup");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
       dispatch(setPopupError(errorMessage));
       return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setPopupError(errorMessage));
-    return false;
-  }
-};
+  };
 
-export const updatePopupStatus = (popupId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setPopupLoading());
-  try {
-    const response = await axios.patch(`${API_BASE_URL}/${popupId}/status`);
-    if (response.data?.success) {
-      dispatch(setPopupLoading());
-    } else {
-      throw new Error(response.data?.message || "Failed to update popup status");
+export const createPopup =
+  (newPopup: FormData) => async (dispatch: AppDispatch) => {
+    dispatch(setPopupLoading());
+    try {
+      const response = await axios.post(API_BASE_URL, newPopup, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      if (response.data?.success) {
+        dispatch(setPopupLoading());
+        return true;
+      } else {
+        const errorMessage = response.data?.message || "Failed to create popup";
+        dispatch(setPopupError(errorMessage));
+        return false;
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setPopupError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    dispatch(setPopupError(errorMessage));
-  }
-}
+  };
 
-export const updatePopup = (popupId: string, updatedData: FormData) => async (dispatch: AppDispatch) => {
-  dispatch(setPopupLoading());
-  try {
-    const response = await axios.put(`${API_BASE_URL}/${popupId}`, updatedData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    if (response.data?.success) {
-      dispatch(setPopupLoading());
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to update popup");
+export const updatePopupStatus =
+  (popupId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setPopupLoading());
+    try {
+      const response = await axios.patch(`${API_BASE_URL}/${popupId}/status`);
+      if (response.data?.success) {
+        dispatch(setPopupLoading());
+      } else {
+        throw new Error(
+          response.data?.message || "Failed to update popup status",
+        );
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      dispatch(setPopupError(errorMessage));
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setPopupError(errorMessage));
-    return false;
-  }
-};
+  };
 
-export const deletePopup = (popupId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setPopupLoading());
-  try {
-    const response = await axios.delete(`${API_BASE_URL}/${popupId}`);
-    if (response.data?.success) {
-      dispatch(setPopupLoading());
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to delete popup");
+export const updatePopup =
+  (popupId: string, updatedData: FormData) => async (dispatch: AppDispatch) => {
+    dispatch(setPopupLoading());
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/${popupId}`,
+        updatedData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      if (response.data?.success) {
+        dispatch(setPopupLoading());
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to update popup");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setPopupError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setPopupError(errorMessage));
-    return false;
-  }
-};
+  };
+
+export const deletePopup =
+  (popupId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setPopupLoading());
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/${popupId}`);
+      if (response.data?.success) {
+        dispatch(setPopupLoading());
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to delete popup");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setPopupError(errorMessage));
+      return false;
+    }
+  };
 
 export const selectPopupsData = (state: RootState) => state.popups.data;
 export const selectPopupsLoading = (state: RootState) => state.popups.isLoading;
 export const selectPopupsError = (state: RootState) => state.popups.error;
-export const selectSelectedPopup = (state: RootState) => state.popups.selectedPopup;
+export const selectSelectedPopup = (state: RootState) =>
+  state.popups.selectedPopup;
 export const selectPopupsFilters = (state: RootState) => state.popups.filters;
 
 export default popupSlice.reducer;

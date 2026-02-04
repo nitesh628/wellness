@@ -58,7 +58,7 @@ const getAuthConfig = () => {
   };
 };
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard/doctor`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/dashboard/doctor`;
 
 // --- Thunk ---
 export const fetchDoctorDashboard = createAsyncThunk(
@@ -69,10 +69,10 @@ export const fetchDoctorDashboard = createAsyncThunk(
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch dashboard data"
+        error.response?.data?.message || "Failed to fetch dashboard data",
       );
     }
-  }
+  },
 );
 
 // --- Slice ---

@@ -94,9 +94,7 @@ const sanitizeBaseUrl = (url?: string) => {
   return url.endsWith("/") ? url.slice(0, -1) : url;
 };
 
-const API_BASE_URL =
-  sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL) ||
-  `${sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) || "http://localhost:5000"}/v1`;
+const API_BASE_URL = `${sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL) || sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) || "http://localhost:5000"}/v1/appointments`;
 
 // --- Helper for Auth Headers ---
 const getAuthConfig = () => {
@@ -214,7 +212,7 @@ export const fetchAppointments =
     dispatch(setLoading());
     try {
       const { page, limit } = getState().appointments.pagination;
-      const url = `${API_BASE_URL}/appointments?page=${page}&limit=${limit}`;
+      const url = `${API_BASE_URL}?page=${page}&limit=${limit}`;
 
       console.log("Fetching appointments from:", url);
       const response = await axios.get(url, getAuthConfig());
@@ -255,7 +253,7 @@ export const createAppointment =
     dispatch(setLoading());
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/appointments`,
+        `${API_BASE_URL}`,
         formData,
         getAuthConfig(),
       );
@@ -285,7 +283,7 @@ export const updateAppointment =
       };
 
       const response = await axios.put(
-        `${API_BASE_URL}/appointments/${id}`,
+        `${API_BASE_URL}/${id}`,
         payload,
         getAuthConfig(),
       );
@@ -309,7 +307,7 @@ export const deleteAppointment =
     dispatch(setLoading());
     try {
       const response = await axios.delete(
-        `${API_BASE_URL}/appointments/${id}`,
+        `${API_BASE_URL}/${id}`,
         getAuthConfig(),
       );
 
@@ -329,10 +327,7 @@ export const deleteAppointment =
 
 export const fetchAppointmentStats = () => async (dispatch: AppDispatch) => {
   try {
-    const response = await axios.get(
-      `${API_BASE_URL}/appointments/stats`,
-      getAuthConfig(),
-    );
+    const response = await axios.get(`${API_BASE_URL}/stats`, getAuthConfig());
 
     if (response.data.success) {
       dispatch(setStats(response.data.data));
@@ -351,7 +346,7 @@ export const exportAppointments = async (
   try {
     const queryParams = new URLSearchParams(filters || {}).toString();
     const response = await axios.get(
-      `${API_BASE_URL}/appointments/export${queryParams ? `?${queryParams}` : ""}`,
+      `${API_BASE_URL}/export${queryParams ? `?${queryParams}` : ""}`,
       {
         ...getAuthConfig(),
         responseType: "blob",

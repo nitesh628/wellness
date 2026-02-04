@@ -73,7 +73,8 @@ const initialState: PrescriptionState = {
 };
 
 const getAuthConfig = () => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
   return {
     withCredentials: true,
     headers: {
@@ -83,29 +84,40 @@ const getAuthConfig = () => {
   };
 };
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/prescriptions`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/prescriptions`;
 
 // --- Thunks ---
 
 export const fetchPrescriptions = createAsyncThunk(
   "prescriptions/fetchAll",
   async (
-    params: { page?: number; limit?: number; status?: string; search?: string } = {},
-    { rejectWithValue }
+    params: {
+      page?: number;
+      limit?: number;
+      status?: string;
+      search?: string;
+    } = {},
+    { rejectWithValue },
   ) => {
     try {
       const query = new URLSearchParams();
       if (params.page) query.append("page", params.page.toString());
       if (params.limit) query.append("limit", params.limit.toString());
-      if (params.status && params.status !== "all") query.append("status", params.status);
+      if (params.status && params.status !== "all")
+        query.append("status", params.status);
       if (params.search) query.append("search", params.search);
 
-      const response = await axios.get(`${API_URL}?${query.toString()}`, getAuthConfig());
+      const response = await axios.get(
+        `${API_URL}?${query.toString()}`,
+        getAuthConfig(),
+      );
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch prescriptions");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch prescriptions",
+      );
     }
-  }
+  },
 );
 
 export const fetchPrescriptionById = createAsyncThunk(
@@ -115,9 +127,11 @@ export const fetchPrescriptionById = createAsyncThunk(
       const response = await axios.get(`${API_URL}/${id}`, getAuthConfig());
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch prescription");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch prescription",
+      );
     }
-  }
+  },
 );
 
 export const createPrescription = createAsyncThunk(
@@ -127,21 +141,29 @@ export const createPrescription = createAsyncThunk(
       const response = await axios.post(API_URL, data, getAuthConfig());
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to create prescription");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create prescription",
+      );
     }
-  }
+  },
 );
 
 export const updatePrescription = createAsyncThunk(
   "prescriptions/update",
   async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(`${API_URL}/${id}`, data, getAuthConfig());
+      const response = await axios.put(
+        `${API_URL}/${id}`,
+        data,
+        getAuthConfig(),
+      );
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to update prescription");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update prescription",
+      );
     }
-  }
+  },
 );
 
 export const deletePrescription = createAsyncThunk(
@@ -151,9 +173,11 @@ export const deletePrescription = createAsyncThunk(
       await axios.delete(`${API_URL}/${id}`, getAuthConfig());
       return id;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to delete prescription");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete prescription",
+      );
     }
-  }
+  },
 );
 
 export const fetchPrescriptionStats = createAsyncThunk(
@@ -163,9 +187,11 @@ export const fetchPrescriptionStats = createAsyncThunk(
       const response = await axios.get(`${API_URL}/stats`, getAuthConfig());
       return response.data.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to fetch stats");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch stats",
+      );
     }
-  }
+  },
 );
 
 export const exportPrescriptions = createAsyncThunk(
@@ -188,9 +214,11 @@ export const exportPrescriptions = createAsyncThunk(
 
       return true;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to export");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to export",
+      );
     }
-  }
+  },
 );
 
 // --- Slice ---
@@ -250,10 +278,15 @@ const prescriptionSlice = createSlice({
 
 export const { clearSelectedPrescription } = prescriptionSlice.actions;
 
-export const selectPrescriptions = (state: RootState) => state.prescriptions.data;
-export const selectPrescriptionStats = (state: RootState) => state.prescriptions.stats;
-export const selectPrescriptionLoading = (state: RootState) => state.prescriptions.isLoading;
-export const selectPrescriptionPagination = (state: RootState) => state.prescriptions.pagination;
-export const selectSelectedPrescription = (state: RootState) => state.prescriptions.selectedPrescription;
+export const selectPrescriptions = (state: RootState) =>
+  state.prescriptions.data;
+export const selectPrescriptionStats = (state: RootState) =>
+  state.prescriptions.stats;
+export const selectPrescriptionLoading = (state: RootState) =>
+  state.prescriptions.isLoading;
+export const selectPrescriptionPagination = (state: RootState) =>
+  state.prescriptions.pagination;
+export const selectSelectedPrescription = (state: RootState) =>
+  state.prescriptions.selectedPrescription;
 
 export default prescriptionSlice.reducer;

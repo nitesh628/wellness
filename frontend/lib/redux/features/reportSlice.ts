@@ -33,7 +33,7 @@ const getAuthConfig = () => {
   };
 };
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports`; // Adjust base URL if needed
+const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/reports`; // Adjust base URL if needed
 
 // --- Thunks ---
 
@@ -45,15 +45,15 @@ export const fetchOverviewReport = createAsyncThunk(
       const query = new URLSearchParams(params as any).toString();
       const response = await axios.get(
         `${API_URL}/overview?${query}`,
-        getAuthConfig()
+        getAuthConfig(),
       );
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch overview"
+        error.response?.data?.message || "Failed to fetch overview",
       );
     }
-  }
+  },
 );
 
 // 2. Appointment Report
@@ -64,15 +64,15 @@ export const fetchAppointmentReport = createAsyncThunk(
       const query = new URLSearchParams(params as any).toString();
       const response = await axios.get(
         `${API_URL}/appointments?${query}`,
-        getAuthConfig()
+        getAuthConfig(),
       );
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch appointment stats"
+        error.response?.data?.message || "Failed to fetch appointment stats",
       );
     }
-  }
+  },
 );
 
 // 3. Patient Report
@@ -83,15 +83,15 @@ export const fetchPatientReport = createAsyncThunk(
       const query = new URLSearchParams(params as any).toString();
       const response = await axios.get(
         `${API_URL}/patients?${query}`,
-        getAuthConfig()
+        getAuthConfig(),
       );
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch patient stats"
+        error.response?.data?.message || "Failed to fetch patient stats",
       );
     }
-  }
+  },
 );
 
 // 4. Prescription Report
@@ -102,15 +102,15 @@ export const fetchPrescriptionReport = createAsyncThunk(
       const query = new URLSearchParams(params as any).toString();
       const response = await axios.get(
         `${API_URL}/prescriptions?${query}`,
-        getAuthConfig()
+        getAuthConfig(),
       );
       return response.data.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch prescription stats"
+        error.response?.data?.message || "Failed to fetch prescription stats",
       );
     }
-  }
+  },
 );
 
 // 5. Export Report
@@ -118,7 +118,7 @@ export const exportReportData = createAsyncThunk(
   "reports/export",
   async (
     params: { type: string; from?: string; to?: string; format?: string },
-    { rejectWithValue }
+    { rejectWithValue },
   ) => {
     try {
       const config = getAuthConfig();
@@ -135,7 +135,7 @@ export const exportReportData = createAsyncThunk(
       link.href = url;
       link.setAttribute(
         "download",
-        `report-${params.type}-${Date.now()}.${params.format || "csv"}`
+        `report-${params.type}-${Date.now()}.${params.format || "csv"}`,
       );
       document.body.appendChild(link);
       link.click();
@@ -144,10 +144,10 @@ export const exportReportData = createAsyncThunk(
       return true;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to export report"
+        error.response?.data?.message || "Failed to export report",
       );
     }
-  }
+  },
 );
 
 // --- Slice ---
