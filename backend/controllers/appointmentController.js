@@ -285,6 +285,32 @@ export const deleteAppointment = async (req, res) => {
   }
 };
 
+export const getTodaysAppointmentsCount = async (req, res) => {
+  try {
+    const doctorId = req.user._id;
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const totalToday = await Appointment.countDocuments({
+      doctor: doctorId,
+      appointmentDate: { $gte: today, $lt: tomorrow }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalToday,
+        date: today.toISOString().split('T')[0]
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 export const getAppointmentStats = async (req, res) => {
   try {
     const doctorId = req.user._id;

@@ -6,6 +6,7 @@ import {
   updateAppointment,
   deleteAppointment,
   getAppointmentStats,
+  getTodaysAppointmentsCount,
   exportAppointments
 } from '../controllers/appointmentController.js';
 import { isLogin } from '../middleWares/isLogin.js';
@@ -30,6 +31,7 @@ router.post('/', createAppointment);
 // GET - Specific routes BEFORE /:id wildcard
 router.get('/export', exportAppointments);
 router.get('/stats', getAppointmentStats);
+router.get('/today/count', getTodaysAppointmentsCount);
 
 // GET - All appointments (list)
 router.get('/', getAppointments);
