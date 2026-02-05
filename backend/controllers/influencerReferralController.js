@@ -1,6 +1,31 @@
 import User from "../models/userModel.js";
 import ReferralUsage from "../models/referralUsageModel.js";
 
+// Generate a unique referral code
+const generateUniqueReferralCode = async (firstName) => {
+  const maxAttempts = 10;
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    // Create code: first 4 letters of name + 4 random digits
+    const namePrefix = firstName.substring(0, 4).toUpperCase().padEnd(4, 'X');
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const code = namePrefix + randomNum;
+
+    // Check if code already exists
+    const existingUser = await User.findOne({ referralCode: code });
+    if (!existingUser) {
+      return code;
+    }
+
+    attempts++;
+  }
+
+  // Fallback: use timestamp if all attempts failed
+  const timestamp = Date.now().toString().slice(-6);
+  return firstName.substring(0, 2).toUpperCase() + timestamp;
+};
+
 export const getReferralDashboardData = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -11,7 +36,7 @@ export const getReferralDashboardData = async (req, res) => {
     }
 
     if (!user.referralCode) {
-      const code = (user.firstName.substring(0, 4) + Math.floor(1000 + Math.random() * 9000)).toUpperCase();
+      const code = await generateUniqueReferralCode(user.firstName);
       user.referralCode = code;
       await user.save();
     }
@@ -61,7 +86,7 @@ export const getReferralDashboardData = async (req, res) => {
 export const createDummyReferral = async (req, res) => {
   try {
     const { influencerCode, customerName, customerEmail, customerPhone, orderAmount } = req.body;
-    
+
     const influencer = await User.findOne({ referralCode: influencerCode });
     if (!influencer) return res.status(404).json({ message: "Invalid code" });
 

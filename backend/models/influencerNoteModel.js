@@ -9,7 +9,7 @@ const influencerNoteSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: [true, "Content is required"] 
+      required: [true, "Content is required"]
     },
     category: {
       type: String,
@@ -22,7 +22,7 @@ const influencerNoteSchema = new mongoose.Schema(
     }],
     author: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Influencer",
       required: true
     },
     isFavorite: {

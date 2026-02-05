@@ -8,11 +8,11 @@ export const createInfluencerNote = async (req, res) => {
       title,
       content,
       category,
-      tags: tags ? tags.split(",").map(tag => tag.trim()) : [], 
+      tags: tags ? tags.split(",").map(tag => tag.trim()) : [],
       priority,
       status,
       isPrivate,
-      author: req.user._id 
+      author: req.user._id
     });
 
     await newNote.populate("author", "firstName lastName email imageUrl");
@@ -26,14 +26,14 @@ export const createInfluencerNote = async (req, res) => {
 export const getInfluencerNotes = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { 
-      search, 
-      category, 
-      status, 
-      priority, 
+    const {
+      search,
+      category,
+      status,
+      priority,
       isFavorite,
-      sortBy = "updatedAt", 
-      sortOrder = "desc" 
+      sortBy = "updatedAt",
+      sortOrder = "desc"
     } = req.query;
 
     let query = { author: userId };
@@ -121,7 +121,7 @@ export const deleteInfluencerNote = async (req, res) => {
 export const toggleInfluencerNoteFavorite = async (req, res) => {
   try {
     const note = await InfluencerNote.findOne({ _id: req.params.id, author: req.user._id });
-    
+
     if (!note) {
       return res.status(404).json({ success: false, message: "Note not found" });
     }

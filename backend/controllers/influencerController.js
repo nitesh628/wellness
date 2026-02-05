@@ -1,6 +1,31 @@
 import { validationResult } from 'express-validator';
 import Influencer from '../models/influencerModel.js';
 
+// Generate a unique referral code for influencer
+const generateUniqueReferralCode = async (firstName) => {
+  const maxAttempts = 10;
+  let attempts = 0;
+
+  while (attempts < maxAttempts) {
+    // Create code: first 4 letters of name + 4 random digits
+    const namePrefix = firstName.substring(0, 4).toUpperCase().padEnd(4, 'X');
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const code = namePrefix + randomNum;
+
+    // Check if code already exists in Influencer collection
+    const existingInfluencer = await Influencer.findOne({ referralCode: code });
+    if (!existingInfluencer) {
+      return code;
+    }
+
+    attempts++;
+  }
+
+  // Fallback: use timestamp if all attempts failed
+  const timestamp = Date.now().toString().slice(-6);
+  return firstName.substring(0, 2).toUpperCase() + timestamp;
+};
+
 // Create a new influencer
 export async function createInfluencer(req, res) {
   const errors = validationResult(req);
@@ -8,6 +33,12 @@ export async function createInfluencer(req, res) {
 
   try {
     const influencer = new Influencer(req.body);
+
+    // Generate unique referral code if not provided
+    if (!influencer.referralCode && influencer.firstName) {
+      influencer.referralCode = await generateUniqueReferralCode(influencer.firstName);
+    }
+
     const savedInfluencer = await influencer.save();
 
     // Remove password from response
