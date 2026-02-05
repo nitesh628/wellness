@@ -434,24 +434,45 @@ const NotesPage = () => {
   };
 
   const handleToggleFavorite = async (noteId: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-notes/${noteId}/favorite`,
-        {
-          method: "PATCH",
-          credentials: "include",
-        },
-      );
+    console.log("Toggling favorite for note:", noteId);
+    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
 
-      if (response.ok) {
-        await fetchNotes(); // Refresh the list
+    try {
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-notes/${noteId}/favorite`;
+      console.log("Full URL:", url);
+
+      const response = await fetch(url, {
+        method: "PATCH",
+        credentials: "include",
+      });
+
+      console.log("Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Failed to toggle favorite:", response.status, errorText);
+        return;
       }
-      handleOpenAddModal;
+
+      const result = await response.json();
+      console.log("Toggle result:", result);
+      const updated = result?.data;
+
+      if (updated?._id) {
+        console.log("Updating note in UI, isFavorite:", updated.isFavorite);
+        setNotes((prev) =>
+          prev.map((note) =>
+            note.id === updated._id
+              ? { ...note, isFavorite: updated.isFavorite }
+              : note,
+          ),
+        );
+      } else {
+        console.log("No updated data, refreshing all notes");
+        await fetchNotes();
+      }
     } catch (error) {
       console.error("Error toggling favorite:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
