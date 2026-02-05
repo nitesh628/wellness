@@ -119,20 +119,6 @@ export const getPrescriptions = async (req, res) => {
             Prescription.aggregate(dataPipeline)
         ]);
 
-        console.log('📋 GET PRESCRIPTIONS');
-        console.log('  Doctor ID:', doctorId);
-        console.log('  Total found:', total);
-        console.log('  Prescriptions returned:', prescriptions.length);
-        if (prescriptions.length > 0) {
-            console.log('  First prescription:', {
-                id: prescriptions[0]._id,
-                diagnosis: prescriptions[0].diagnosis,
-                patientName: prescriptions[0].patientName,
-                patientEmail: prescriptions[0].patient?.email,
-                patientFirstName: prescriptions[0].patient?.firstName
-            });
-        }
-
         res.json({
             success: true,
             data: prescriptions,

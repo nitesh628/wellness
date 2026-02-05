@@ -92,9 +92,6 @@ export const createAppointment = async (req, res) => {
 export const getAppointments = async (req, res) => {
   try {
     const doctorId = req.user._id;
-    console.log('🔍 GET APPOINTMENTS');
-    console.log('  Doctor ID:', doctorId);
-    console.log('  Doctor Email:', req.user.email);
 
     const {
       page = 1,
@@ -117,18 +114,6 @@ export const getAppointments = async (req, res) => {
       endDate.setUTCHours(23, 59, 59, 999);
       filter.appointmentDate = { $gte: startDate, $lte: endDate };
     }
-
-    console.log('  Query:', {
-      page,
-      limit,
-      status,
-      type,
-      search,
-      sortBy,
-      sortOrder,
-      date
-    });
-    console.log('  Filter:', filter);
 
     const sortOptions = {};
     if (sortBy === 'patientName') {
@@ -231,20 +216,6 @@ export const getAppointments = async (req, res) => {
       Appointment.aggregate(countPipeline),
       Appointment.aggregate(dataPipeline)
     ]);
-
-    console.log('  Found appointments:', appointments.length);
-    if (appointments.length > 0) {
-      console.log('  First appointment:', {
-        id: appointments[0]._id,
-        doctorId: appointments[0].doctor?._id,
-        patientName: `${appointments[0].patient?.firstName} ${appointments[0].patient?.lastName}`,
-        patientId: appointments[0].patient?._id,
-        patientFirstName: appointments[0].patient?.firstName,
-        patientLastName: appointments[0].patient?.lastName,
-        date: appointments[0].appointmentDate
-      });
-      console.log('  All patient names:', appointments.map(a => `${a.patient?.firstName} ${a.patient?.lastName}`));
-    }
 
     res.json({
       success: true,
@@ -365,14 +336,6 @@ export const exportAppointments = async (req, res) => {
     const doctorId = req.user._id;
     // Hum wahi filters/search use karenge jo getAppointments mein hain
     const { status, type, search, sortBy = 'appointmentDate', sortOrder = 'asc', date } = req.query;
-    console.log('GET Appointments - Export Query:', {
-      status,
-      type,
-      search,
-      sortBy,
-      sortOrder,
-      date
-    });
 
     const filter = { doctor: new mongoose.Types.ObjectId(doctorId) };
     if (status && status !== 'all') filter.status = status;
@@ -473,4 +436,4 @@ export const exportAppointments = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to export data', error: error.message });
   }
-};
+};   
