@@ -56,8 +56,7 @@ Create a .env.local file in frontend/ with:
 
 - NEXT_PUBLIC_API_BASE_URL
 
-## Scripts
-
+## Script
 - dev: start local dev server
 - build: production build
 - start: run production server
