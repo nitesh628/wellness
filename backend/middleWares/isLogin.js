@@ -12,7 +12,7 @@ export const isLogin = async (req, res, next) => {
 
     try {
         if (!token || token === undefined) {
-            return res.status(404).json({
+            return res.status(401).json({
                 message: "No Token"
             })
         }

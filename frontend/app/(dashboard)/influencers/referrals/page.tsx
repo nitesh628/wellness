@@ -95,6 +95,7 @@ interface ReferralData {
 const ReferralsPage = () => {
   const [referralData, setReferralData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showUsageModal, setShowUsageModal] = useState(false);
   const [selectedReferral] = useState<ReferralCode | null>(null);
 
@@ -106,27 +107,62 @@ const ReferralsPage = () => {
   const fetchReferralData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-referrals/dashboard`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+      setError(null);
+
+      // Debug: Check cookies
+      console.log("All cookies:", document.cookie);
+      console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
+
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-referrals/dashboard`;
+      console.log("Full API URL:", apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
         },
+      });
+
+      console.log("Response status:", response.status);
+      console.log(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries()),
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch referral data");
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: response.statusText }));
+        console.error(`API Error: ${response.status}`, errorData);
+
+        if (response.status === 401) {
+          setError("Please log in to access referral data.");
+        } else if (response.status === 403) {
+          setError("Access denied. Influencer role required.");
+        } else if (response.status === 404) {
+          setError("Referral service not found. Please contact support.");
+        } else {
+          setError(errorData.message || `Error: ${response.status}`);
+        }
+        return;
       }
 
       const result = await response.json();
-      if (result.success) {
+      console.log("Referral API Response:", result);
+
+      if (result.success && result.data) {
         setReferralData(result.data);
+        setError(null);
+      } else {
+        console.error("API returned unsuccessful response:", result);
+        setError(result.message || "Failed to load referral data");
       }
     } catch (error) {
       console.error("Error fetching referral data:", error);
+      setError(
+        "Network error. Please check your connection and backend server.",
+      );
     } finally {
       setLoading(false);
     }
@@ -165,12 +201,22 @@ const ReferralsPage = () => {
     );
   }
 
-  if (!referralData) {
+  if (error || !referralData) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4">
         <Users className="w-16 h-16 text-muted-foreground" />
-        <p className="text-muted-foreground">No referral data available</p>
-        <Button onClick={fetchReferralData}>Try Again</Button>
+        <div className="text-center space-y-2">
+          <p className="text-lg font-semibold text-foreground">
+            {error || "No referral data available"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {!error && "Your referral code will be generated automatically."}
+          </p>
+        </div>
+        <Button onClick={fetchReferralData} variant="outline">
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Retry
+        </Button>
       </div>
     );
   }

@@ -1,4 +1,5 @@
 import User from "../models/userModel.js";
+import Influencer from "../models/influencerModel.js";
 import ReferralUsage from "../models/referralUsageModel.js";
 
 // Generate a unique referral code
@@ -29,19 +30,44 @@ const generateUniqueReferralCode = async (firstName) => {
 export const getReferralDashboardData = async (req, res) => {
   try {
     const userId = req.user._id;
-    const user = await User.findById(userId);
 
-    if (!user) {
+    console.log("Fetching referral data for user:", userId);
+    console.log("User role:", req.user.role);
+    console.log("User from middleware:", req.user.firstName, req.user.email);
+
+    // Check if user has Influencer role
+    if (req.user.role !== 'Influencer') {
+      console.log("User is not an Influencer:", req.user.role);
+      return res.status(403).json({ success: false, message: "Access denied. Influencer role required." });
+    }
+
+    // Use req.user directly (already populated by middleware)
+    // But fetch from Influencer model to ensure we can save changes
+    let influencer = await Influencer.findById(userId);
+
+    if (!influencer) {
+      console.log("Influencer not found in Influencer collection, checking User collection");
+      // Fallback to User collection for backward compatibility
+      influencer = await User.findById(userId);
+    }
+
+    if (!influencer) {
+      console.log("User not found in any collection:", userId);
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    if (!user.referralCode) {
-      const code = await generateUniqueReferralCode(user.firstName);
-      user.referralCode = code;
-      await user.save();
+    // Generate referral code if user doesn't have one
+    if (!influencer.referralCode) {
+      console.log("Generating referral code for user:", influencer.firstName);
+      const code = await generateUniqueReferralCode(influencer.firstName);
+      influencer.referralCode = code;
+      await influencer.save();
+      console.log("Referral code generated:", code);
     }
 
     const usages = await ReferralUsage.find({ influencerId: userId }).sort({ createdAt: -1 });
+
+    console.log(`Found ${usages.length} referral usages for user`);
 
     const totalReferrals = usages.length;
     const completedReferrals = usages.filter(u => u.status === 'completed').length;
@@ -61,24 +87,28 @@ export const getReferralDashboardData = async (req, res) => {
       notes: usage.notes
     }));
 
+    const responseData = {
+      referralCode: influencer.referralCode,
+      commissionRate: influencer.commissionRate || 10,
+      stats: {
+        totalReferrals,
+        completedReferrals,
+        totalEarnings,
+        pendingReferrals,
+        conversionRate: totalReferrals > 0 ? Math.round((completedReferrals / totalReferrals) * 100) : 0,
+        avgCommission: totalReferrals > 0 ? Math.round(totalEarnings / totalReferrals) : 0
+      },
+      usageHistory: tableData
+    };
+
+    console.log("Sending referral dashboard data");
     res.json({
       success: true,
-      data: {
-        referralCode: user.referralCode,
-        commissionRate: user.commissionRate,
-        stats: {
-          totalReferrals,
-          completedReferrals,
-          totalEarnings,
-          pendingReferrals,
-          conversionRate: totalReferrals > 0 ? Math.round((completedReferrals / totalReferrals) * 100) : 0,
-          avgCommission: totalReferrals > 0 ? Math.round(totalEarnings / totalReferrals) : 0
-        },
-        usageHistory: tableData
-      }
+      data: responseData
     });
 
   } catch (error) {
+    console.error("Error in getReferralDashboardData:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
