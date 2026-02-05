@@ -72,7 +72,6 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
   }
 
   const handleAddAppointment = () => {
-    // Add new appointment
     const appointment: Appointment = {
       ...newAppointment,
       id: Date.now().toString()

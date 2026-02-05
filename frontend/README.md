@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Wellness Frontend
 
-## Getting Started
+## Overview
 
-First, run the development server:
+This is the Next.js App Router frontend for Wellness Fuel. It includes the public website, authentication pages, and role-based dashboards for admins, doctors, and influencers.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Tech Stack
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Next.js (App Router)
+- React 19
+- Redux Toolkit
+- Tailwind CSS
+- Radix UI + shadcn-style components
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Key areas to know:
 
-## Learn More
+- app/: route groups and layouts (App Router)
+- components/: shared UI and feature components
+- lib/: Redux store, contexts, utilities
+- public/: static assets
+- middleware.ts: route protection and role gating
 
-To learn more about Next.js, take a look at the following resources:
+## Route Groups
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Routes are organized with App Router groups:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- (website): public site pages like home, products, checkout, and content
+- (auth): login/signup/logout
+- (dashboard): admin dashboard sections
+- (dashboard)/doctors: doctor portal
+- (dashboard)/influencers: influencer portal
 
-## Deploy on Vercel
+Entry layout files:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [frontend/app/layout.tsx](frontend/app/layout.tsx): global layout, Redux provider, and popup
+- [frontend/app/(website)/layout.tsx](<frontend/app/(website)/layout.tsx>): website header/footer and providers
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## State Management
+
+- Redux store and slices live in [frontend/lib/redux](frontend/lib/redux)
+- Context providers for cart and wishlist live in [frontend/lib/context](frontend/lib/context)
+
+## Middleware (Auth + Role Access)
+
+Route protection and redirects are handled in [frontend/middleware.ts](frontend/middleware.ts) using role-based rules and cookies.
+
+## API Integration
+
+API calls use the base URL from `NEXT_PUBLIC_API_BASE_URL` (see [frontend/lib/utils/auth.ts](frontend/lib/utils/auth.ts)).
+
+## Environment Variables
+
+Create a .env.local file in frontend/ with:
+
+- NEXT_PUBLIC_API_BASE_URL
+
+## Scripts
+
+- dev: start local dev server
+- build: production build
+- start: run production server
+- lint: run ESLint
+
+## Folder Map (Quick Reference)
+
+- app/(website)/: public pages (home, products, checkout, content)
+- app/(auth)/: auth screens
+- app/(dashboard)/dashboard/: admin dashboard sections
+- app/(dashboard)/doctors/: doctor dashboard sections
+- app/(dashboard)/influencers/: influencer dashboard sections
+- components/: UI and feature components
+- lib/redux/features/: Redux slices per domain
+
+## API Documentation
+
+Backend API reference is in [backend/API_DOCUMENTATION_UPDATED.md](backend/API_DOCUMENTATION_UPDATED.md).

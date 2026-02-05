@@ -37,6 +37,11 @@ import {
   selectDashboardLoading,
 } from "@/lib/redux/features/dashboardSlice";
 
+import {
+  fetchTodaysAppointmentCount,
+  selectTodaysAppointmentCount,
+} from "@/lib/redux/features/dashboardSlice";
+
 const DoctorsDashboard = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -44,10 +49,14 @@ const DoctorsDashboard = () => {
   // Get Data from Redux
   const dashboardData = useSelector(selectDashboardData);
   const isLoading = useSelector(selectDashboardLoading);
+  const todaysAppointmentCountFromAPI = useSelector(
+    selectTodaysAppointmentCount,
+  );
 
   // Fetch Data on Mount
   useEffect(() => {
     dispatch(fetchDoctorDashboard());
+    dispatch(fetchTodaysAppointmentCount());
   }, [dispatch]);
 
   // Show Loader while fetching
@@ -77,6 +86,11 @@ const DoctorsDashboard = () => {
     ...defaultStats,
     ...(dashboardData?.stats ?? {}),
   };
+
+  // Use API data for todayAppointments if available
+  if (todaysAppointmentCountFromAPI !== null) {
+    statsData.todayAppointments = todaysAppointmentCountFromAPI;
+  }
 
   const todaysAppointments = dashboardData?.todaysAppointments || [];
   const recentPrescriptions = dashboardData?.recentPrescriptions || [];

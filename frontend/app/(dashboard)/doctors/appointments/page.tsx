@@ -87,9 +87,7 @@ const AppointmentsPage = () => {
   const error = useSelector(selectApptError);
   const isLoading = useSelector(selectApptLoading);
   const apptStats = useSelector(selectApptStats);
-  const [viewMode, setViewMode] = useState<"calendar" | "table" | "grid">(
-    "calendar",
-  );
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -514,21 +512,6 @@ const AppointmentsPage = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        variant={viewMode === "calendar" ? "default" : "ghost"}
-                        size="icon"
-                        onClick={() => setViewMode("calendar")}
-                        className="rounded-none"
-                      >
-                        <Calendar className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Calendar view</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
                         variant={viewMode === "table" ? "default" : "ghost"}
                         size="icon"
                         onClick={() => setViewMode("table")}
@@ -606,112 +589,6 @@ const AppointmentsPage = () => {
           </Card>
         ) : (
           <>
-            {viewMode === "calendar" && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5" /> Calendar
-                    </CardTitle>
-                    <CardDescription>
-                      Select a date to view details
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold">January 2024</h3>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-7 gap-2 text-center">
-                      {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                        (day) => (
-                          <div
-                            key={day}
-                            className="p-2 text-sm font-medium text-muted-foreground"
-                          >
-                            {day}
-                          </div>
-                        ),
-                      )}
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map(
-                        (day) => {
-                          const date = `2024-01-${day.toString().padStart(2, "0")}`;
-                          const hasAppt = appointments.some(
-                            (a) => a.date === date,
-                          );
-                          return (
-                            <button
-                              key={day}
-                              onClick={() => setSelectedDate(date)}
-                              className={`p-2 text-sm rounded-lg transition-colors relative ${date === selectedDate ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                            >
-                              {day}
-                              {hasAppt && (
-                                <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-                              )}
-                            </button>
-                          );
-                        },
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="w-5 h-5" /> {selectedDate}
-                    </CardTitle>
-                    <CardDescription>
-                      {todaysAppointments.length} appointments
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {todaysAppointments.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-muted-foreground text-sm">
-                          No appointments scheduled.
-                        </p>
-                      </div>
-                    ) : (
-                      todaysAppointments.map((app) => (
-                        <div
-                          key={app.id}
-                          className="p-3 border rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
-                        >
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-bold text-sm">
-                                {app.patientName}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {app.time} ({app.duration}m)
-                              </p>
-                            </div>
-                            <Badge
-                              variant={getStatusColor(app.status) as any}
-                              className="text-[10px]"
-                            >
-                              {app.status}
-                            </Badge>
-                          </div>
-                          <p className="text-xs mt-1 text-muted-foreground">
-                            {app.reason}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
             {viewMode === "table" && (
               <Card>
                 <CardContent className="p-0">

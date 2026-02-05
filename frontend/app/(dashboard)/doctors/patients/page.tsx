@@ -192,6 +192,9 @@ const PatientsPage = () => {
       let aValue = a[sortBy as keyof typeof a];
       let bValue = b[sortBy as keyof typeof b];
 
+      if (aValue === undefined || aValue === null) aValue = "";
+      if (bValue === undefined || bValue === null) bValue = "";
+
       if (typeof aValue === "string") {
         aValue = aValue.toLowerCase();
         bValue = (bValue as string).toLowerCase();

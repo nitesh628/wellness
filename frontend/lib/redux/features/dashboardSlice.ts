@@ -44,6 +44,23 @@ const initialState: DashboardState = {
   error: null,
 };
 
+interface TodaysAppointmentCount {
+  totalToday: number;
+  date: string;
+}
+
+interface AppointmentCountState {
+  count: TodaysAppointmentCount | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+const appointmentCountInitialState: AppointmentCountState = {
+  count: null,
+  isLoading: false,
+  error: null,
+};
+
 // Helper for Auth Headers
 const getAuthConfig = () => {
   const token =
@@ -58,6 +75,7 @@ const getAuthConfig = () => {
 };
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/dashboard/doctor`;
+const APPOINTMENT_COUNT_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/today/count`;
 
 // --- Thunk ---
 export const fetchDoctorDashboard = createAsyncThunk(
@@ -69,6 +87,22 @@ export const fetchDoctorDashboard = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch dashboard data",
+      );
+    }
+  },
+);
+
+// Fetch today's appointments count
+export const fetchTodaysAppointmentCount = createAsyncThunk(
+  "dashboard/fetchTodaysCount",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(APPOINTMENT_COUNT_URL, getAuthConfig());
+      return response.data.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch today's appointments count",
       );
     }
   },
@@ -96,10 +130,40 @@ const dashboardSlice = createSlice({
   },
 });
 
+// Appointment Count Slice
+const appointmentCountSlice = createSlice({
+  name: "appointmentCount",
+  initialState: appointmentCountInitialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchTodaysAppointmentCount.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchTodaysAppointmentCount.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.count = action.payload;
+      })
+      .addCase(fetchTodaysAppointmentCount.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+  },
+});
+
 // --- Selectors ---
 export const selectDashboardData = (state: RootState) => state.dashboard.data;
 export const selectDashboardLoading = (state: RootState) =>
   state.dashboard.isLoading;
 export const selectDashboardError = (state: RootState) => state.dashboard.error;
 
+export const selectTodaysAppointmentCount = (state: RootState) =>
+  state.appointmentCount?.count?.totalToday ?? null;
+export const selectTodaysAppointmentCountLoading = (state: RootState) =>
+  state.appointmentCount?.isLoading ?? false;
+export const selectTodaysAppointmentCountError = (state: RootState) =>
+  state.appointmentCount?.error ?? null;
+
 export default dashboardSlice.reducer;
+export const appointmentCountReducer = appointmentCountSlice.reducer;
