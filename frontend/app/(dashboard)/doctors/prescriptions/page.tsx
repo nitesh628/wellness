@@ -112,13 +112,6 @@ const PrescriptionsPage = () => {
     dispatch(fetchPatients()); // Loading patients
   }, [dispatch, statusFilter, searchTerm]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log("Prescriptions Data:", prescriptions);
-    console.log("Is Loading:", isLoading);
-    console.log("Stats:", stats);
-  }, [prescriptions, isLoading, stats]);
-
   // --- Handlers ---
 
   const handleAddPrescription = async () => {

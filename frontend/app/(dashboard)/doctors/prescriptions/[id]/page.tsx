@@ -33,9 +33,6 @@ const PrescriptionDetailPage = () => {
         const apiUrl =
           process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
         const url = `${apiUrl}/v1/prescriptions/${params.id}`;
-        console.log("Fetching prescription from:", url);
-        console.log("With ID:", params.id);
-        console.log("Token:", token ? "Present" : "Missing");
 
         const response = await fetch(url, {
           method: "GET",
@@ -46,9 +43,7 @@ const PrescriptionDetailPage = () => {
           credentials: "include",
         });
 
-        console.log("Response status:", response.status);
         const data = await response.json();
-        console.log("Response data:", data);
 
         if (data.success) {
           setPrescription(data.data);

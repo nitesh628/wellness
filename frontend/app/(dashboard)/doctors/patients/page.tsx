@@ -125,6 +125,9 @@ const PatientsPage = () => {
   );
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editTab, setEditTab] = useState<"details" | "medical" | "visits">(
+    "details",
+  );
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -244,6 +247,7 @@ const PatientsPage = () => {
 
   const handleEditPatient = (patient: PatientUI) => {
     setSelectedPatient(patient);
+    setEditTab("details");
     setIsEditModalOpen(true);
   };
 
@@ -295,34 +299,88 @@ const PatientsPage = () => {
     setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
 
-    const nameParts = (formData.get("name") as string).split(" ");
+    const getString = (key: string, fallback = "") => {
+      const value = formData.get(key);
+      if (value === null || value === undefined) return fallback;
+      const stringValue = String(value).trim();
+      return stringValue.length ? stringValue : fallback;
+    };
+
+    const getNumber = (key: string, fallback = 0) => {
+      const value = formData.get(key);
+      if (value === null || value === undefined || value === "")
+        return fallback;
+      const parsed = Number(value);
+      return Number.isNaN(parsed) ? fallback : parsed;
+    };
+
+    const fallbackName = selectedPatient.name || "";
+    const rawName = getString("name", fallbackName);
+    const nameParts = rawName
+      .split(/\s+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const fallbackNameParts = fallbackName
+      .split(/\s+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const firstName =
+      nameParts[0] || fallbackNameParts[0] || selectedPatient.name || "";
+    const lastName =
+      nameParts.slice(1).join(" ") ||
+      fallbackNameParts.slice(1).join(" ") ||
+      "";
+
+    const emergencyContactFallback =
+      typeof selectedPatient.emergencyContact === "string"
+        ? { name: selectedPatient.emergencyContact, phone: "" }
+        : selectedPatient.emergencyContact || { name: "", phone: "" };
+
     const updatedData = {
-      firstName: nameParts[0],
-      lastName: nameParts.slice(1).join(" ") || "",
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-      age: parseInt(formData.get("age") as string),
-      dateOfBirth: formData.get("dateOfBirth") as string,
-      gender: formData.get("gender") as any,
-      bloodGroup: formData.get("bloodGroup") as any,
-      location: formData.get("location") as string,
-      status: formData.get("status") as any,
-      patientType: formData.get("patientType") as string,
+      firstName,
+      lastName,
+      email: getString("email", selectedPatient.email || ""),
+      phone: getString("phone", selectedPatient.phone || ""),
+      age: getNumber("age", selectedPatient.age || 0),
+      dateOfBirth: getString("dateOfBirth", selectedPatient.dateOfBirth || ""),
+      gender: getString("gender", selectedPatient.gender || "") as any,
+      bloodGroup: getString(
+        "bloodGroup",
+        selectedPatient.bloodGroup || "",
+      ) as any,
+      location: getString("location", selectedPatient.location || ""),
+      status: getString("status", selectedPatient.status || "") as any,
+      patientType: getString("patientType", selectedPatient.patientType || ""),
       emergencyContact: {
-        name: formData.get("emergencyContactName") as string,
-        phone: formData.get("emergencyContactPhone") as string,
+        name: getString("emergencyContactName", emergencyContactFallback.name),
+        phone: getString(
+          "emergencyContactPhone",
+          emergencyContactFallback.phone,
+        ),
       },
-      insuranceProvider: formData.get("insuranceProvider") as string,
-      medicalHistory: (formData.get("medicalHistory") as string)
-        ?.split(",")
+      insuranceProvider: getString(
+        "insuranceProvider",
+        selectedPatient.insuranceProvider || "",
+      ),
+      medicalHistory: getString(
+        "medicalHistory",
+        selectedPatient.medicalHistory?.join(", ") || "",
+      )
+        .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      currentMedications: (formData.get("currentMedications") as string)
-        ?.split(",")
+      currentMedications: getString(
+        "currentMedications",
+        selectedPatient.currentMedications?.join(", ") || "",
+      )
+        .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      allergies: (formData.get("allergies") as string)
-        ?.split(",")
+      allergies: getString(
+        "allergies",
+        selectedPatient.allergies?.join(", ") || "",
+      )
+        .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
     };
@@ -1033,7 +1091,13 @@ const PatientsPage = () => {
               </DialogDescription>
             </DialogHeader>
             {selectedPatient && (
-              <Tabs defaultValue="details" className="w-full">
+              <Tabs
+                value={editTab}
+                onValueChange={(value) =>
+                  setEditTab(value as "details" | "medical" | "visits")
+                }
+                className="w-full"
+              >
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="medical">Medical</TabsTrigger>
@@ -1314,7 +1378,9 @@ const PatientsPage = () => {
               </Button>
               <Button
                 type="submit"
-                form="editPatientForm"
+                form={
+                  editTab === "medical" ? "editMedicalForm" : "editPatientForm"
+                }
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (

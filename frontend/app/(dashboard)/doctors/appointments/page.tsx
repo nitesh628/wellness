@@ -87,13 +87,6 @@ const AppointmentsPage = () => {
   const error = useSelector(selectApptError);
   const isLoading = useSelector(selectApptLoading);
   const apptStats = useSelector(selectApptStats);
-
-  console.log("Appointments state:", {
-    count: appointments.length,
-    isLoading,
-    error,
-    apptStats,
-  });
   const [viewMode, setViewMode] = useState<"calendar" | "table" | "grid">(
     "calendar",
   );
@@ -115,7 +108,6 @@ const AppointmentsPage = () => {
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    console.log("AppointmentsPage mounted: fetching appointments & stats");
     dispatch(fetchAppointments());
     dispatch(fetchAppointmentStats());
   }, [dispatch]);
