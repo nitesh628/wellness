@@ -297,7 +297,6 @@ export const deletePatient = async (req, res) => {
     }
 };
 
-
 export const getPatientStats = async (req, res) => {
     try {
         const [
@@ -324,6 +323,21 @@ export const getPatientStats = async (req, res) => {
                 activePatients,
                 vipPatients,
                 avgVisitFee
+            }
+        });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+export const getTotalPatientsCount = async (req, res) => {
+    try {
+        const totalPatients = await Customer.countDocuments({ createdBy: req.user._id });
+
+        res.json({
+            success: true,
+            data: {
+                totalPatients
             }
         });
     } catch (error) {

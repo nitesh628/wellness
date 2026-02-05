@@ -88,7 +88,6 @@ export const createAppointment = async (req, res) => {
   }
 };
 
-
 export const getAppointments = async (req, res) => {
   try {
     const doctorId = req.user._id;
@@ -249,7 +248,6 @@ export const getAppointmentById = async (req, res) => {
   }
 };
 
-
 export const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -269,7 +267,6 @@ export const updateAppointment = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-
 
 export const deleteAppointment = async (req, res) => {
   try {
@@ -355,7 +352,6 @@ export const getAppointmentStats = async (req, res) => {
     res.status(400).json({ success: false, message: error.message });
   }
 };
-
 
 export const exportAppointments = async (req, res) => {
   try {

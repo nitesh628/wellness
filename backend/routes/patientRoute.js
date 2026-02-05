@@ -6,6 +6,7 @@ import {
     updatePatient,
     deletePatient,
     getPatientStats,
+    getTotalPatientsCount,
     exportPatients
 } from '../controllers/patientController.js';
 import { isLogin } from '../middleWares/isLogin.js';
@@ -17,6 +18,7 @@ router.use(isLogin);
 router.post('/', createPatient);
 router.get('/', getPatients);
 router.get('/stats', getPatientStats);
+router.get('/count', getTotalPatientsCount);
 router.get('/export', exportPatients);
 router.get('/:id', getPatientById);
 router.put('/:id', updatePatient);
