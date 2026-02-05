@@ -1,13 +1,23 @@
 import User from "../models/userModel.js";
+import Influencer from "../models/influencerModel.js";
 
 // Get all settings (Profile, Business, Security)
 export const getInfluencerSettings = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("-password");
+    console.log("Fetching settings for user:", req.user._id);
+
+    // Try to find in Influencer collection first, then fallback to User
+    let user = await Influencer.findById(req.user._id).select("-password");
+    if (!user) {
+      user = await User.findById(req.user._id).select("-password");
+    }
 
     if (!user) {
+      console.log("User not found in any collection");
       return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    console.log("User found:", user.email);
 
     // Structure data to match frontend expectations
     const settingsData = {
@@ -69,7 +79,7 @@ export const updateProfileSettings = async (req, res) => {
   try {
     const {
       name,
-      email, // Handle email change carefully (verification usually needed)
+      email,
       phone,
       niche,
       followers,
@@ -86,7 +96,8 @@ export const updateProfileSettings = async (req, res) => {
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(" ");
 
-    const updatedUser = await User.findByIdAndUpdate(
+    // Try Influencer model first
+    let updatedUser = await Influencer.findByIdAndUpdate(
       req.user._id,
       {
         firstName: firstName || req.user.firstName,
@@ -94,16 +105,35 @@ export const updateProfileSettings = async (req, res) => {
         phone,
         category: niche,
         followers,
-        engagementRate: engagement, // Ensure Schema supports this
         platform,
         location,
-        notes: bio, // Mapping bio to notes or add bio field
-        language: languages,
+        occupation: bio,
         collaborationRate,
-        sponsoredPostRate // Ensure Schema supports this
+        sponsoredPostRate
       },
       { new: true, runValidators: true }
     ).select("-password");
+
+    // Fallback to User model
+    if (!updatedUser) {
+      updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          firstName: firstName || req.user.firstName,
+          lastName: lastName || req.user.lastName,
+          phone,
+          category: niche,
+          followers,
+          platform,
+          location,
+          notes: bio,
+          language: languages,
+          collaborationRate,
+          sponsoredPostRate
+        },
+        { new: true, runValidators: true }
+      ).select("-password");
+    }
 
     res.status(200).json({ success: true, message: "Profile updated", data: updatedUser });
   } catch (error) {
@@ -128,23 +158,25 @@ export const updateBusinessSettings = async (req, res) => {
       brandPartnerships
     } = req.body;
 
-    const updatedUser = await User.findByIdAndUpdate(
+    // Try Influencer model first
+    let updatedUser = await Influencer.findByIdAndUpdate(
       req.user._id,
       {
-        brandName,
-        businessAddress,
-        businessPhone,
-        businessEmail,
-        website,
-        taxId,
-        businessType,
-        socialMediaLinks: JSON.stringify(socialMedia), // Storing as JSON string
-        averagePostTime,
-        maxCollaborationsPerMonth,
-        brandPartnerships
+        socialMediaLinks: socialMedia ? JSON.stringify(socialMedia) : undefined
       },
       { new: true, runValidators: true }
     ).select("-password");
+
+    // Fallback to User model
+    if (!updatedUser) {
+      updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          socialMediaLinks: socialMedia ? JSON.stringify(socialMedia) : undefined
+        },
+        { new: true, runValidators: true }
+      ).select("-password");
+    }
 
     res.status(200).json({ success: true, message: "Business settings updated", data: updatedUser });
   } catch (error) {
@@ -166,20 +198,32 @@ export const updateSecuritySettings = async (req, res) => {
       backupFrequency
     } = req.body;
 
-    const updatedUser = await User.findByIdAndUpdate(
+    // Try Influencer model first
+    let updatedUser = await Influencer.findByIdAndUpdate(
       req.user._id,
       {
-        twoFactorEnabled: twoFactorAuth,
-        loginAlerts,
-        sessionTimeout,
-        passwordExpiry,
-        ipWhitelist,
-        auditLogs,
-        dataEncryption,
-        backupFrequency
+        twoFactorEnabled: twoFactorAuth
       },
       { new: true, runValidators: true }
     ).select("-password");
+
+    // Fallback to User model
+    if (!updatedUser) {
+      updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          twoFactorEnabled: twoFactorAuth,
+          loginAlerts,
+          sessionTimeout,
+          passwordExpiry,
+          ipWhitelist,
+          auditLogs,
+          dataEncryption,
+          backupFrequency
+        },
+        { new: true, runValidators: true }
+      ).select("-password");
+    }
 
     res.status(200).json({ success: true, message: "Security settings updated", data: updatedUser });
   } catch (error) {
@@ -189,13 +233,19 @@ export const updateSecuritySettings = async (req, res) => {
 
 // Update Avatar (Handle file upload separately usually, or via URL here)
 export const updateAvatar = async (req, res) => {
-    try {
-        const { avatarUrl } = req.body; // Expecting S3 URL from frontend after upload
-        
-        await User.findByIdAndUpdate(req.user._id, { imageUrl: avatarUrl });
+  try {
+    const { avatarUrl } = req.body;
 
-        res.status(200).json({ success: true, message: "Avatar updated" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+    // Try Influencer model first
+    let updatedUser = await Influencer.findByIdAndUpdate(req.user._id, { imageUrl: avatarUrl });
+
+    // Fallback to User model
+    if (!updatedUser) {
+      updatedUser = await User.findByIdAndUpdate(req.user._id, { imageUrl: avatarUrl });
     }
+
+    res.status(200).json({ success: true, message: "Avatar updated" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };

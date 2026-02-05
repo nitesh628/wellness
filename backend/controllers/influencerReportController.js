@@ -3,17 +3,21 @@ import BrandCollaboration from "../models/brandCollaborationModel.js";
 import AudienceInsight from "../models/audienceInsightModel.js";
 import ReportLog from "../models/reportLogModel.js";
 import User from "../models/userModel.js";
+import Influencer from "../models/influencerModel.js";
 
 export const getReportDashboardData = async (req, res) => {
   try {
     const influencerId = req.user._id;
     const { period = "30d" } = req.query;
 
+    console.log("Fetching report data for influencer:", influencerId);
+    console.log("Period:", period);
+
     let dateLimit = new Date();
     if (period === "7d") dateLimit.setDate(dateLimit.getDate() - 7);
     else if (period === "90d") dateLimit.setDate(dateLimit.getDate() - 90);
     else if (period === "1y") dateLimit.setFullYear(dateLimit.getFullYear() - 1);
-    else dateLimit.setDate(dateLimit.getDate() - 30); 
+    else dateLimit.setDate(dateLimit.getDate() - 30);
 
     const metrics = await InfluencerMetric.find({
       influencerId,
@@ -22,15 +26,20 @@ export const getReportDashboardData = async (req, res) => {
 
     const collaborations = await BrandCollaboration.find({ influencerId });
     const audience = await AudienceInsight.find({ influencerId, demographicType: "age" });
-    const user = await User.findById(influencerId);
 
-    const totalFollowers = user.followers || 0;
-    
+    // Try to find in Influencer collection first, then fallback to User
+    let user = await Influencer.findById(influencerId);
+    if (!user) {
+      user = await User.findById(influencerId);
+    }
+
+    const totalFollowers = user?.followers || 0;
+
     const totalLikes = metrics.reduce((acc, curr) => acc + curr.likes, 0);
     const totalPosts = metrics.reduce((acc, curr) => acc + curr.postsCount, 0);
-    const totalRevenue = metrics.reduce((acc, curr) => acc + curr.revenue, 0) + 
-                         collaborations.reduce((acc, curr) => acc + curr.revenue, 0);
-    
+    const totalRevenue = metrics.reduce((acc, curr) => acc + curr.revenue, 0) +
+      collaborations.reduce((acc, curr) => acc + curr.revenue, 0);
+
     const engagementRate = totalPosts > 0 ? ((totalLikes / totalPosts) / totalFollowers) * 100 : 0;
 
     const stats = {
@@ -39,8 +48,8 @@ export const getReportDashboardData = async (req, res) => {
       totalPosts,
       totalRevenue,
       avgLikesPerPost: totalPosts > 0 ? Math.round(totalLikes / totalPosts) : 0,
-      reachRate: 12.5, 
-      conversionRate: 3.2, 
+      reachRate: 12.5,
+      conversionRate: 3.2,
       brandCollaborations: collaborations.length
     };
 
@@ -64,7 +73,7 @@ export const getReportHistory = async (req, res) => {
     const logs = await ReportLog.find({ influencerId: req.user._id })
       .sort({ createdAt: -1 })
       .limit(10);
-      
+
     res.status(200).json({ success: true, data: logs });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -74,14 +83,14 @@ export const getReportHistory = async (req, res) => {
 export const generateReport = async (req, res) => {
   try {
     const { reportType, format, dateRange } = req.body;
-    
+
     const newLog = await ReportLog.create({
       influencerId: req.user._id,
       reportName: `${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report`,
       reportType,
       format: format.toUpperCase(),
-      fileSize: "1.5 MB", 
-      url: "#" 
+      fileSize: "1.5 MB",
+      url: "#"
     });
 
     res.status(200).json({ success: true, message: "Report generated successfully", data: newLog });
