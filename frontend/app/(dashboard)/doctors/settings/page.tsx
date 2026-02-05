@@ -1,7 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
-import { Save, Edit, Loader2, Camera, Plus, X, Languages } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Save,
+  Edit,
+  Loader2,
+  Camera,
+  Plus,
+  X,
+  Languages,
+  AlertCircle,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -25,67 +34,122 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// Redux Imports
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/lib/redux/store";
+import {
+  fetchDoctorSettings,
+  updateProfileSettings,
+  updateBusinessSettings,
+  updateSecuritySettings,
+  selectDoctorSettings,
+  selectDoctorSettingsLoading,
+  selectDoctorSettingsSaving,
+  selectDoctorSettingsError,
+} from "@/lib/redux/features/doctorSettingsSlice";
 
 // Doctor Settings Page Component
 const DoctorSettingsPage = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const settingsData = useSelector(selectDoctorSettings);
+  const isLoading = useSelector(selectDoctorSettingsLoading);
+  const isSaving = useSelector(selectDoctorSettingsSaving);
+  const error = useSelector(selectDoctorSettingsError);
+
   const [editStates, setEditStates] = useState({
     profile: false,
     business: false,
     security: false,
   });
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [originalData, setOriginalData] = useState({
-    profile: {
-      name: "Dr. Sarah Johnson",
-      email: "sarah.johnson@medicalclinic.com",
-      phone: "+1 (555) 123-4567",
-      specialization: "Cardiology",
-      experience: 12,
-      qualifications: "MD, PhD in Cardiology",
-      license: "MD-12345",
-      hospital: "City Medical Center",
-      location: "New York, NY",
-      bio: "Experienced cardiologist with 12+ years of practice. Specialized in interventional cardiology and preventive care.",
-      avatar: "/avatars/doctor-1.jpg",
-      languages: ["English", "Spanish", "French"],
-      consultationFee: 200,
-      emergencyFee: 350,
-    },
-    business: {
-      clinicName: "City Medical Center",
-      clinicAddress: "123 Medical Plaza, New York, NY 10001",
-      clinicPhone: "+1 (555) 987-6543",
-      clinicEmail: "info@citymedical.com",
-      website: "www.citymedical.com",
-      taxId: "12-3456789",
-      businessType: "Private Practice",
-      operatingHours: {
-        monday: { start: "09:00", end: "17:00", closed: false },
-        tuesday: { start: "09:00", end: "17:00", closed: false },
-        wednesday: { start: "09:00", end: "17:00", closed: false },
-        thursday: { start: "09:00", end: "17:00", closed: false },
-        friday: { start: "09:00", end: "17:00", closed: false },
-        saturday: { start: "10:00", end: "14:00", closed: false },
-        sunday: { start: "00:00", end: "00:00", closed: true },
+  const [formData, setFormData] = useState(
+    settingsData || {
+      profile: {
+        name: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        specialization: "",
+        experience: 0,
+        qualifications: "",
+        license: "",
+        hospital: "",
+        location: "",
+        bio: "",
+        avatar: "",
+        languages: [],
+        consultationFee: 0,
+        emergencyFee: 0,
+        gender: "",
+        dateOfBirth: "",
       },
-      appointmentDuration: 30,
-      maxPatientsPerDay: 20,
-      emergencyAvailability: true,
+      business: {
+        clinicName: "",
+        clinicAddress: "",
+        clinicPhone: "",
+        clinicEmail: "",
+        website: "",
+        taxId: "",
+        businessType: "Private Practice",
+        operatingHours: {
+          monday: { start: "09:00", end: "17:00", closed: false },
+          tuesday: { start: "09:00", end: "17:00", closed: false },
+          wednesday: { start: "09:00", end: "17:00", closed: false },
+          thursday: { start: "09:00", end: "17:00", closed: false },
+          friday: { start: "09:00", end: "17:00", closed: false },
+          saturday: { start: "10:00", end: "14:00", closed: false },
+          sunday: { start: "00:00", end: "00:00", closed: true },
+        },
+        appointmentDuration: 30,
+        maxPatientsPerDay: 20,
+        emergencyAvailability: true,
+      },
+      security: {
+        twoFactorAuth: false,
+        loginAlerts: false,
+        sessionTimeout: 30,
+        passwordExpiry: 90,
+        ipWhitelist: [],
+        auditLogs: true,
+        dataEncryption: true,
+        backupFrequency: "daily",
+      },
     },
-    security: {
-      twoFactorAuth: true,
-      loginAlerts: true,
-      sessionTimeout: 30,
-      passwordExpiry: 90,
-      ipWhitelist: ["192.168.1.100", "10.0.0.50"],
-      auditLogs: true,
-      dataEncryption: true,
-      backupFrequency: "daily",
-    },
-  });
+  );
 
-  const [formData, setFormData] = useState(originalData);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Fetch settings on component mount
+  useEffect(() => {
+    dispatch(fetchDoctorSettings());
+  }, [dispatch]);
+
+  // Update form data when settings are fetched
+  useEffect(() => {
+    if (settingsData) {
+      setFormData(settingsData);
+    }
+  }, [settingsData]);
+
+  // Clear success message after 3 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(""), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // Show loader while fetching
+  if (isLoading && !settingsData) {
+    return (
+      <div className="flex h-[80vh] w-full items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const handleEdit = (section: string) => {
     setEditStates((prev) => ({ ...prev, [section]: true }));
@@ -93,22 +157,31 @@ const DoctorSettingsPage = () => {
 
   const handleCancel = (section: string) => {
     setEditStates((prev) => ({ ...prev, [section]: false }));
-    setFormData((prev) => ({
-      ...prev,
-      [section]: originalData[section as keyof typeof originalData],
-    }));
+    if (settingsData) {
+      setFormData(settingsData);
+    }
   };
 
   const handleSave = async (section: string) => {
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setOriginalData((prev) => ({
-      ...prev,
-      [section]: formData[section as keyof typeof formData],
-    }));
-    setEditStates((prev) => ({ ...prev, [section]: false }));
-    setIsLoading(false);
+    try {
+      if (section === "profile") {
+        await dispatch(updateProfileSettings(formData.profile as any)).unwrap();
+      } else if (section === "business") {
+        await dispatch(
+          updateBusinessSettings(formData.business as any),
+        ).unwrap();
+      } else if (section === "security") {
+        await dispatch(
+          updateSecuritySettings(formData.security as any),
+        ).unwrap();
+      }
+      setEditStates((prev) => ({ ...prev, [section]: false }));
+      setSuccessMessage(
+        `${section.charAt(0).toUpperCase() + section.slice(1)} settings updated successfully!`,
+      );
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+    }
   };
 
   const handleInputChange = (
@@ -157,6 +230,23 @@ const DoctorSettingsPage = () => {
         </div>
       </div>
 
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Success Alert */}
+      {successMessage && (
+        <Alert className="border-green-200 bg-green-50">
+          <AlertDescription className="text-green-800">
+            {successMessage}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
           <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -181,15 +271,16 @@ const DoctorSettingsPage = () => {
                       <Button
                         variant="outline"
                         onClick={() => handleCancel("profile")}
+                        disabled={isSaving}
                       >
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
                       <Button
                         onClick={() => handleSave("profile")}
-                        disabled={isLoading}
+                        disabled={isSaving}
                       >
-                        {isLoading ? (
+                        {isSaving ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
                           <Save className="w-4 h-4 mr-2" />
@@ -212,10 +303,10 @@ const DoctorSettingsPage = () => {
                 <Avatar className="w-24 h-24">
                   <AvatarImage
                     src={formData.profile.avatar}
-                    alt={formData.profile.name}
+                    alt={formData.profile.name || "Doctor"}
                   />
                   <AvatarFallback className="text-2xl">
-                    {formData.profile.name
+                    {(formData.profile.name || "D")
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
@@ -491,15 +582,16 @@ const DoctorSettingsPage = () => {
                       <Button
                         variant="outline"
                         onClick={() => handleCancel("business")}
+                        disabled={isSaving}
                       >
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
                       <Button
                         onClick={() => handleSave("business")}
-                        disabled={isLoading}
+                        disabled={isSaving}
                       >
-                        {isLoading ? (
+                        {isSaving ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
                           <Save className="w-4 h-4 mr-2" />
@@ -785,15 +877,16 @@ const DoctorSettingsPage = () => {
                       <Button
                         variant="outline"
                         onClick={() => handleCancel("security")}
+                        disabled={isSaving}
                       >
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                       </Button>
                       <Button
                         onClick={() => handleSave("security")}
-                        disabled={isLoading}
+                        disabled={isSaving}
                       >
-                        {isLoading ? (
+                        {isSaving ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
                           <Save className="w-4 h-4 mr-2" />

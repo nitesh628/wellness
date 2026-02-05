@@ -20,6 +20,7 @@ import reportReducer from "./features/reportSlice";
 import dashboardReducer from "./features/dashboardSlice";
 import { appointmentCountReducer } from "./features/dashboardSlice";
 import patientReducer from "./features/patientSlice";
+import doctorSettingsReducer from "./features/doctorSettingsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -44,6 +45,7 @@ export const store = configureStore({
     dashboard: dashboardReducer,
     appointmentCount: appointmentCountReducer,
     patients: patientReducer,
+    doctorSettings: doctorSettingsReducer,
   },
 });
 

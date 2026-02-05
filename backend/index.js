@@ -26,6 +26,7 @@ import patientRoute from './routes/patientRoute.js';
 import prescriptionRoute from './routes/prescriptionRoute.js';
 import reportRoute from './routes/reportRoute.js';
 import dashboardRoute from './routes/dashboardRoute.js';
+import doctorSettingsRoute from './routes/doctorSettingsRoute.js';
 
 //customer routes
 import customerRoute from './routes/customerRoute.js';
@@ -92,6 +93,7 @@ app.use('/v1/patients', patientRoute);
 app.use('/v1/prescriptions', prescriptionRoute);
 app.use('/v1/reports', reportRoute);
 app.use('/v1/dashboard', dashboardRoute);
+app.use('/v1/doctor-settings', doctorSettingsRoute);
 
 //customer routes
 app.use('/v1/customer', customerRoute);
