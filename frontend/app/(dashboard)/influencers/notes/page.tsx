@@ -1102,12 +1102,20 @@ const NotesPage = () => {
                       <Label htmlFor="editNoteTitle">Note Title</Label>
                       <Input
                         id="editNoteTitle"
-                        defaultValue={selectedNote.title}
+                        value={formData.title}
+                        onChange={(e) =>
+                          setFormData({ ...formData, title: e.target.value })
+                        }
                       />
                     </div>
                     <div>
                       <Label htmlFor="editNoteCategory">Category</Label>
-                      <Select defaultValue={selectedNote.category}>
+                      <Select
+                        value={formData.category}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, category: value })
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -1122,7 +1130,12 @@ const NotesPage = () => {
                     </div>
                     <div>
                       <Label htmlFor="editNotePriority">Priority</Label>
-                      <Select defaultValue={selectedNote.priority}>
+                      <Select
+                        value={formData.priority}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, priority: value })
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -1135,7 +1148,12 @@ const NotesPage = () => {
                     </div>
                     <div>
                       <Label htmlFor="editNoteStatus">Status</Label>
-                      <Select defaultValue={selectedNote.status}>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, status: value })
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -1150,14 +1168,18 @@ const NotesPage = () => {
                       <Label htmlFor="editAuthorName">Author Name</Label>
                       <Input
                         id="editAuthorName"
-                        defaultValue={selectedNote.authorName}
+                        value={selectedNote.authorName}
+                        readOnly
                       />
                     </div>
                     <div>
                       <Label htmlFor="editNoteTags">Tags</Label>
                       <Input
                         id="editNoteTags"
-                        defaultValue={selectedNote.tags.join(", ")}
+                        value={formData.tags}
+                        onChange={(e) =>
+                          setFormData({ ...formData, tags: e.target.value })
+                        }
                       />
                     </div>
                   </div>
@@ -1167,9 +1189,13 @@ const NotesPage = () => {
                   <div>
                     <Label htmlFor="editNoteContent">Note Content</Label>
                     <div className="mt-2">
-                      <LexicalEditor
-                        initialContent={selectedNote.content}
+                      <textarea
+                        className="w-full min-h-[300px] p-3 border rounded-md"
                         placeholder="Start writing your note..."
+                        value={formData.content}
+                        onChange={(e) =>
+                          setFormData({ ...formData, content: e.target.value })
+                        }
                       />
                     </div>
                   </div>
