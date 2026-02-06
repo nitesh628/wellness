@@ -195,6 +195,21 @@ export const fetchUserDetails = async (
   token: string,
 ): Promise<UserDetails | null> => {
   try {
+    const checkResponse = await fetch(getApiV1Url("/auth/check"), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (checkResponse.ok) {
+      const checkData = await checkResponse.json();
+      if (checkData?.user) {
+        return checkData.user;
+      }
+    }
+
     const response = await fetch(getApiV1Url(`/users/${userId}`), {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -202,18 +217,18 @@ export const fetchUserDetails = async (
       },
     });
 
-    if (response.ok) {
-      const userData = await response.json();
-
-      // Handle the response structure: { success: true, user: {...} }
-      if (userData.success && userData.user) {
-        return userData.user;
-      } else {
-        throw new Error("Invalid response structure");
-      }
-    } else {
+    if (!response.ok) {
       throw new Error("Failed to fetch user details");
     }
+
+    const userData = await response.json();
+
+    // Handle the response structure: { success: true, user: {...} }
+    if (userData.success && userData.user) {
+      return userData.user;
+    }
+
+    throw new Error("Invalid response structure");
   } catch (error) {
     console.error("Error fetching user details:", error);
     return null;

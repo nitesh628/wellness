@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import StatsCards from "@/components/profile/StatsCards";
@@ -14,9 +14,11 @@ import ProfileDialogs from "@/components/profile/ProfileDialogs";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectUser,
+  setUser,
   updateProfile,
   User,
 } from "@/lib/redux/features/authSlice";
+import { fetchUserDetails, getSessionData } from "@/lib/utils/auth";
 
 interface Appointment {
   id: string;
@@ -131,9 +133,37 @@ const UserProfile = () => {
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-
-  // Local state for editing profile data
+  const [isMounted, setIsMounted] = useState(false);
   const [editingProfile, setEditingProfile] = useState<User | null>(null);
+
+  useEffect(() => {
+    const loadUserFromStorage = async () => {
+      const sessionData = getSessionData();
+      if (sessionData && !currentUser) {
+        try {
+          const userDetails = await fetchUserDetails(
+            sessionData.user,
+            sessionData.token,
+          );
+          if (userDetails) {
+            dispatch(setUser(userDetails));
+          }
+        } catch (error) {
+          console.error("Error loading user from localStorage:", error);
+        }
+      }
+    };
+
+    loadUserFromStorage();
+  }, [dispatch, currentUser]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return <div className="min-h-screen" />;
+  }
 
   const handleSaveProfile = async () => {
     if (!currentUser?._id || !editingProfile) return;
