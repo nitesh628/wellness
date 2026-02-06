@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
+
+const API_BASE_URL = getApiV1BaseUrl();
 
 // Define the Order type
 export interface Order {
@@ -15,11 +18,17 @@ export interface Order {
       quantity: number;
       price: number;
       total: number;
-    }
+    },
   ];
   paymentMethod: "Credit Card" | "Debit Card" | "UPI" | "Net Banking" | "COD";
   paymentStatus: "Paid" | "Pending" | "Refunded" | "Failed";
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled" | "Returned";
+  status:
+    | "Pending"
+    | "Processing"
+    | "Shipped"
+    | "Delivered"
+    | "Cancelled"
+    | "Returned";
   trackingNumber?: string;
   shippingCost: string;
   subTotal: number;
@@ -41,7 +50,14 @@ interface OrderState {
   isLoading: boolean;
   error: string | null;
   filters: {
-    status: "" | "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled" | "Returned";
+    status:
+      | ""
+      | "Pending"
+      | "Processing"
+      | "Shipped"
+      | "Delivered"
+      | "Cancelled"
+      | "Returned";
     paymentStatus: "" | "Paid" | "Pending" | "Refunded" | "Failed";
     dateRange?: {
       from: string;
@@ -65,7 +81,7 @@ const initialState: OrderState = {
 
 // Create the slice
 const orderSlice = createSlice({
-  name: "order",    
+  name: "order",
   initialState,
   reducers: {
     setOrdersData: (state, action: PayloadAction<Order[]>) => {
@@ -89,7 +105,10 @@ const orderSlice = createSlice({
     clearSelectedOrder: (state) => {
       state.selectedOrder = null;
     },
-    setFilters: (state, action: PayloadAction<Partial<OrderState['filters']>>) => {
+    setFilters: (
+      state,
+      action: PayloadAction<Partial<OrderState["filters"]>>,
+    ) => {
       state.filters = { ...state.filters, ...action.payload };
     },
     clearFilters: (state) => {
@@ -117,189 +136,196 @@ const handleApiError = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 // Fetch orders with filters
-export const fetchOrdersData = () => async (dispatch: AppDispatch, getState: () => { order: OrderState }) => {
-  dispatch(setOrderLoading());
-  try {
-    const { filters } = getState().order;
-    const queryParams = new URLSearchParams();
+export const fetchOrdersData =
+  () =>
+  async (dispatch: AppDispatch, getState: () => { order: OrderState }) => {
+    dispatch(setOrderLoading());
+    try {
+      const { filters } = getState().order;
+      const queryParams = new URLSearchParams();
 
-    // Add filter parameters if they exist
-    if (filters.status) {
-      queryParams.append('status', filters.status);
-    }
-    if (filters.paymentStatus) {
-      queryParams.append('paymentStatus', filters.paymentStatus);
-    }
-    if (filters.search) {
-      queryParams.append('search', filters.search);
-    }
-    if (filters.dateRange) {
-      queryParams.append('fromDate', filters.dateRange.from);
-      queryParams.append('toDate', filters.dateRange.to);
-    }
+      // Add filter parameters if they exist
+      if (filters.status) {
+        queryParams.append("status", filters.status);
+      }
+      if (filters.paymentStatus) {
+        queryParams.append("paymentStatus", filters.paymentStatus);
+      }
+      if (filters.search) {
+        queryParams.append("q", filters.search);
+      }
+      if (filters.dateRange) {
+        queryParams.append("fromDate", filters.dateRange.from);
+        queryParams.append("toDate", filters.dateRange.to);
+      }
 
-    const queryString = queryParams.toString();
-    const url = queryString ?
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders?${queryString}` :
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders`;
+      const queryString = queryParams.toString();
+      const url = queryString
+        ? `${API_BASE_URL}/orders?${queryString}`
+        : `${API_BASE_URL}/orders`;
 
-    const response = await axios.get(url);
+      const response = await axios.get(url);
 
-    if (response.data?.success) {
-      dispatch(setOrdersData(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch orders");
+      if (response.data?.success) {
+        dispatch(setOrdersData(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch orders");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setOrderError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setOrderError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Fetch order by ID
-export const fetchOrderById = (orderId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setOrderLoading());
-  try {
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getOrderById/${orderId}`
-    );
-    if (response.data?.success) {
-      dispatch(setSelectedOrder(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch order");
+export const fetchOrderById =
+  (orderId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setOrderLoading());
+    try {
+      const response = await axios.get(`${API_BASE_URL}/orders/${orderId}`);
+      if (response.data?.success) {
+        dispatch(setSelectedOrder(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch order");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setOrderError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setOrderError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Create new order
-export const createOrder = (orderData: Omit<Order, '_id' | 'createdAt' | 'updatedAt'>) => async (dispatch: AppDispatch) => {
-  dispatch(setOrderLoading());
-  try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/createOrder`,
-      orderData
-    );
-    if (response.data?.success) {
-      dispatch(setSelectedOrder(response.data.data));
-      return response.data.data;
-    } else {
-      throw new Error(response.data?.message || "Failed to create order");
+export const createOrder =
+  (orderData: Omit<Order, "_id" | "createdAt" | "updatedAt">) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setOrderLoading());
+    try {
+      const response = await axios.post(`${API_BASE_URL}/orders`, orderData);
+      if (response.data?.success) {
+        dispatch(setSelectedOrder(response.data.data));
+        return response.data.data;
+      } else {
+        throw new Error(response.data?.message || "Failed to create order");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setOrderError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setOrderError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Update order status
-export const updateOrderStatus = (
-  orderId: string,
-  status: Order['status'],
-  trackingNumber?: string
-) => async (dispatch: AppDispatch) => {
-  dispatch(setOrderLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/updateOrderStatus/${orderId}`,
-      { status, trackingNumber }
-    );
-    if (response.data?.success) {
-      dispatch(setSelectedOrder(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to update order status");
+export const updateOrderStatus =
+  (orderId: string, status: Order["status"], trackingNumber?: string) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setOrderLoading());
+    try {
+      const response = await axios.put(`${API_BASE_URL}/orders/${orderId}`, {
+        status,
+        trackingNumber,
+      });
+      if (response.data?.success) {
+        dispatch(setSelectedOrder(response.data.data));
+        return true;
+      } else {
+        throw new Error(
+          response.data?.message || "Failed to update order status",
+        );
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setOrderError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setOrderError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Update payment status
-export const updatePaymentStatus = (
-  orderId: string,
-  paymentStatus: Order['paymentStatus']
-) => async (dispatch: AppDispatch) => {
-  dispatch(setOrderLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/updatePaymentStatus/${orderId}`,
-      { paymentStatus }
-    );
-    if (response.data?.success) {
-      dispatch(setSelectedOrder(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to update payment status");
+export const updatePaymentStatus =
+  (orderId: string, paymentStatus: Order["paymentStatus"]) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setOrderLoading());
+    try {
+      const response = await axios.put(`${API_BASE_URL}/orders/${orderId}`, {
+        paymentStatus,
+      });
+      if (response.data?.success) {
+        dispatch(setSelectedOrder(response.data.data));
+        return true;
+      } else {
+        throw new Error(
+          response.data?.message || "Failed to update payment status",
+        );
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setOrderError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setOrderError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Cancel order
-export const cancelOrder = (orderId: string, reason: string) => async (dispatch: AppDispatch) => {
-  dispatch(setOrderLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/cancelOrder/${orderId}`,
-      { reason }
-    );
-    if (response.data?.success) {
-      dispatch(setSelectedOrder(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to cancel order");
+export const cancelOrder =
+  (orderId: string, reason: string) => async (dispatch: AppDispatch) => {
+    dispatch(setOrderLoading());
+    try {
+      const response = await axios.put(`${API_BASE_URL}/orders/${orderId}`, {
+        status: "Cancelled",
+        cancelReason: reason,
+      });
+      if (response.data?.success) {
+        dispatch(setSelectedOrder(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to cancel order");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setOrderError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setOrderError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Return order
-export const returnOrder = (orderId: string, reason: string) => async (dispatch: AppDispatch) => {
-  dispatch(setOrderLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/returnOrder/${orderId}`,
-      { reason }
-    );
-    if (response.data?.success) {
-      dispatch(setSelectedOrder(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to return order");
+export const returnOrder =
+  (orderId: string, reason: string) => async (dispatch: AppDispatch) => {
+    dispatch(setOrderLoading());
+    try {
+      const response = await axios.put(`${API_BASE_URL}/orders/${orderId}`, {
+        status: "Returned",
+        returnReason: reason,
+      });
+      if (response.data?.success) {
+        dispatch(setSelectedOrder(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to return order");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setOrderError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setOrderError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Selectors
-export const selectOrders = (state: { order: OrderState }) => state.order.orders;
-export const selectSelectedOrder = (state: { order: OrderState }) => state.order.selectedOrder;
-export const selectOrderLoading = (state: { order: OrderState }) => state.order.isLoading;
-export const selectOrderError = (state: { order: OrderState }) => state.order.error;
-export const selectOrderFilters = (state: { order: OrderState }) => state.order.filters;
+export const selectOrders = (state: { order: OrderState }) =>
+  state.order.orders;
+export const selectSelectedOrder = (state: { order: OrderState }) =>
+  state.order.selectedOrder;
+export const selectOrderLoading = (state: { order: OrderState }) =>
+  state.order.isLoading;
+export const selectOrderError = (state: { order: OrderState }) =>
+  state.order.error;
+export const selectOrderFilters = (state: { order: OrderState }) =>
+  state.order.filters;
 
 // Export the reducer
-export default orderSlice.reducer;  
+export default orderSlice.reducer;

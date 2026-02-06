@@ -42,6 +42,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getApiV1Url } from "@/lib/utils/api";
 
 // Types
 interface ReferralCode {
@@ -109,12 +110,7 @@ const ReferralsPage = () => {
       setLoading(true);
       setError(null);
 
-      // Debug: Check cookies
-      console.log("All cookies:", document.cookie);
-      console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
-
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-referrals/dashboard`;
-      console.log("Full API URL:", apiUrl);
+      const apiUrl = getApiV1Url("/influencer-referrals/dashboard");
 
       const response = await fetch(apiUrl, {
         method: "GET",
@@ -123,12 +119,6 @@ const ReferralsPage = () => {
           "Content-Type": "application/json",
         },
       });
-
-      console.log("Response status:", response.status);
-      console.log(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries()),
-      );
 
       if (!response.ok) {
         const errorData = await response
@@ -149,7 +139,6 @@ const ReferralsPage = () => {
       }
 
       const result = await response.json();
-      console.log("Referral API Response:", result);
 
       if (result.success && result.data) {
         setReferralData(result.data);

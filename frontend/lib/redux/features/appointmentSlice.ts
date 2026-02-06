@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch, RootState } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
 
 export interface User {
   _id: string;
@@ -85,12 +86,7 @@ const initialState: AppointmentState = {
   },
 };
 
-const sanitizeBaseUrl = (url?: string) => {
-  if (!url) return "";
-  return url.endsWith("/") ? url.slice(0, -1) : url;
-};
-
-const API_BASE_URL = `${sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL) || sanitizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) || "http://localhost:5000"}/v1/appointments`;
+const API_BASE_URL = `${getApiV1BaseUrl()}/appointments`;
 
 // --- Helper for Auth Headers ---
 const getAuthConfig = () => {
@@ -211,17 +207,12 @@ export const fetchAppointments =
     try {
       const { page, limit } = getState().appointments.pagination;
       const url = `${API_BASE_URL}?page=${page}&limit=${limit}`;
-
-      console.log("Fetching appointments from:", url);
       const response = await axios.get(url, getAuthConfig());
-
-      console.log("API Response:", response.data);
 
       if (response.data.success) {
         const uiData = response.data.data.map((item: ApiAppointment) =>
           mapApiToUI(item),
         );
-        console.log("Mapped UI data:", uiData);
         dispatch(
           setAppointments({
             data: uiData,

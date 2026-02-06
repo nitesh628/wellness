@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
 
 export interface Blog {
   _id: string;
@@ -90,7 +91,7 @@ const initialState: BlogsState = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: getApiV1BaseUrl(),
   withCredentials: true,
 });
 
@@ -111,7 +112,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 const blogsSlice = createSlice({
@@ -120,7 +121,7 @@ const blogsSlice = createSlice({
   reducers: {
     setBlogsData: (
       state,
-      action: PayloadAction<{ data: Blog[]; total: number }>
+      action: PayloadAction<{ data: Blog[]; total: number }>,
     ) => {
       state.data = action.payload.data;
       state.pagination.total = action.payload.total;
@@ -142,14 +143,14 @@ const blogsSlice = createSlice({
     },
     setFilters: (
       state,
-      action: PayloadAction<Partial<BlogsState["filters"]>>
+      action: PayloadAction<Partial<BlogsState["filters"]>>,
     ) => {
       state.filters = { ...state.filters, ...action.payload };
       state.pagination.page = 1;
     },
     setPagination: (
       state,
-      action: PayloadAction<Partial<BlogsState["pagination"]>>
+      action: PayloadAction<Partial<BlogsState["pagination"]>>,
     ) => {
       state.pagination = { ...state.pagination, ...action.payload };
     },
@@ -223,18 +224,18 @@ export const fetchBlogsData =
         queryParams.append("search", filters.search);
       }
 
-      const response = await api.get(`/blogs/?${queryParams}`);
+      const response = await api.get(`/blogs?${queryParams}`);
 
       if (response.data?.success) {
         const mappedBlogs = response.data.data.blogs.map((blog: ApiBlog) =>
-          mapApiBlogToBlog(blog)
+          mapApiBlogToBlog(blog),
         );
 
         dispatch(
           setBlogsData({
             data: mappedBlogs,
             total: response.data.data.pagination.totalBlogs,
-          })
+          }),
         );
       } else {
         throw new Error(response.data?.message || "Failed to fetch blogs");
@@ -265,18 +266,19 @@ export const fetchActiveBlogs =
         queryParams.append("search", filters.search);
       }
 
-      const response = await api.get(`/blogs/getActiveBlogs?${queryParams}`);
+      queryParams.append("status", "published");
+      const response = await api.get(`/blogs?${queryParams}`);
 
       if (response.data?.success) {
         const mappedBlogs = response.data.data.blogs.map((blog: ApiBlog) =>
-          mapApiBlogToBlog(blog)
+          mapApiBlogToBlog(blog),
         );
 
         dispatch(
           setBlogsData({
             data: mappedBlogs,
             total: response.data.data.pagination.totalBlogs,
-          })
+          }),
         );
       } else {
         throw new Error(response.data?.message || "Failed to fetch blogs");
@@ -292,7 +294,7 @@ export const fetchBlogById =
   (blogId: string) => async (dispatch: AppDispatch) => {
     dispatch(setBlogsLoading());
     try {
-      const response = await api.get(`/blogs/getBlogById/${blogId}`);
+      const response = await api.get(`/blogs/${blogId}`);
       if (response.data?.success) {
         const blog = response.data.data;
         const mappedBlog = mapApiBlogToBlog(blog);
@@ -312,15 +314,20 @@ export const fetchBlogBySlug =
   (slug: string) => async (dispatch: AppDispatch) => {
     dispatch(setBlogsLoading());
     try {
-      const response = await api.get(`/blogs/getBlogBySlug/${slug}`);
+      const response = await api.get(`/blogs?search=${slug}`);
       if (response.data?.success) {
-        const blog = response.data.data;
-        const mappedBlog = mapApiBlogToBlog(blog);
-        dispatch(setSelectedBlog(mappedBlog));
-        return true;
-      } else {
-        throw new Error(response.data?.message || "Failed to fetch blog");
+        const items = response.data.data.blogs || [];
+        const mapped = items.map((blog: ApiBlog) => mapApiBlogToBlog(blog));
+        const match = mapped.find(
+          (blog) => blog.slug === slug || (blog as any).urlSlug === slug,
+        );
+        if (match) {
+          dispatch(setSelectedBlog(match));
+          return true;
+        }
+        throw new Error("Blog not found");
       }
+      throw new Error(response.data?.message || "Failed to fetch blog");
     } catch (error: unknown) {
       const errorMessage = handleApiError(error);
       dispatch(setBlogsError(errorMessage));
@@ -331,17 +338,17 @@ export const fetchBlogBySlug =
 export const fetchLatestBlogs = () => async (dispatch: AppDispatch) => {
   dispatch(setBlogsLoading());
   try {
-    const response = await api.get(`/blogs/getLatestBlogs`);
+    const response = await api.get(`/blogs?page=1&limit=10`);
     if (response.data?.success) {
       const mappedBlogs = response.data.data.blogs.map((blog: ApiBlog) =>
-        mapApiBlogToBlog(blog)
+        mapApiBlogToBlog(blog),
       );
 
       dispatch(
         setBlogsData({
           data: mappedBlogs,
           total: response.data.data.pagination.totalBlogs,
-        })
+        }),
       );
     } else {
       throw new Error(response.data?.message || "Failed to fetch latest blogs");
@@ -356,7 +363,7 @@ export const fetchLatestBlogs = () => async (dispatch: AppDispatch) => {
 export const createBlog =
   (newBlog: FormData) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.post(`/blogs/newBlog`, newBlog, {
+      const response = await api.post(`/blogs/create`, newBlog, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -379,17 +386,7 @@ export const createBlog =
 export const generateBlogs =
   (message: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.post(`/blogs/blogGenerate`, {
-        message: message,
-      });
-      if (response.data?.success) {
-        return {
-          type: "blogs/generateBlogs/fulfilled",
-          payload: response.data.reply,
-        };
-      } else {
-        throw new Error(response.data?.message || "Failed to generate blogs");
-      }
+      throw new Error("Blog generation is not supported by the backend");
     } catch (error: unknown) {
       const errorMessage = handleApiError(error);
       dispatch(setBlogsError(errorMessage));
@@ -398,14 +395,14 @@ export const generateBlogs =
   };
 
 export const updateBlogStatus =
-  (blogId: string) => async (dispatch: AppDispatch) => {
+  (blogId: string, status: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.put(`/blogs/updateBlogStatus/${blogId}`);
+      const response = await api.put(`/blogs/${blogId}`, { status });
       if (response.data?.success) {
         dispatch(fetchBlogsData());
       } else {
         throw new Error(
-          response.data?.message || "Failed to update blog status"
+          response.data?.message || "Failed to update blog status",
         );
       }
     } catch (error: unknown) {
@@ -418,15 +415,11 @@ export const updateBlogStatus =
 export const updateBlog =
   (blogId: string, updatedData: FormData) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.put(
-        `/blogs/updateBlog/${blogId}`,
-        updatedData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await api.put(`/blogs/${blogId}`, updatedData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       if (response.data?.success) {
         dispatch(fetchBlogsData());
         return true;
@@ -442,7 +435,7 @@ export const updateBlog =
 
 export const deleteBlog = (blogId: string) => async (dispatch: AppDispatch) => {
   try {
-    const response = await api.delete(`/blogs/deleteBlog/${blogId}`);
+    const response = await api.delete(`/blogs/${blogId}`);
     if (response.data?.success) {
       dispatch(fetchBlogsData());
       return true;

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { getApiV1Url } from "@/lib/utils/api";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,7 +25,10 @@ import { toast } from "sonner";
 import RazorpayButton from "@/components/RazorpayButton";
 import Swal from "sweetalert2";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUser, selectIsAuthenticated } from "@/lib/redux/features/authSlice";
+import {
+  selectUser,
+  selectIsAuthenticated,
+} from "@/lib/redux/features/authSlice";
 
 const formatPrice = (amount: number) => {
   return new Intl.NumberFormat("en-IN", {
@@ -211,14 +215,7 @@ const CheckoutPage = () => {
         // Add more fields if needed
       };
 
-      console.log("Order Payload:", orderPayload);
-
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/orders`,
-        orderPayload,
-      );
-
-      console.log("Order API Response:", response.data);
+      const response = await axios.post(getApiV1Url("/orders"), orderPayload);
 
       clearCart();
       setIsOrderPlaced(true);
@@ -227,7 +224,7 @@ const CheckoutPage = () => {
         text: "Your order has been placed successfully.",
         icon: "success",
         confirmButtonColor: "#2563eb",
-        confirmButtonText: "Track Order"
+        confirmButtonText: "Track Order",
       }).then(() => {
         router.push("/track-order");
       });
@@ -289,10 +286,7 @@ const CheckoutPage = () => {
         razorpaySignature: paymentData.razorpay_signature,
       };
 
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/orders`,
-        orderPayload,
-      );
+      const response = await axios.post(getApiV1Url("/orders"), orderPayload);
 
       clearCart();
       setIsOrderPlaced(true);
@@ -301,7 +295,7 @@ const CheckoutPage = () => {
         text: "Your order has been placed successfully.",
         icon: "success",
         confirmButtonColor: "#2563eb",
-        confirmButtonText: "Track Order"
+        confirmButtonText: "Track Order",
       }).then(() => {
         router.push("/track-order");
       });
@@ -554,10 +548,11 @@ const CheckoutPage = () => {
 
               <div className="space-y-4">
                 <label
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "cod"
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
-                    }`}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === "cod"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
+                  }`}
                 >
                   <input
                     type="radio"
@@ -579,10 +574,11 @@ const CheckoutPage = () => {
                 </label>
 
                 <label
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "online"
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
-                    }`}
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === "online"
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-slate-200 dark:border-slate-700 hover:border-blue-300"
+                  }`}
                 >
                   <input
                     type="radio"

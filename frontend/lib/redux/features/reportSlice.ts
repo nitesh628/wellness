@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
 import { RootState } from "../store";
 
 // --- Interfaces ---
@@ -33,7 +34,7 @@ const getAuthConfig = () => {
   };
 };
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/reports`; // Adjust base URL if needed
+const API_URL = `${getApiV1BaseUrl()}/reports`;
 
 // --- Thunks ---
 

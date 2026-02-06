@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
 import { AppDispatch, RootState } from "../store";
+import { getApiV1BaseUrl } from "../../utils/api";
 
 export interface Patient {
   _id: string;
@@ -58,14 +59,7 @@ const initialState: PatientState = {
   selectedPatient: null,
 };
 
-const sanitizeBaseUrl = (url?: string) => {
-  if (!url) return "";
-  return url.endsWith("/") ? url.slice(0, -1) : url;
-};
-
-const API_BASE_URL = `${sanitizeBaseUrl(
-  process.env.NEXT_PUBLIC_API_BASE_URL,
-)}/v1/patients`;
+const API_BASE_URL = `${getApiV1BaseUrl()}/patients`;
 
 // Helper to get auth token from cookies
 const getAuthToken = () => {

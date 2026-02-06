@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { getApiV1Url } from "@/lib/utils/api";
 import { Save, Edit, Loader2, Camera, Plus, X, Languages } from "lucide-react";
 import {
   Card,
@@ -114,17 +115,14 @@ const InfluencerSettingsPage = () => {
       setIsLoading(true);
       setError(null);
       const token = localStorage.getItem("token");
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-settings`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
+      const response = await fetch(getApiV1Url("/influencer-settings"), {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
-      );
+      });
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -221,20 +219,15 @@ const InfluencerSettingsPage = () => {
             ? "/v1/influencer-settings/business"
             : "/v1/influencer-settings/security";
 
-      console.log(`Saving ${section} settings:`, dataToSend);
-
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
-        {
-          method: "PUT",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-          body: JSON.stringify(dataToSend),
+      const response = await fetch(getApiV1Url(endpoint), {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
-      );
+        body: JSON.stringify(dataToSend),
+      });
 
       if (!response.ok) {
         if (response.status === 401) {

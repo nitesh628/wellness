@@ -69,7 +69,6 @@ const LoginPage = () => {
 
     try {
       const result = await dispatch(loginUser(email, password));
-      console.log("Login result:", result);
 
       if (
         result &&
@@ -77,7 +76,6 @@ const LoginPage = () => {
           (result.message === "login successful" && result.session))
       ) {
         const { session } = result;
-        console.log("Login successful, session:", session);
 
         storeAuthData(session);
 
@@ -94,19 +92,15 @@ const LoginPage = () => {
         if (userDetails && userDetails.role) {
           dispatch(setUser(userDetails));
           updateUserRole(userDetails.role);
-          console.log("Updated user role to:", userDetails.role);
 
           const dashboardUrl = getDashboardForRole(userDetails.role);
-          console.log("Redirecting to:", dashboardUrl);
 
           router.replace(dashboardUrl);
         } else {
-          console.log("Using fallback role: user");
           updateUserRole("user");
           router.replace("/profile");
         }
       } else {
-        console.log("Login failed or invalid response:", result);
       }
     } catch (error) {
       console.error("Login error:", error);

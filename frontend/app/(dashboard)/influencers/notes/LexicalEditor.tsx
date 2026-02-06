@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react'
-import { 
+import React, { useState, useEffect, useRef } from "react";
+import {
   Bold,
   Italic,
   Underline,
@@ -17,173 +17,188 @@ import {
   Save,
   Heading1,
   Heading2,
-  Heading3
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+  Heading3,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 interface LexicalEditorProps {
-  initialContent?: string
-  onChange?: (content: string) => void
-  placeholder?: string
+  initialContent?: string;
+  onChange?: (content: string) => void;
+  placeholder?: string;
 }
 
-const LexicalEditor: React.FC<LexicalEditorProps> = ({ 
-  initialContent = '', 
+const LexicalEditor: React.FC<LexicalEditorProps> = ({
+  initialContent = "",
   onChange,
-  placeholder = 'Start writing your medical note...'
+  placeholder = "Start writing your medical note...",
 }) => {
-  const [content, setContent] = useState(initialContent)
-  const [htmlContent, setHtmlContent] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [showLinkDialog, setShowLinkDialog] = useState(false)
-  const [linkUrl, setLinkUrl] = useState('')
-  const [linkText, setLinkText] = useState('')
-  const [showImageDialog, setShowImageDialog] = useState(false)
-  const [imageUrl, setImageUrl] = useState('')
-  const [imageAlt, setImageAlt] = useState('')
+  const [content, setContent] = useState(initialContent);
+  const [htmlContent, setHtmlContent] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkText, setLinkText] = useState("");
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageAlt, setImageAlt] = useState("");
 
   useEffect(() => {
     if (onChange) {
-      onChange(content)
+      onChange(content);
     }
     // Convert markdown to HTML for preview
-    setHtmlContent(convertMarkdownToHtml(content))
-  }, [content, onChange])
+    setHtmlContent(convertMarkdownToHtml(content));
+  }, [content, onChange]);
 
   const convertMarkdownToHtml = (markdown: string) => {
     return markdown
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/~~(.*?)~~/g, '<del>$1</del>')
-      .replace(/`(.*?)`/g, '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>')
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/~~(.*?)~~/g, "<del>$1</del>")
+      .replace(
+        /`(.*?)`/g,
+        '<code class="bg-muted px-1 py-0.5 rounded text-sm">$1</code>',
+      )
       .replace(/^# (.*$)/gm, '<h1 class="text-2xl font-bold mt-4 mb-2">$1</h1>')
       .replace(/^## (.*$)/gm, '<h2 class="text-xl font-bold mt-3 mb-2">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 class="text-lg font-bold mt-2 mb-1">$1</h3>')
-      .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-primary pl-4 italic my-2">$1</blockquote>')
+      .replace(
+        /^### (.*$)/gm,
+        '<h3 class="text-lg font-bold mt-2 mb-1">$1</h3>',
+      )
+      .replace(
+        /^> (.*$)/gm,
+        '<blockquote class="border-l-4 border-primary pl-4 italic my-2">$1</blockquote>',
+      )
       .replace(/^- (.*$)/gm, '<li class="ml-4">• $1</li>')
       .replace(/^1\. (.*$)/gm, '<li class="ml-4">1. $1</li>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary underline" target="_blank">$1</a>')
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => `<img src="${src}" alt="${alt || 'Image'}" class="max-w-full h-auto rounded my-2" />`)
-      .replace(/\n/g, '<br>')
-  }
+      .replace(
+        /\[([^\]]+)\]\(([^)]+)\)/g,
+        '<a href="$2" class="text-primary underline" target="_blank">$1</a>',
+      )
+      .replace(
+        /!\[([^\]]*)\]\(([^)]+)\)/g,
+        (match, alt, src) =>
+          `<img src="${src}" alt="${alt || "Image"}" class="max-w-full h-auto rounded my-2" />`,
+      )
+      .replace(/\n/g, "<br>");
+  };
 
-  const insertText = (before: string, after: string = '') => {
-    const textarea = textareaRef.current
-    if (!textarea) return
+  const insertText = (before: string, after: string = "") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const selectedText = content.substring(start, end)
-    
-    const newText = before + selectedText + after
-    const newContent = content.substring(0, start) + newText + content.substring(end)
-    
-    setContent(newContent)
-    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+
+    const newText = before + selectedText + after;
+    const newContent =
+      content.substring(0, start) + newText + content.substring(end);
+
+    setContent(newContent);
+
     // Set cursor position after the inserted text
     setTimeout(() => {
-      const newCursorPos = start + before.length + selectedText.length
-      textarea.setSelectionRange(newCursorPos, newCursorPos)
-      textarea.focus()
-    }, 0)
-  }
+      const newCursorPos = start + before.length + selectedText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+      textarea.focus();
+    }, 0);
+  };
 
   const handleFormat = (format: string) => {
     switch (format) {
-      case 'bold':
-        insertText('**', '**')
-        break
-      case 'italic':
-        insertText('*', '*')
-        break
-      case 'underline':
-        insertText('<u>', '</u>')
-        break
-      case 'strikethrough':
-        insertText('~~', '~~')
-        break
-      case 'code':
-        insertText('`', '`')
-        break
-      case 'quote':
-        insertText('> ')
-        break
-      case 'h1':
-        insertText('# ')
-        break
-      case 'h2':
-        insertText('## ')
-        break
-      case 'h3':
-        insertText('### ')
-        break
+      case "bold":
+        insertText("**", "**");
+        break;
+      case "italic":
+        insertText("*", "*");
+        break;
+      case "underline":
+        insertText("<u>", "</u>");
+        break;
+      case "strikethrough":
+        insertText("~~", "~~");
+        break;
+      case "code":
+        insertText("`", "`");
+        break;
+      case "quote":
+        insertText("> ");
+        break;
+      case "h1":
+        insertText("# ");
+        break;
+      case "h2":
+        insertText("## ");
+        break;
+      case "h3":
+        insertText("### ");
+        break;
     }
-  }
+  };
 
-  const handleList = (type: 'ul' | 'ol') => {
-    const textarea = textareaRef.current
-    if (!textarea) return
+  const handleList = (type: "ul" | "ol") => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
 
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const selectedText = content.substring(start, end)
-    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+
     if (selectedText) {
-      const lines = selectedText.split('\n')
-      const formattedLines = lines.map(line => {
-        if (type === 'ul') {
-          return line.trim() ? `- ${line.trim()}` : line
+      const lines = selectedText.split("\n");
+      const formattedLines = lines.map((line) => {
+        if (type === "ul") {
+          return line.trim() ? `- ${line.trim()}` : line;
         } else {
-          return line.trim() ? `1. ${line.trim()}` : line
+          return line.trim() ? `1. ${line.trim()}` : line;
         }
-      })
-      
-      const formattedText = formattedLines.join('\n')
-      const newContent = content.substring(0, start) + formattedText + content.substring(end)
-      setContent(newContent)
+      });
+
+      const formattedText = formattedLines.join("\n");
+      const newContent =
+        content.substring(0, start) + formattedText + content.substring(end);
+      setContent(newContent);
     } else {
       // If no text selected, just insert list marker
-      insertText(type === 'ul' ? '- ' : '1. ')
+      insertText(type === "ul" ? "- " : "1. ");
     }
-  }
+  };
 
   const handleLink = () => {
     if (linkUrl && linkText) {
-      const linkMarkdown = `[${linkText}](${linkUrl})`
-      insertText(linkMarkdown)
-      setShowLinkDialog(false)
-      setLinkUrl('')
-      setLinkText('')
+      const linkMarkdown = `[${linkText}](${linkUrl})`;
+      insertText(linkMarkdown);
+      setShowLinkDialog(false);
+      setLinkUrl("");
+      setLinkText("");
     }
-  }
+  };
 
   const handleImage = () => {
     if (imageUrl) {
-      const imageMarkdown = `![${imageAlt}](${imageUrl})`
-      insertText(imageMarkdown)
-      setShowImageDialog(false)
-      setImageUrl('')
-      setImageAlt('')
+      const imageMarkdown = `![${imageAlt}](${imageUrl})`;
+      insertText(imageMarkdown);
+      setShowImageDialog(false);
+      setImageUrl("");
+      setImageAlt("");
     }
-  }
+  };
 
   const handleUndo = () => {
     // Simple undo functionality
-    console.log('Undo')
-  }
+  };
 
   const handleRedo = () => {
     // Simple redo functionality
-    console.log('Redo')
-  }
+  };
 
   const handleSave = () => {
     // Save functionality
-    console.log('Save content:', content)
-  }
+  };
 
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -195,7 +210,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('bold')}
+              onClick={() => handleFormat("bold")}
               title="Bold (Ctrl+B)"
             >
               <Bold className="w-4 h-4" />
@@ -203,7 +218,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('italic')}
+              onClick={() => handleFormat("italic")}
               title="Italic (Ctrl+I)"
             >
               <Italic className="w-4 h-4" />
@@ -211,7 +226,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('underline')}
+              onClick={() => handleFormat("underline")}
               title="Underline (Ctrl+U)"
             >
               <Underline className="w-4 h-4" />
@@ -219,7 +234,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('strikethrough')}
+              onClick={() => handleFormat("strikethrough")}
               title="Strikethrough"
             >
               <Strikethrough className="w-4 h-4" />
@@ -227,7 +242,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('code')}
+              onClick={() => handleFormat("code")}
               title="Inline Code"
             >
               <Code className="w-4 h-4" />
@@ -239,7 +254,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('h1')}
+              onClick={() => handleFormat("h1")}
               title="Heading 1"
             >
               <Heading1 className="w-4 h-4" />
@@ -247,7 +262,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('h2')}
+              onClick={() => handleFormat("h2")}
               title="Heading 2"
             >
               <Heading2 className="w-4 h-4" />
@@ -255,7 +270,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('h3')}
+              onClick={() => handleFormat("h3")}
               title="Heading 3"
             >
               <Heading3 className="w-4 h-4" />
@@ -267,7 +282,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleList('ul')}
+              onClick={() => handleList("ul")}
               title="Bullet List"
             >
               <List className="w-4 h-4" />
@@ -275,7 +290,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleList('ol')}
+              onClick={() => handleList("ol")}
               title="Numbered List"
             >
               <ListOrdered className="w-4 h-4" />
@@ -283,7 +298,7 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => handleFormat('quote')}
+              onClick={() => handleFormat("quote")}
               title="Quote"
             >
               <Quote className="w-4 h-4" />
@@ -356,8 +371,10 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
 
         {/* Preview */}
         <div className="p-4">
-          <div className="text-sm font-medium text-muted-foreground mb-2">Preview</div>
-          <div 
+          <div className="text-sm font-medium text-muted-foreground mb-2">
+            Preview
+          </div>
+          <div
             className="prose prose-sm max-w-none min-h-[350px] p-3 border rounded bg-muted/20 overflow-y-auto"
             dangerouslySetInnerHTML={{ __html: htmlContent }}
           />
@@ -393,7 +410,10 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
               <Button onClick={handleLink} disabled={!linkUrl || !linkText}>
                 Add Link
               </Button>
-              <Button variant="outline" onClick={() => setShowLinkDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowLinkDialog(false)}
+              >
                 Cancel
               </Button>
             </div>
@@ -430,7 +450,10 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
               <Button onClick={handleImage} disabled={!imageUrl}>
                 Add Image
               </Button>
-              <Button variant="outline" onClick={() => setShowImageDialog(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowImageDialog(false)}
+              >
                 Cancel
               </Button>
             </div>
@@ -438,8 +461,8 @@ const LexicalEditor: React.FC<LexicalEditorProps> = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export { LexicalEditor }
-export default LexicalEditor
+export { LexicalEditor };
+export default LexicalEditor;

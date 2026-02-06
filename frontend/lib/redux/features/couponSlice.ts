@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
+
+const API_BASE_URL = getApiV1BaseUrl();
 
 // Define the Coupon type
 export interface Coupon {
@@ -59,8 +62,8 @@ const initialState: CouponState = {
   error: null,
   selectedCoupon: null,
   filters: {
-    status: '',
-    name: '',
+    status: "",
+    name: "",
   },
 };
 
@@ -87,7 +90,10 @@ const couponSlice = createSlice({
       state.isLoading = false;
       state.error = null;
     },
-    setFilters: (state, action: PayloadAction<Partial<CouponState['filters']>>) => {
+    setFilters: (
+      state,
+      action: PayloadAction<Partial<CouponState["filters"]>>,
+    ) => {
       state.filters = { ...state.filters, ...action.payload };
     },
     clearSelectedCoupon: (state) => {
@@ -108,7 +114,7 @@ export const {
 
 // Helper function to map API coupon to our Coupon interface
 const mapApiCouponToCoupon = (apiCoupon: ApiCoupon): Coupon => ({
-  _id: apiCoupon._id || '',
+  _id: apiCoupon._id || "",
   code: apiCoupon.code,
   type: apiCoupon.type,
   value: apiCoupon.value,
@@ -133,55 +139,61 @@ const handleApiError = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 // Fetch coupons with filters
-export const fetchCouponsData = () => async (dispatch: AppDispatch, getState: () => { coupons: CouponState }) => {
-  dispatch(setCouponLoading());
-  try {
-    const { filters } = getState().coupons;
-    const queryParams = new URLSearchParams();
+export const fetchCouponsData =
+  () =>
+  async (dispatch: AppDispatch, getState: () => { coupons: CouponState }) => {
+    dispatch(setCouponLoading());
+    try {
+      const { filters } = getState().coupons;
+      const queryParams = new URLSearchParams();
 
-    // Add filter parameters if they exist
-    if (filters.status && filters.status !== 'all') {
-      queryParams.append('status', filters.status);
+      // Add filter parameters if they exist
+      if (filters.status && filters.status !== "all") {
+        queryParams.append("status", filters.status);
+      }
+      if (filters.name) {
+        queryParams.append("name", filters.name);
+      }
+
+      const queryString = queryParams.toString();
+      const url = queryString
+        ? `${API_BASE_URL}/coupons?${queryString}`
+        : `${API_BASE_URL}/coupons`;
+
+      const response = await axios.get(url);
+
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        // Map API response to our Coupon interface
+        const mappedCoupons = response.data.data.map((coupon: ApiCoupon) =>
+          mapApiCouponToCoupon(coupon),
+        );
+
+        dispatch(setCouponData(mappedCoupons));
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch coupons");
+      }
+      return true;
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setCouponError(errorMessage));
+      return false;
     }
-    if (filters.name) {
-      queryParams.append('name', filters.name);
-    }
-
-    const queryString = queryParams.toString();
-    const url = queryString ? 
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons?${queryString}` :
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons`;
-
-    const response = await axios.get(url);
-
-    if (response.data?.success && Array.isArray(response.data.data)) {
-      // Map API response to our Coupon interface
-      const mappedCoupons = response.data.data.map((coupon: ApiCoupon) => mapApiCouponToCoupon(coupon));
-
-      dispatch(setCouponData(mappedCoupons));
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch coupons");
-    }
-    return true;
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setCouponError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Fetch active coupons
 export const fetchActiveCoupons = () => async (dispatch: AppDispatch) => {
   dispatch(setCouponLoading());
   try {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/getActiveCoupons`);
+    const response = await axios.get(`${API_BASE_URL}/coupons?status=active`);
     if (response.data?.success && Array.isArray(response.data.data)) {
       // Map API response to our Coupon interface
-      const mappedCoupons = response.data.data.map((coupon: ApiCoupon) => mapApiCouponToCoupon(coupon));
+      const mappedCoupons = response.data.data.map((coupon: ApiCoupon) =>
+        mapApiCouponToCoupon(coupon),
+      );
 
       dispatch(setCouponData(mappedCoupons));
     } else {
@@ -196,63 +208,69 @@ export const fetchActiveCoupons = () => async (dispatch: AppDispatch) => {
 };
 
 // Fetch coupon by ID
-export const fetchCouponById = (couponId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setCouponLoading());
-  try {
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/getCouponById/${couponId}`
-    );
-    if (response.data?.success) {
-      const coupon = response.data.data;
-      const mappedCoupon = mapApiCouponToCoupon(coupon);
-      dispatch(setSelectedCoupon(mappedCoupon));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch coupon");
+export const fetchCouponById =
+  (couponId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setCouponLoading());
+    try {
+      const response = await axios.get(`${API_BASE_URL}/coupons/${couponId}`);
+      if (response.data?.success) {
+        const coupon = response.data.data;
+        const mappedCoupon = mapApiCouponToCoupon(coupon);
+        dispatch(setSelectedCoupon(mappedCoupon));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch coupon");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setCouponError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setCouponError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Fetch coupon by code
-export const fetchCouponByCode = (code: string) => async (dispatch: AppDispatch) => {
-  dispatch(setCouponLoading());
-  try {
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/getCouponByCode/${code}`
-    );
-    if (response.data?.success) {
-      const coupon = response.data.data;
-      const mappedCoupon = mapApiCouponToCoupon(coupon);
-      dispatch(setSelectedCoupon(mappedCoupon));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch coupon");
+export const fetchCouponByCode =
+  (code: string) => async (dispatch: AppDispatch) => {
+    dispatch(setCouponLoading());
+    try {
+      const response = await axios.get(`${API_BASE_URL}/coupons?q=${code}`);
+      if (response.data?.success) {
+        const coupon = Array.isArray(response.data.data)
+          ? response.data.data[0]
+          : response.data.data;
+        if (coupon) {
+          const mappedCoupon = mapApiCouponToCoupon(coupon);
+          dispatch(setSelectedCoupon(mappedCoupon));
+          return true;
+        }
+        throw new Error("Coupon not found");
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch coupon");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setCouponError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setCouponError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Fetch latest coupons
 export const fetchLatestCoupons = () => async (dispatch: AppDispatch) => {
   dispatch(setCouponLoading());
   try {
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/getLatestCoupons`
+      `${API_BASE_URL}/coupons?sort=-createdAt&limit=10`,
     );
     if (response.data?.success) {
-      // Map API response to our Coupon interface
-      const mappedCoupons = response.data.data.coupons.map((coupon: ApiCoupon) => mapApiCouponToCoupon(coupon));
+      const mappedCoupons = response.data.data.map((coupon: ApiCoupon) =>
+        mapApiCouponToCoupon(coupon),
+      );
 
       dispatch(setCouponData(mappedCoupons));
     } else {
-      throw new Error(response.data?.message || "Failed to fetch latest coupons");
+      throw new Error(
+        response.data?.message || "Failed to fetch latest coupons",
+      );
     }
     return true;
   } catch (error: unknown) {
@@ -263,127 +281,145 @@ export const fetchLatestCoupons = () => async (dispatch: AppDispatch) => {
 };
 
 // Add a new coupon
-export const createCoupon = (newCoupon: Coupon) => async (dispatch: AppDispatch) => {
-  dispatch(setCouponLoading());
-  try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons`,
-      newCoupon
-    );
-    if (response.data?.success) {
-      dispatch(setCouponLoading());
-      return true;
-    } else {
-      const errorMessage = response.data?.message || "Failed to create coupon";
+export const createCoupon =
+  (newCoupon: Coupon) => async (dispatch: AppDispatch) => {
+    dispatch(setCouponLoading());
+    try {
+      const response = await axios.post(`${API_BASE_URL}/coupons`, newCoupon);
+      if (response.data?.success) {
+        dispatch(setCouponLoading());
+        return true;
+      } else {
+        const errorMessage =
+          response.data?.message || "Failed to create coupon";
+        dispatch(setCouponError(errorMessage));
+        return false;
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
       dispatch(setCouponError(errorMessage));
       return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setCouponError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Update coupon status
-export const updateCouponStatus = (couponId: string) => async (dispatch: AppDispatch) => {
-  try {
-    const response = await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/updateCouponStatus/${couponId}`);
-    if (response.data?.success) {
-      dispatch(setCouponLoading());
-    } else {
-      throw new Error(response.data?.message || "Failed to update coupon status");
+export const updateCouponStatus =
+  (couponId: string, status: "active" | "inactive") =>
+  async (dispatch: AppDispatch) => {
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/coupons/${couponId}/status`,
+        { status },
+      );
+      if (response.data?.success) {
+        dispatch(setCouponLoading());
+      } else {
+        throw new Error(
+          response.data?.message || "Failed to update coupon status",
+        );
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "An unexpected error occurred";
+      dispatch(setCouponError(errorMessage));
     }
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-    dispatch(setCouponError(errorMessage));
-  }
-}
+  };
 
 // Edit a coupon
-export const updateCoupon = (couponId: string, updatedData: Coupon) => async (dispatch: AppDispatch) => {
-  dispatch(setCouponLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/${couponId}`,
-      updatedData
-    );
-    if (response.data?.success) {
-      dispatch(setCouponLoading());
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to update coupon");
+export const updateCoupon =
+  (couponId: string, updatedData: Coupon) => async (dispatch: AppDispatch) => {
+    dispatch(setCouponLoading());
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/coupons/${couponId}`,
+        updatedData,
+      );
+      if (response.data?.success) {
+        dispatch(setCouponLoading());
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to update coupon");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setCouponError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setCouponError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Delete a coupon
-export const deleteCoupon = (couponId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setCouponLoading());
-  try {
-    const response = await axios.delete(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/${couponId}`
-    );
-    if (response.data?.success) {
-      dispatch(setCouponLoading());
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to delete coupon");
+export const deleteCoupon =
+  (couponId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setCouponLoading());
+    try {
+      const response = await axios.delete(
+        `${API_BASE_URL}/coupons/${couponId}`,
+      );
+      if (response.data?.success) {
+        dispatch(setCouponLoading());
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to delete coupon");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setCouponError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setCouponError(errorMessage));
-    return false;
-  }
-};
+  };
 
-export const validateCoupon = (couponCode: string) => async (dispatch: AppDispatch) => {
-  dispatch(setCouponLoading());
-  try {
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/validate/${couponCode}`
-    );
-    if (response.data?.success) {
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to validate coupon");
+export const validateCoupon =
+  (couponCode: string, orderAmount: number, userId?: string) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setCouponLoading());
+    try {
+      const response = await axios.post(`${API_BASE_URL}/coupons/validate`, {
+        code: couponCode,
+        orderAmount,
+        userId,
+      });
+      if (response.data?.success) {
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to validate coupon");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setCouponError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setCouponError(errorMessage));
-    return false;
-  }
-};
+  };
 
-export const redeemCoupon = (couponCode: string) => async (dispatch: AppDispatch) => {
-  dispatch(setCouponLoading());
-  try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/coupons/redeem`,
-      { couponCode }
-    );
-    if (response.data?.success) {
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to redeem coupon");
+export const redeemCoupon =
+  (couponCode: string) => async (dispatch: AppDispatch) => {
+    dispatch(setCouponLoading());
+    try {
+      const response = await axios.post(`${API_BASE_URL}/coupons/redeem`, {
+        code: couponCode,
+      });
+      if (response.data?.success) {
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to redeem coupon");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setCouponError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setCouponError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Selectors
-export const selectCouponsData = (state: { coupons: CouponState }) => state.coupons.data;
-export const selectCouponsLoading = (state: { coupons: CouponState }) => state.coupons.isLoading;
-export const selectCouponsError = (state: { coupons: CouponState }) => state.coupons.error;
-export const selectSelectedCoupon = (state: { coupons: CouponState }) => state.coupons.selectedCoupon;
-export const selectCouponsFilters = (state: { coupons: CouponState }) => state.coupons.filters;
+export const selectCouponsData = (state: { coupons: CouponState }) =>
+  state.coupons.data;
+export const selectCouponsLoading = (state: { coupons: CouponState }) =>
+  state.coupons.isLoading;
+export const selectCouponsError = (state: { coupons: CouponState }) =>
+  state.coupons.error;
+export const selectSelectedCoupon = (state: { coupons: CouponState }) =>
+  state.coupons.selectedCoupon;
+export const selectCouponsFilters = (state: { coupons: CouponState }) =>
+  state.coupons.filters;
 
 // Export the reducer
 export default couponSlice.reducer;

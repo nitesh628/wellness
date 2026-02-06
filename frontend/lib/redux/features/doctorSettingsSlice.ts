@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
 import { RootState } from "../store";
 
 interface ProfileSettings {
@@ -85,7 +86,7 @@ const getAuthConfig = () => {
   };
 };
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/doctor-settings`;
+const API_URL = `${getApiV1BaseUrl()}/doctor-settings`;
 
 // Thunks
 export const fetchDoctorSettings = createAsyncThunk(

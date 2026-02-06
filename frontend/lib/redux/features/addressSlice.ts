@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
+
+const API_BASE_URL = getApiV1BaseUrl();
 
 // Define the Address type
 export interface Address {
@@ -8,6 +11,7 @@ export interface Address {
   user: string;
   addresses: [
     {
+      _id?: string;
       name: string;
       phone: string;
       address: string;
@@ -18,7 +22,7 @@ export interface Address {
       isDefault: boolean;
       addressType: "Home" | "Work" | "Other";
       addressLabel?: string;
-    }
+    },
   ];
   createdAt: string;
   updatedAt: string;
@@ -80,121 +84,133 @@ const handleApiError = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 // Fetch user's addresses
-export const fetchUserAddresses = (userId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setAddressLoading());
-  try {
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/addresses/getUserAddresses/${userId}`
-    );
-    if (response.data?.success) {
-      dispatch(setAddressData(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch addresses");
+export const fetchUserAddresses =
+  (userId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setAddressLoading());
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/addresses/user/${userId}`,
+      );
+      if (response.data?.success) {
+        dispatch(setAddressData(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch addresses");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setAddressError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setAddressError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Add a new address
-export const addNewAddress = (userId: string, addressData: Address['addresses'][0]) => async (dispatch: AppDispatch) => {
-  dispatch(setAddressLoading());
-  try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/addresses/addAddress/${userId}`,
-      addressData
-    );
-    if (response.data?.success) {
-      dispatch(setAddressData(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to add address");
+export const addNewAddress =
+  (userId: string, addressData: Address["addresses"][0]) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setAddressLoading());
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/addresses/user/${userId}`,
+        addressData,
+      );
+      if (response.data?.success) {
+        dispatch(setAddressData(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to add address");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setAddressError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setAddressError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Update an address
-export const updateAddress = (
-  userId: string,
-  addressIndex: number,
-  updatedData: Partial<Address['addresses'][0]>
-) => async (dispatch: AppDispatch) => {
-  dispatch(setAddressLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/addresses/updateAddress/${userId}/${addressIndex}`,
-      updatedData
-    );
-    if (response.data?.success) {
-      dispatch(setAddressData(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to update address");
+export const updateAddress =
+  (
+    userId: string,
+    addressId: string,
+    updatedData: Partial<Address["addresses"][0]>,
+  ) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setAddressLoading());
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/addresses/user/${userId}/${addressId}`,
+        updatedData,
+      );
+      if (response.data?.success) {
+        dispatch(setAddressData(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to update address");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setAddressError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setAddressError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Delete an address
-export const deleteAddress = (userId: string, addressIndex: number) => async (dispatch: AppDispatch) => {
-  dispatch(setAddressLoading());
-  try {
-    const response = await axios.delete(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/addresses/deleteAddress/${userId}/${addressIndex}`
-    );
-    if (response.data?.success) {
-      dispatch(setAddressData(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to delete address");
+export const deleteAddress =
+  (userId: string, addressId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setAddressLoading());
+    try {
+      const response = await axios.delete(
+        `${API_BASE_URL}/addresses/user/${userId}/${addressId}`,
+      );
+      if (response.data?.success) {
+        dispatch(setAddressData(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to delete address");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setAddressError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setAddressError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Set default address
-export const setDefaultAddress = (userId: string, addressIndex: number) => async (dispatch: AppDispatch) => {
-  dispatch(setAddressLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/addresses/setDefaultAddress/${userId}/${addressIndex}`
-    );
-    if (response.data?.success) {
-      dispatch(setAddressData(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to set default address");
+export const setDefaultAddress =
+  (userId: string, addressId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setAddressLoading());
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/addresses/user/${userId}/${addressId}/default`,
+      );
+      if (response.data?.success) {
+        dispatch(setAddressData(response.data.data));
+        return true;
+      } else {
+        throw new Error(
+          response.data?.message || "Failed to set default address",
+        );
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setAddressError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setAddressError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Selectors
-export const selectAddressData = (state: { address: AddressState }) => state.address.data;
-export const selectAddressLoading = (state: { address: AddressState }) => state.address.isLoading;
-export const selectAddressError = (state: { address: AddressState }) => state.address.error;
-export const selectDefaultAddress = (state: { address: AddressState }) => 
-  state.address.data?.addresses.find(addr => addr.isDefault);
+export const selectAddressData = (state: { address: AddressState }) =>
+  state.address.data;
+export const selectAddressLoading = (state: { address: AddressState }) =>
+  state.address.isLoading;
+export const selectAddressError = (state: { address: AddressState }) =>
+  state.address.error;
+export const selectDefaultAddress = (state: { address: AddressState }) =>
+  state.address.data?.addresses.find((addr) => addr.isDefault);
 
 // Export the reducer
 export default addressSlice.reducer;

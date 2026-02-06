@@ -1,22 +1,24 @@
+import { getApiV1Url } from "./api";
+
 // Get dashboard URL for user role
 export const getDashboardForRole = (role: string): string => {
   switch (role.toLowerCase()) {
-    case 'admin':
-    case 'super_admin':
-      return '/dashboard'
-    case 'doctor':
-      return '/doctors'
-    case 'influencer':
-      return '/influencers'
-    case 'user':
-    case 'customer':
-      return '/profile'
-    case 'moderator':
-      return '/dashboard'
+    case "admin":
+    case "super_admin":
+      return "/dashboard";
+    case "doctor":
+      return "/doctors";
+    case "influencer":
+      return "/influencers";
+    case "user":
+    case "customer":
+      return "/profile";
+    case "moderator":
+      return "/dashboard";
     default:
-      return '/profile'
+      return "/profile";
   }
-}
+};
 
 // Authentication utility functions
 
@@ -63,13 +65,13 @@ export interface LoginResponse {
 // Store authentication data
 export const storeAuthData = (session: SessionData) => {
   // Store in localStorage for persistence
-  localStorage.setItem('authToken', session.token);
-  localStorage.setItem('userId', session.user);
-  localStorage.setItem('sessionData', JSON.stringify(session));
-  
+  localStorage.setItem("authToken", session.token);
+  localStorage.setItem("userId", session.user);
+  localStorage.setItem("sessionData", JSON.stringify(session));
+
   // Store in cookies for server-side access
   // Store user ID as a simple object for middleware compatibility
-  const userData = { id: session.user, role: 'user' }; // Default role, update based on your API
+  const userData = { id: session.user, role: "user" }; // Default role, update based on your API
   document.cookie = `user=${JSON.stringify(userData)}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
   document.cookie = `token=${session.token}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
 };
@@ -77,63 +79,63 @@ export const storeAuthData = (session: SessionData) => {
 // Clear authentication data
 export const clearAuthData = () => {
   // Clear localStorage
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('userId');
-  localStorage.removeItem('sessionData');
-  
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("sessionData");
+
   // Clear cookies
-  document.cookie = 'user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-  document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  document.cookie = "user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 };
 
 // Check if user is authenticated
 export const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem('authToken');
-  const userId = localStorage.getItem('userId');
-  
+  const token = localStorage.getItem("authToken");
+  const userId = localStorage.getItem("userId");
+
   if (!token || !userId) {
     return false;
   }
-  
+
   // Check if token is expired
   try {
-    const sessionData = localStorage.getItem('sessionData');
+    const sessionData = localStorage.getItem("sessionData");
     if (sessionData) {
       const session: SessionData = JSON.parse(sessionData);
       const expiresAt = new Date(session.expiresAt);
       const now = new Date();
-      
+
       if (now > expiresAt) {
         clearAuthData();
         return false;
       }
     }
   } catch (error) {
-    console.error('Error checking token expiration:', error);
+    console.error("Error checking token expiration:", error);
     clearAuthData();
     return false;
   }
-  
+
   return true;
 };
 
 // Get current user ID
 export const getCurrentUserId = (): string | null => {
-  return localStorage.getItem('userId');
+  return localStorage.getItem("userId");
 };
 
 // Get current auth token
 export const getAuthToken = (): string | null => {
-  return localStorage.getItem('authToken');
+  return localStorage.getItem("authToken");
 };
 
 // Get session data
 export const getSessionData = (): SessionData | null => {
   try {
-    const sessionData = localStorage.getItem('sessionData');
+    const sessionData = localStorage.getItem("sessionData");
     return sessionData ? JSON.parse(sessionData) : null;
   } catch (error) {
-    console.error('Error parsing session data:', error);
+    console.error("Error parsing session data:", error);
     return null;
   }
 };
@@ -141,14 +143,15 @@ export const getSessionData = (): SessionData | null => {
 // Get user role from session data
 export const getUserRole = (): string | null => {
   try {
-    const sessionData = localStorage.getItem('sessionData');
+    const sessionData = localStorage.getItem("sessionData");
     if (sessionData) {
-      const session: SessionData & { userRole?: string } = JSON.parse(sessionData);
+      const session: SessionData & { userRole?: string } =
+        JSON.parse(sessionData);
       // Return the stored userRole if available, otherwise default to 'user'
-      return session.userRole || 'user';
+      return session.userRole || "user";
     }
   } catch (error) {
-    console.error('Error getting user role:', error);
+    console.error("Error getting user role:", error);
   }
   return null;
 };
@@ -187,30 +190,32 @@ interface UserDetails {
 }
 
 // Fetch user details including role from API
-export const fetchUserDetails = async (userId: string, token: string): Promise<UserDetails | null> => {
+export const fetchUserDetails = async (
+  userId: string,
+  token: string,
+): Promise<UserDetails | null> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userId}`, {
+    const response = await fetch(getApiV1Url(`/users/${userId}`), {
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
     });
-    
+
     if (response.ok) {
       const userData = await response.json();
-      console.log('API Response:', userData);
-      
+
       // Handle the response structure: { success: true, user: {...} }
       if (userData.success && userData.user) {
         return userData.user;
       } else {
-        throw new Error('Invalid response structure');
+        throw new Error("Invalid response structure");
       }
     } else {
-      throw new Error('Failed to fetch user details');
+      throw new Error("Failed to fetch user details");
     }
   } catch (error) {
-    console.error('Error fetching user details:', error);
+    console.error("Error fetching user details:", error);
     return null;
   }
 };
@@ -222,13 +227,13 @@ export const updateUserRole = (role: string) => {
     if (sessionData) {
       // Update localStorage
       const updatedSession = { ...sessionData, userRole: role };
-      localStorage.setItem('sessionData', JSON.stringify(updatedSession));
-      
+      localStorage.setItem("sessionData", JSON.stringify(updatedSession));
+
       // Update cookies
       const userData = { id: sessionData.user, role: role };
       document.cookie = `user=${JSON.stringify(userData)}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
     }
   } catch (error) {
-    console.error('Error updating user role:', error);
+    console.error("Error updating user role:", error);
   }
 };

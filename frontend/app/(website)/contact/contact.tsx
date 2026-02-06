@@ -1,13 +1,8 @@
-"use client"
-import React, { useState } from 'react'
+"use client";
+import React, { useState } from "react";
 import Image from "next/image";
-import {
-  Phone,
-  Mail,
-  MapPin,
-  Send,
-  Loader2,
-} from "lucide-react";
+import { getApiV1Url } from "@/lib/utils/api";
+import { Phone, Mail, MapPin, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import Swal from "sweetalert2";
@@ -26,7 +21,7 @@ const Contact = () => {
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -40,8 +35,7 @@ const Contact = () => {
     setIsLoading(true);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-      const res = await fetch(`${apiUrl}/v1/contact`, {
+      const res = await fetch(getApiV1Url("/contact"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,9 +48,11 @@ const Contact = () => {
       if (data.success) {
         Swal.fire({
           title: "Message Sent!",
-          text: data.message || "Thank you for contacting us. We will get back to you shortly.",
+          text:
+            data.message ||
+            "Thank you for contacting us. We will get back to you shortly.",
           icon: "success",
-          confirmButtonColor: "#2563eb"
+          confirmButtonColor: "#2563eb",
         });
         // Reset form
         setFormData({
@@ -71,7 +67,7 @@ const Contact = () => {
           title: "Error!",
           text: data.error || "Failed to send message. Please try again later.",
           icon: "error",
-          confirmButtonColor: "#ef4444"
+          confirmButtonColor: "#ef4444",
         });
       }
     } catch (error) {
@@ -80,7 +76,7 @@ const Contact = () => {
         title: "Error!",
         text: "An unexpected error occurred.",
         icon: "error",
-        confirmButtonColor: "#ef4444"
+        confirmButtonColor: "#ef4444",
       });
     } finally {
       setIsLoading(false);
@@ -99,13 +95,15 @@ const Contact = () => {
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent flex items-center justify-center">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="text-center text-white px-4"
           >
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">Get in Touch</h1>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+              Get in Touch
+            </h1>
             <p className="text-lg md:text-xl text-slate-200 max-w-2xl mx-auto">
               We&apos;d love to hear from you. Our team is always here to chat.
             </p>
@@ -116,9 +114,8 @@ const Contact = () => {
       <section className="py-16 md:py-24 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-start">
-            
             {/* Contact Info Side */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -130,7 +127,9 @@ const Contact = () => {
                   Let&apos;s start a conversation
                 </h2>
                 <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Whether you have a question about our products, pricing, need a demo, or anything else, our team is ready to answer all your questions.
+                  Whether you have a question about our products, pricing, need
+                  a demo, or anything else, our team is ready to answer all your
+                  questions.
                 </p>
               </div>
 
@@ -141,9 +140,13 @@ const Contact = () => {
                     <MapPin className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">Visit Us</h3>
+                    <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">
+                      Visit Us
+                    </h3>
                     <div className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-                      <p className="font-medium">Wellness Nutraceuticals Private Limited</p>
+                      <p className="font-medium">
+                        Wellness Nutraceuticals Private Limited
+                      </p>
                       <p>Wellness | Home-1, Block A1, Tiril,</p>
                       <p>Vipul World, Sohna Road,</p>
                       <p>Gurugram, Haryana, 122018, India</p>
@@ -156,11 +159,16 @@ const Contact = () => {
                     <Mail className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">Email Us</h3>
+                    <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">
+                      Email Us
+                    </h3>
                     <p className="text-slate-600 dark:text-slate-400 text-sm mb-1">
                       Drop us a line anytime at
                     </p>
-                    <a href="mailto:info@nutra-zen.com" className="text-blue-600 hover:text-blue-700 font-medium">
+                    <a
+                      href="mailto:info@nutra-zen.com"
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
                       info@nutra-zen.com
                     </a>
                   </div>
@@ -171,11 +179,16 @@ const Contact = () => {
                     <Phone className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">Call Us</h3>
+                    <h3 className="font-semibold text-lg text-slate-900 dark:text-white mb-2">
+                      Call Us
+                    </h3>
                     <p className="text-slate-600 dark:text-slate-400 text-sm mb-1">
                       Mon-Fri from 9am to 6pm
                     </p>
-                    <a href="tel:01140848448" className="text-blue-600 hover:text-blue-700 font-medium">
+                    <a
+                      href="tel:01140848448"
+                      className="text-blue-600 hover:text-blue-700 font-medium"
+                    >
                       011-408-48448
                     </a>
                   </div>
@@ -184,7 +197,7 @@ const Contact = () => {
             </motion.div>
 
             {/* Form Side */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
@@ -193,36 +206,44 @@ const Contact = () => {
             >
               {/* Decorative blob */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-              
+
               <div className="mb-8">
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">Send us a message</h3>
-                <p className="text-slate-500 dark:text-slate-400 mt-2">We&apos;ll get back to you within 24 hours.</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
+                  Send us a message
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">
+                  We&apos;ll get back to you within 24 hours.
+                </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Full Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoading}
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
                       className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       placeholder="John Doe"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoading}
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      disabled={isLoading}
                       className="w-full h-12 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                       placeholder="john@example.com"
                     />
@@ -230,7 +251,9 @@ const Contact = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Phone Number</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Phone Number
+                  </label>
                   <input
                     type="tel"
                     name="phone"
@@ -243,7 +266,9 @@ const Contact = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Message</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Message
+                  </label>
                   <textarea
                     name="message"
                     value={formData.message}
@@ -282,4 +307,4 @@ const Contact = () => {
   );
 };
 
-export default Contact
+export default Contact;

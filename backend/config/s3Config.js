@@ -56,7 +56,6 @@ const deleteOldImage = async (oldImageUrl) => {
 
   try {
     await s3.send(new DeleteObjectCommand(deleteParams));
-    console.log(`Successfully deleted old image: ${oldImageKey}`);
   } catch (error) {
     console.error(`Error deleting old image: ${error.message}`);
     throw error;

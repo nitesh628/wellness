@@ -38,6 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getApiV1Url } from "@/lib/utils/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -101,7 +102,7 @@ const InfluencerReportsPage = () => {
       setError(null);
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-reports/dashboard?period=${selectedPeriod}`,
+        getApiV1Url(`/influencer-reports/dashboard?period=${selectedPeriod}`),
         {
           method: "GET",
           credentials: "include",
@@ -348,7 +349,7 @@ const InfluencerReportsPage = () => {
 
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-reports/generate`,
+        getApiV1Url("/influencer-reports/generate"),
         {
           method: "POST",
           credentials: "include",

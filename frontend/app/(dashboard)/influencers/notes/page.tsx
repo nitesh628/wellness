@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/tooltip";
 import LexicalEditor from "./LexicalEditor";
 
+import { getApiV1Url } from "@/lib/utils/api";
 // Note type definition
 type Note = {
   id: string;
@@ -85,8 +86,6 @@ const notes: Note[] = [
       "<h2>Project Overview</h2><p><strong>Date:</strong> January 20, 2024</p><p><strong>Objective:</strong> Complete website redesign and launch new features</p><h3>Key Tasks:</h3><ul><li>UI/UX design updates</li><li>Backend API development</li><li>Database optimization</li><li>Testing and deployment</li></ul><h3>Timeline:</h3><ol><li>Design phase - 2 weeks</li><li>Development - 4 weeks</li><li>Testing - 1 week</li><li>Launch - 1 week</li></ol>",
     category: "Work",
     tags: ["project", "planning", "development", "timeline"],
-    authorId: "1",
-    authorName: "John Smith",
     createdAt: "2024-01-20T10:00:00Z",
     updatedAt: "2024-01-20T10:00:00Z",
     isFavorite: true,
@@ -136,7 +135,6 @@ const NotesPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [sortBy, setSortBy] = useState("updatedAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -162,16 +160,13 @@ const NotesPage = () => {
   const fetchNotes = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-notes`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const response = await fetch(getApiV1Url("/influencer-notes"), {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch notes");
@@ -347,13 +342,10 @@ const NotesPage = () => {
   const handleDeleteNote = async (noteId: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-notes/${noteId}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-        },
-      );
+      const response = await fetch(getApiV1Url(`/influencer-notes/${noteId}`), {
+        method: "DELETE",
+        credentials: "include",
+      });
 
       if (response.ok) {
         await fetchNotes(); // Refresh the list
@@ -368,17 +360,14 @@ const NotesPage = () => {
   const handleAddNote = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-notes`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
+      const response = await fetch(getApiV1Url("/influencer-notes"), {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify(formData),
+      });
 
       if (response.ok) {
         setIsAddModalOpen(false);
@@ -411,7 +400,7 @@ const NotesPage = () => {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-notes/${selectedNote.id}`,
+        getApiV1Url(`/influencer-notes/${selectedNote.id}`),
         {
           method: "PUT",
           credentials: "include",
@@ -434,19 +423,13 @@ const NotesPage = () => {
   };
 
   const handleToggleFavorite = async (noteId: string) => {
-    console.log("Toggling favorite for note:", noteId);
-    console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
-
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-notes/${noteId}/favorite`;
-      console.log("Full URL:", url);
+      const url = getApiV1Url(`/influencer-notes/${noteId}/favorite`);
 
       const response = await fetch(url, {
         method: "PATCH",
         credentials: "include",
       });
-
-      console.log("Response status:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -455,11 +438,9 @@ const NotesPage = () => {
       }
 
       const result = await response.json();
-      console.log("Toggle result:", result);
       const updated = result?.data;
 
       if (updated?._id) {
-        console.log("Updating note in UI, isFavorite:", updated.isFavorite);
         setNotes((prev) =>
           prev.map((note) =>
             note.id === updated._id
@@ -468,7 +449,6 @@ const NotesPage = () => {
           ),
         );
       } else {
-        console.log("No updated data, refreshing all notes");
         await fetchNotes();
       }
     } catch (error) {

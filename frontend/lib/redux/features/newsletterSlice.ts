@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
 
 export interface Newsletter {
   _id: string;
@@ -51,7 +52,7 @@ const initialState: NewsletterState = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: getApiV1BaseUrl(),
   withCredentials: true,
 });
 
@@ -72,7 +73,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 const newsletterSlice = createSlice({
@@ -81,7 +82,7 @@ const newsletterSlice = createSlice({
   reducers: {
     setNewsletterData: (
       state,
-      action: PayloadAction<{ data: Newsletter[]; total: number }>
+      action: PayloadAction<{ data: Newsletter[]; total: number }>,
     ) => {
       state.data = action.payload.data;
       state.pagination.total = action.payload.total;
@@ -98,7 +99,7 @@ const newsletterSlice = createSlice({
     },
     setSelectedNewsletter: (
       state,
-      action: PayloadAction<Newsletter | null>
+      action: PayloadAction<Newsletter | null>,
     ) => {
       state.selectedNewsletter = action.payload;
       state.isLoading = false;
@@ -106,14 +107,14 @@ const newsletterSlice = createSlice({
     },
     setNewsletterFilters: (
       state,
-      action: PayloadAction<Partial<NewsletterState["filters"]>>
+      action: PayloadAction<Partial<NewsletterState["filters"]>>,
     ) => {
       state.filters = { ...state.filters, ...action.payload };
       state.pagination.page = 1;
     },
     setPagination: (
       state,
-      action: PayloadAction<Partial<NewsletterState["pagination"]>>
+      action: PayloadAction<Partial<NewsletterState["pagination"]>>,
     ) => {
       state.pagination = { ...state.pagination, ...action.payload };
     },
@@ -134,7 +135,7 @@ export const {
 } = newsletterSlice.actions;
 
 const mapApiNewsletterToNewsletter = (
-  apiNewsletter: ApiNewsletter
+  apiNewsletter: ApiNewsletter,
 ): Newsletter => ({
   _id: apiNewsletter._id,
   email: apiNewsletter.email,
@@ -157,7 +158,7 @@ export const fetchNewslettersData =
   () =>
   async (
     dispatch: AppDispatch,
-    getState: () => { newsletters: NewsletterState }
+    getState: () => { newsletters: NewsletterState },
   ) => {
     dispatch(setNewsletterLoading());
     try {
@@ -178,18 +179,18 @@ export const fetchNewslettersData =
 
       if (response.data?.success) {
         const mappedNewsletters = response.data.data.map(
-          (item: ApiNewsletter) => mapApiNewsletterToNewsletter(item)
+          (item: ApiNewsletter) => mapApiNewsletterToNewsletter(item),
         );
 
         dispatch(
           setNewsletterData({
             data: mappedNewsletters,
             total: response.data.pagination?.total || response.data.data.length,
-          })
+          }),
         );
       } else {
         throw new Error(
-          response.data?.message || "Failed to fetch newsletters"
+          response.data?.message || "Failed to fetch newsletters",
         );
       }
       return true;
@@ -249,7 +250,7 @@ export const updateNewsletterStatus =
         return true;
       } else {
         throw new Error(
-          response.data?.message || "Failed to update newsletter status"
+          response.data?.message || "Failed to update newsletter status",
         );
       }
     } catch (error: unknown) {
@@ -269,7 +270,7 @@ export const deleteNewsletter =
         return true;
       } else {
         throw new Error(
-          response.data?.message || "Failed to delete newsletter"
+          response.data?.message || "Failed to delete newsletter",
         );
       }
     } catch (error: unknown) {

@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
+
+const API_BASE_URL = getApiV1BaseUrl();
 
 // Define the Session type
 export interface Session {
@@ -57,7 +60,9 @@ const sessionSlice = createSlice({
       state.error = null;
     },
     removeSession: (state, action: PayloadAction<string>) => {
-      state.sessions = state.sessions.filter(session => session._id !== action.payload);
+      state.sessions = state.sessions.filter(
+        (session) => session._id !== action.payload,
+      );
       if (state.currentSession?._id === action.payload) {
         state.currentSession = null;
       }
@@ -98,98 +103,95 @@ const handleApiError = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 // Fetch user's sessions
-export const fetchUserSessions = (userId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setSessionLoading());
-  try {
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/sessions/${userId}`
-    );
-    if (response.data?.success) {
-      dispatch(setSessionsData(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to fetch sessions");
+export const fetchUserSessions =
+  (_userId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setSessionLoading());
+    try {
+      const response = await axios.get(`${API_BASE_URL}/sessions/user/`);
+      if (response.data?.success) {
+        dispatch(setSessionsData(response.data.data));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to fetch sessions");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setSessionError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setSessionError(errorMessage));
-    return false;
-  }
-};
-
+  };
 
 // End session
-export const endSession = (sessionId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setSessionLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/sessions/endSession/${sessionId}`
-    );
-    if (response.data?.success) {
-      dispatch(removeSession(sessionId));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to end session");
+export const endSession =
+  (sessionId: string) => async (dispatch: AppDispatch) => {
+    dispatch(setSessionLoading());
+    try {
+      const response = await axios.delete(
+        `${API_BASE_URL}/sessions/user/session/${sessionId}`,
+      );
+      if (response.data?.success) {
+        dispatch(removeSession(sessionId));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to end session");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setSessionError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setSessionError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // End all sessions except current
-export const endAllOtherSessions = (userId: string, currentSessionId: string) => async (dispatch: AppDispatch) => {
-  dispatch(setSessionLoading());
-  try {
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/sessions/endAllOtherSessions/${userId}/${currentSessionId}`
-    );
-    if (response.data?.success) {
-      dispatch(setSessionsData(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to end other sessions");
+export const endAllOtherSessions =
+  (userId: string, currentSessionId: string) =>
+  async (dispatch: AppDispatch) => {
+    dispatch(setSessionLoading());
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/sessions/user/`);
+      if (response.data?.success) {
+        dispatch(clearSessions());
+        return true;
+      } else {
+        throw new Error(
+          response.data?.message || "Failed to end other sessions",
+        );
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setSessionError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setSessionError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Verify session
-export const verifySession = (sessionId: string, token: string) => async (dispatch: AppDispatch) => {
-  dispatch(setSessionLoading());
-  try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/sessions/verifySession`,
-      { sessionId, token }
-    );
-    if (response.data?.success) {
-      dispatch(setCurrentSession(response.data.data));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Session verification failed");
+export const verifySession =
+  (sessionId: string, token: string) => async (dispatch: AppDispatch) => {
+    dispatch(setSessionLoading());
+    try {
+      throw new Error("Session verification is not supported by the backend");
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setSessionError(errorMessage));
+      return false;
     }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setSessionError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Selectors
-export const selectSessions = (state: { session: SessionState }) => state.session.sessions;
-export const selectCurrentSession = (state: { session: SessionState }) => state.session.currentSession;
-export const selectSessionLoading = (state: { session: SessionState }) => state.session.isLoading;
-export const selectSessionError = (state: { session: SessionState }) => state.session.error;
-export const selectActiveSessions = (state: { session: SessionState }) => 
-  state.session.sessions.filter(session => session.isActive);
+export const selectSessions = (state: { session: SessionState }) =>
+  state.session.sessions;
+export const selectCurrentSession = (state: { session: SessionState }) =>
+  state.session.currentSession;
+export const selectSessionLoading = (state: { session: SessionState }) =>
+  state.session.isLoading;
+export const selectSessionError = (state: { session: SessionState }) =>
+  state.session.error;
+export const selectActiveSessions = (state: { session: SessionState }) =>
+  state.session.sessions.filter((session) => session.isActive);
 
 // Export the reducer
 export default sessionSlice.reducer;

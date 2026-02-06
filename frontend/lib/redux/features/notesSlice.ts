@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
+
+const API_BASE_URL = getApiV1BaseUrl();
 export interface Note {
   _id: string;
   title: string;
@@ -235,7 +238,7 @@ export const fetchNotes =
       }
 
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes?${queryParams}`,
+        `${API_BASE_URL}/notes?${queryParams}`,
         getAuthConfig(), // <--- UPDATED
       );
 
@@ -267,7 +270,7 @@ export const fetchNoteById =
     dispatch(setNoteLoading());
     try {
       const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/${noteId}`,
+        `${API_BASE_URL}/notes/${noteId}`,
         getAuthConfig(), // <--- UPDATED
       );
 
@@ -289,7 +292,7 @@ export const fetchNoteById =
 export const fetchNoteStats = () => async (dispatch: AppDispatch) => {
   try {
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/stats`,
+      `${API_BASE_URL}/notes/stats`,
       getAuthConfig(), // <--- UPDATED
     );
 
@@ -317,7 +320,7 @@ export const createNote =
     dispatch(setNoteLoading());
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes`,
+        `${API_BASE_URL}/notes`,
         newNote,
         getAuthConfig(), // <--- UPDATED
       );
@@ -343,7 +346,7 @@ export const updateNote =
     dispatch(setNoteLoading());
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/${noteId}`,
+        `${API_BASE_URL}/notes/${noteId}`,
         updatedData,
         getAuthConfig(), // <--- UPDATED
       );
@@ -369,7 +372,7 @@ export const deleteNote = (noteId: string) => async (dispatch: AppDispatch) => {
   dispatch(setNoteLoading());
   try {
     const response = await axios.delete(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/${noteId}`,
+      `${API_BASE_URL}/notes/${noteId}`,
       getAuthConfig(), // <--- UPDATED
     );
 
@@ -391,7 +394,7 @@ export const toggleFavorite =
   (noteId: string) => async (dispatch: AppDispatch) => {
     try {
       const response = await axios.patch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/${noteId}/favorite`,
+        `${API_BASE_URL}/notes/${noteId}/favorite`,
         {},
         getAuthConfig(), // <--- UPDATED
       );
@@ -418,7 +421,7 @@ export const exportNotes = () => async () => {
     };
 
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/notes/export`,
+      `${API_BASE_URL}/notes/export`,
       exportConfig,
     );
 

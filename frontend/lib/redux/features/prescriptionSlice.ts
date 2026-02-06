@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
 import { RootState } from "../store";
 
 // --- Types ---
@@ -86,7 +87,7 @@ const getAuthConfig = () => {
   };
 };
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/prescriptions`;
+const API_URL = `${getApiV1BaseUrl()}/prescriptions`;
 
 // --- Thunks ---
 

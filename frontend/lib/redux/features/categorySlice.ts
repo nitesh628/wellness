@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
 
 export interface Category {
   _id: string;
@@ -51,7 +52,7 @@ const initialState: CategoryState = {
 };
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL: getApiV1BaseUrl(),
   withCredentials: true,
 });
 
@@ -72,7 +73,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 const categorySlice = createSlice({
@@ -99,7 +100,7 @@ const categorySlice = createSlice({
     },
     setFilters: (
       state,
-      action: PayloadAction<Partial<CategoryState["filters"]>>
+      action: PayloadAction<Partial<CategoryState["filters"]>>,
     ) => {
       state.filters = { ...state.filters, ...action.payload };
     },
@@ -145,7 +146,7 @@ export const fetchCategoriesData =
   () =>
   async (
     dispatch: AppDispatch,
-    getState: () => { categories: CategoryState }
+    getState: () => { categories: CategoryState },
   ) => {
     dispatch(setCategoryLoading());
     try {
@@ -166,7 +167,7 @@ export const fetchCategoriesData =
 
       if (response.data?.success && Array.isArray(response.data.data)) {
         const mappedCategories = response.data.data.map((cat: ApiCategory) =>
-          mapApiCategoryToCategory(cat)
+          mapApiCategoryToCategory(cat),
         );
         dispatch(setCategoryData(mappedCategories));
       } else {
@@ -183,12 +184,15 @@ export const fetchCategoriesData =
 export const fetchActiveCategories = () => async (dispatch: AppDispatch) => {
   dispatch(setCategoryLoading());
   try {
-    const response = await api.get(`/categories/getActiveCategories`);
+    const response = await api.get(`/categories`);
     if (response.data?.success && Array.isArray(response.data.data)) {
       const mappedCategories = response.data.data.map((cat: ApiCategory) =>
-        mapApiCategoryToCategory(cat)
+        mapApiCategoryToCategory(cat),
       );
-      dispatch(setCategoryData(mappedCategories));
+      const activeOnly = mappedCategories.filter(
+        (cat) => String(cat.status).toLowerCase() === "active",
+      );
+      dispatch(setCategoryData(activeOnly));
     } else {
       throw new Error(response.data?.message || "Failed to fetch categories");
     }
@@ -204,9 +208,7 @@ export const fetchCategoryById =
   (categoryId: string) => async (dispatch: AppDispatch) => {
     dispatch(setCategoryLoading());
     try {
-      const response = await api.get(
-        `/categories/getCategoryById/${categoryId}`
-      );
+      const response = await api.get(`/categories/${categoryId}`);
       if (response.data?.success) {
         const category = response.data.data;
         const mappedCategory = mapApiCategoryToCategory(category);
@@ -226,15 +228,19 @@ export const fetchCategoryBySlug =
   (slug: string) => async (dispatch: AppDispatch) => {
     dispatch(setCategoryLoading());
     try {
-      const response = await api.get(`/categories/getCategoryBySlug/${slug}`);
-      if (response.data?.success) {
-        const category = response.data.data;
-        const mappedCategory = mapApiCategoryToCategory(category);
-        dispatch(setSelectedCategory(mappedCategory));
-        return true;
-      } else {
-        throw new Error(response.data?.message || "Failed to fetch category");
+      const response = await api.get(`/categories`);
+      if (response.data?.success && Array.isArray(response.data.data)) {
+        const mappedCategories = response.data.data.map((cat: ApiCategory) =>
+          mapApiCategoryToCategory(cat),
+        );
+        const match = mappedCategories.find((cat) => cat.slug === slug);
+        if (match) {
+          dispatch(setSelectedCategory(match));
+          return true;
+        }
+        throw new Error("Category not found");
       }
+      throw new Error(response.data?.message || "Failed to fetch category");
     } catch (error: unknown) {
       const errorMessage = handleApiError(error);
       dispatch(setCategoryError(errorMessage));
@@ -245,15 +251,18 @@ export const fetchCategoryBySlug =
 export const fetchLatestCategories = () => async (dispatch: AppDispatch) => {
   dispatch(setCategoryLoading());
   try {
-    const response = await api.get(`/categories/getLatestCategories`);
-    if (response.data?.success) {
-      const mappedCategories = response.data.data.categories.map(
-        (cat: ApiCategory) => mapApiCategoryToCategory(cat)
+    const response = await api.get(`/categories`);
+    if (response.data?.success && Array.isArray(response.data.data)) {
+      const mappedCategories = response.data.data.map((cat: ApiCategory) =>
+        mapApiCategoryToCategory(cat),
       );
-      dispatch(setCategoryData(mappedCategories));
+      const sorted = mappedCategories.sort((a, b) =>
+        String(b.createdAt).localeCompare(String(a.createdAt)),
+      );
+      dispatch(setCategoryData(sorted));
     } else {
       throw new Error(
-        response.data?.message || "Failed to fetch latest categories"
+        response.data?.message || "Failed to fetch latest categories",
       );
     }
     return true;
@@ -267,7 +276,7 @@ export const fetchLatestCategories = () => async (dispatch: AppDispatch) => {
 export const createCategory =
   (newCategory: FormData) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.post(`/categories/newCategory`, newCategory, {
+      const response = await api.post(`/categories`, newCategory, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -289,16 +298,14 @@ export const createCategory =
   };
 
 export const updateCategoryStatus =
-  (categoryId: string) => async (dispatch: AppDispatch) => {
+  (categoryId: string, status: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.put(
-        `/categories/updateCategoryStatus/${categoryId}`
-      );
+      const response = await api.put(`/categories/${categoryId}`, { status });
       if (response.data?.success) {
         dispatch(setCategoryLoading());
       } else {
         throw new Error(
-          response.data?.message || "Failed to update category status"
+          response.data?.message || "Failed to update category status",
         );
       }
     } catch (error: unknown) {
@@ -312,15 +319,11 @@ export const updateCategory =
   (categoryId: string, updatedData: FormData) =>
   async (dispatch: AppDispatch) => {
     try {
-      const response = await api.put(
-        `/categories/updateCategory/${categoryId}`,
-        updatedData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await api.put(`/categories/${categoryId}`, updatedData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       if (response.data?.success) {
         dispatch(setCategoryLoading());
         return true;
@@ -337,9 +340,7 @@ export const updateCategory =
 export const deleteCategory =
   (categoryId: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await api.delete(
-        `/categories/deleteCategory/${categoryId}`
-      );
+      const response = await api.delete(`/categories/${categoryId}`);
       if (response.data?.success) {
         dispatch(setCategoryLoading());
         return true;
@@ -353,10 +354,15 @@ export const deleteCategory =
     }
   };
 
-export const selectCategoriesData = (state: { categories: CategoryState }) => state.categories.data;
-export const selectCategoriesLoading = (state: { categories: CategoryState }) => state.categories.isLoading;
-export const selectCategoriesError = (state: { categories: CategoryState }) => state.categories.error;
-export const selectSelectedCategory = (state: { categories: CategoryState }) => state.categories.selectedCategory;
-export const selectCategoriesFilters = (state: { categories: CategoryState }) => state.categories.filters;
+export const selectCategoriesData = (state: { categories: CategoryState }) =>
+  state.categories.data;
+export const selectCategoriesLoading = (state: { categories: CategoryState }) =>
+  state.categories.isLoading;
+export const selectCategoriesError = (state: { categories: CategoryState }) =>
+  state.categories.error;
+export const selectSelectedCategory = (state: { categories: CategoryState }) =>
+  state.categories.selectedCategory;
+export const selectCategoriesFilters = (state: { categories: CategoryState }) =>
+  state.categories.filters;
 
 export default categorySlice.reducer;

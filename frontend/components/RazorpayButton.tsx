@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Script from "next/script";
+import { getApiV1Url } from "../lib/utils/api";
 
 interface RazorpayButtonProps {
   amount: number;
@@ -45,16 +46,13 @@ const RazorpayButton: React.FC<RazorpayButtonProps> = ({
     try {
       // Ensure amount is an integer in paise (for INR)
       const amountInPaise = Math.round(amount);
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/v1/razorpay/order`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ amount: amountInPaise, currency }),
+      const res = await fetch(getApiV1Url("/razorpay/order"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({ amount: amountInPaise, currency }),
+      });
       const orderData = await res.json();
 
       if (!orderData.id) {
@@ -72,20 +70,17 @@ const RazorpayButton: React.FC<RazorpayButtonProps> = ({
         handler: async (response: any) => {
           // Verify payment
           try {
-            const verifyRes = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/v1/razorpay/verify`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  razorpayOrderId: response.razorpay_order_id,
-                  razorpayPaymentId: response.razorpay_payment_id,
-                  razorpaySignature: response.razorpay_signature,
-                }),
+            const verifyRes = await fetch(getApiV1Url("/razorpay/verify"), {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
               },
-            );
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              }),
+            });
             const verifyData = await verifyRes.json();
             if (verifyData.success) {
               onSuccess(response);

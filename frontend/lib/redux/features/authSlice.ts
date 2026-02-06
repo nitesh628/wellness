@@ -2,6 +2,9 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
 import { clearAuthData } from "../../utils/auth";
+import { getApiV1BaseUrl } from "../../utils/api";
+
+const API_BASE_URL = getApiV1BaseUrl();
 
 // User interface based on the provided Mongoose schema
 export interface User {
@@ -154,11 +157,7 @@ export const loginUser =
   (email: string, password: string) => async (dispatch: AppDispatch) => {
     dispatch(setAuthLoading());
     try {
-      const apiUrl =
-        process.env.NEXT_PUBLIC_API_URL ||
-        process.env.NEXT_PUBLIC_API_BASE_URL ||
-        "http://localhost:5000";
-      const response = await axios.post(`${apiUrl}/v1/auth/login`, {
+      const response = await axios.post(`${API_BASE_URL}/auth/login`, {
         email,
         password,
       });
@@ -184,12 +183,13 @@ export const registerUser =
   (userData: any) => async (dispatch: AppDispatch) => {
     dispatch(setAuthLoading());
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/auth/register`;
-      console.log("Registering user at:", apiUrl);
-      const response = await axios.post(apiUrl, userData);
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/register`,
+        userData,
+      );
 
       if (response.data?.success) {
-        dispatch(setUser(response.data.data));
+        dispatch(setUser(response.data.user));
         return response.data; // Return full data including session
       } else {
         throw new Error(response.data?.message || "Registration failed");
@@ -206,19 +206,7 @@ export const sendVerificationEmail =
   (email: string) => async (dispatch: AppDispatch) => {
     dispatch(setVerificationStatus({ loading: true, error: null }));
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/send-verification`,
-        { email },
-      );
-
-      if (response.data?.success) {
-        dispatch(setVerificationStatus({ emailSent: true, loading: false }));
-        return true;
-      } else {
-        throw new Error(
-          response.data?.message || "Failed to send verification email",
-        );
-      }
+      throw new Error("Email verification is not supported by the backend");
     } catch (error: unknown) {
       const errorMessage = handleApiError(error);
       dispatch(setVerificationStatus({ loading: false, error: errorMessage }));
@@ -230,20 +218,7 @@ export const sendVerificationEmail =
 export const verifyEmail = (token: string) => async (dispatch: AppDispatch) => {
   dispatch(setVerificationStatus({ loading: true, error: null }));
   try {
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/verify-email`,
-      { token },
-    );
-
-    if (response.data?.success) {
-      dispatch(setVerificationStatus({ verified: true, loading: false }));
-      if (response.data.data) {
-        dispatch(setUser(response.data.data));
-      }
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Email verification failed");
-    }
+    throw new Error("Email verification is not supported by the backend");
   } catch (error: unknown) {
     const errorMessage = handleApiError(error);
     dispatch(setVerificationStatus({ loading: false, error: errorMessage }));
@@ -256,19 +231,7 @@ export const sendPasswordResetEmail =
   (email: string) => async (dispatch: AppDispatch) => {
     dispatch(setPasswordResetStatus({ loading: true, error: null }));
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/forgot-password`,
-        { email },
-      );
-
-      if (response.data?.success) {
-        dispatch(setPasswordResetStatus({ emailSent: true, loading: false }));
-        return true;
-      } else {
-        throw new Error(
-          response.data?.message || "Failed to send password reset email",
-        );
-      }
+      throw new Error("Password reset email is not supported by the backend");
     } catch (error: unknown) {
       const errorMessage = handleApiError(error);
       dispatch(setPasswordResetStatus({ loading: false, error: errorMessage }));
@@ -283,7 +246,7 @@ export const resetPassword =
     dispatch(setPasswordResetStatus({ loading: true, error: null }));
     try {
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/resetpassword`,
+        `${API_BASE_URL}/auth/resetpassword`,
         {
           oldPassword,
           newPassword,
@@ -317,12 +280,12 @@ export const updateProfile =
     dispatch(setAuthLoading());
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userId}`,
+        `${API_BASE_URL}/users/${userId}`,
         profileData,
       );
 
       if (response.data?.success) {
-        dispatch(setUser(response.data.data));
+        dispatch(setUser(response.data.user));
         return true;
       } else {
         throw new Error(response.data?.message || "Profile update failed");
@@ -339,7 +302,7 @@ export const updateProfileImage =
     dispatch(setAuthLoading());
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/updateProfileImage/${userId}`,
+        `${API_BASE_URL}/users/${userId}`,
         imageFile,
         {
           headers: {
@@ -349,7 +312,7 @@ export const updateProfileImage =
       );
 
       if (response.data?.success) {
-        dispatch(setUser(response.data.data));
+        dispatch(setUser(response.data.user));
         return true;
       } else {
         throw new Error(
@@ -368,13 +331,12 @@ export const toggle2FA =
   (userId: string, enable: boolean) => async (dispatch: AppDispatch) => {
     dispatch(setAuthLoading());
     try {
-      const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/toggle2FA/${userId}`,
-        { enable },
-      );
+      const response = await axios.put(`${API_BASE_URL}/users/${userId}`, {
+        twoFactorEnabled: enable,
+      });
 
       if (response.data?.success) {
-        dispatch(setUser(response.data.data));
+        dispatch(setUser(response.data.user));
         return true;
       } else {
         throw new Error(response.data?.message || "2FA toggle failed");
@@ -389,7 +351,7 @@ export const toggle2FA =
 // Logout user
 export const logoutUser = () => async (dispatch: AppDispatch) => {
   try {
-    await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`);
+    await axios.post(`${API_BASE_URL}/auth/logout`);
     dispatch(logout());
     clearAuthData(); // Clear local storage and cookies
     return true;

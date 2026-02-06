@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
+
+const API_BASE_URL = getApiV1BaseUrl();
 
 // Define the Setting type based on MongoDB schema
 export interface Setting {
@@ -70,9 +73,9 @@ export interface Setting {
 // Define the API Setting type (from backend)
 interface ApiSetting {
   _id: string;
-  seoSetting: Setting['seoSetting'][];
-  businessSetting: Setting['businessSetting'][];
-  shippingSetting: Setting['shippingSetting'][];
+  seoSetting: Setting["seoSetting"][];
+  businessSetting: Setting["businessSetting"][];
+  shippingSetting: Setting["shippingSetting"][];
   createdAt: string;
   updatedAt: string;
 }
@@ -119,19 +122,22 @@ const settingSlice = createSlice({
     clearSelectedSetting: (state) => {
       state.selectedSetting = null;
     },
-    updateSettingField: (state, action: PayloadAction<{ path: string; value: unknown }>) => {
+    updateSettingField: (
+      state,
+      action: PayloadAction<{ path: string; value: unknown }>,
+    ) => {
       if (state.data) {
         const { path, value } = action.payload;
-        const keys = path.split('.');
+        const keys = path.split(".");
         let current: Record<string, unknown> = state.data;
-        
+
         for (let i = 0; i < keys.length - 1; i++) {
           if (!current[keys[i]]) {
             current[keys[i]] = {};
           }
           current = current[keys[i]] as Record<string, unknown>;
         }
-        
+
         current[keys[keys.length - 1]] = value;
       }
     },
@@ -153,57 +159,57 @@ const mapApiSettingToSetting = (apiSetting: ApiSetting): Setting => ({
   _id: apiSetting._id,
   seoSetting: apiSetting.seoSetting[0] || {
     basicSetting: {
-      siteTitle: '',
-      metaDescription: '',
+      siteTitle: "",
+      metaDescription: "",
       keywords: [],
-      twitterHandle: '',
-      googleAnalyticsId: ''
+      twitterHandle: "",
+      googleAnalyticsId: "",
     },
     thirdPartySetting: {
-      googleTagManagerId: '',
-      hotjarId: '',
-      intercomAppId: '',
-      zendeskWidgetKey: '',
-      customScripts: ''
+      googleTagManagerId: "",
+      hotjarId: "",
+      intercomAppId: "",
+      zendeskWidgetKey: "",
+      customScripts: "",
     },
     metaSetting: {
-      author: '',
-      robots: 'index, follow',
-      viewport: 'width=device-width, initial-scale=1',
-      themeColor: '',
-      customMetaTags: ''
-    }
+      author: "",
+      robots: "index, follow",
+      viewport: "width=device-width, initial-scale=1",
+      themeColor: "",
+      customMetaTags: "",
+    },
   },
   businessSetting: apiSetting.businessSetting[0] || {
     businessInformation: {
-      businessName: '',
-      businessEmail: '',
-      businessPhone: '',
-      website: '',
-      businessAddress: '',
-      gstNumber: '',
-      panNumber: '',
-      businessType: 'Private Limited',
-      foundedYear: new Date().getFullYear()
+      businessName: "",
+      businessEmail: "",
+      businessPhone: "",
+      website: "",
+      businessAddress: "",
+      gstNumber: "",
+      panNumber: "",
+      businessType: "Private Limited",
+      foundedYear: new Date().getFullYear(),
     },
     socialMediaSetting: {
       socialMedia: {
-        facebook: '',
-        instagram: '',
-        twitter: '',
-        linkedin: ''
-      }
-    }
+        facebook: "",
+        instagram: "",
+        twitter: "",
+        linkedin: "",
+      },
+    },
   },
   shippingSetting: apiSetting.shippingSetting[0] || {
     defaultShippingRate: 50,
     freeShippingThreshold: 1000,
     shippingZones: [],
     deliveryTimeframes: {
-      standard: '3-6 business days',
-      express: '1-2 business days',
-      overnight: 'Next day delivery'
-    }
+      standard: "3-6 business days",
+      express: "1-2 business days",
+      overnight: "Next day delivery",
+    },
   },
   createdAt: apiSetting.createdAt,
   updatedAt: apiSetting.updatedAt,
@@ -217,15 +223,15 @@ const handleApiError = (error: unknown) => {
   if (error instanceof Error) {
     return error.message;
   }
-  return 'An unexpected error occurred';
+  return "An unexpected error occurred";
 };
 
 // Fetch settings
 export const fetchSettingsData = () => async (dispatch: AppDispatch) => {
   dispatch(setSettingLoading());
   try {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/settings`);
-    
+    const response = await axios.get(`${API_BASE_URL}/settings`);
+
     if (response.data?.success) {
       const mappedSetting = mapApiSettingToSetting(response.data.data);
       dispatch(setSettingData(mappedSetting));
@@ -244,7 +250,7 @@ export const fetchSettingsData = () => async (dispatch: AppDispatch) => {
 export const fetchSeoSettings = () => async (dispatch: AppDispatch) => {
   dispatch(setSettingLoading());
   try {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/settings/seo`);
+    const response = await axios.get(`${API_BASE_URL}/settings/seo`);
     if (response.data?.success) {
       const mappedSetting = mapApiSettingToSetting(response.data.data);
       dispatch(setSettingData(mappedSetting));
@@ -263,13 +269,15 @@ export const fetchSeoSettings = () => async (dispatch: AppDispatch) => {
 export const fetchBusinessSettings = () => async (dispatch: AppDispatch) => {
   dispatch(setSettingLoading());
   try {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/settings/business`);
+    const response = await axios.get(`${API_BASE_URL}/settings/business`);
     if (response.data?.success) {
       const mappedSetting = mapApiSettingToSetting(response.data.data);
       dispatch(setSettingData(mappedSetting));
       return true;
     } else {
-      throw new Error(response.data?.message || "Failed to fetch business settings");
+      throw new Error(
+        response.data?.message || "Failed to fetch business settings",
+      );
     }
   } catch (error: unknown) {
     const errorMessage = handleApiError(error);
@@ -282,13 +290,15 @@ export const fetchBusinessSettings = () => async (dispatch: AppDispatch) => {
 export const fetchShippingSettings = () => async (dispatch: AppDispatch) => {
   dispatch(setSettingLoading());
   try {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/settings/shipping`);
+    const response = await axios.get(`${API_BASE_URL}/settings/shipping`);
     if (response.data?.success) {
       const mappedSetting = mapApiSettingToSetting(response.data.data);
       dispatch(setSettingData(mappedSetting));
       return true;
     } else {
-      throw new Error(response.data?.message || "Failed to fetch shipping settings");
+      throw new Error(
+        response.data?.message || "Failed to fetch shipping settings",
+      );
     }
   } catch (error: unknown) {
     const errorMessage = handleApiError(error);
@@ -298,46 +308,48 @@ export const fetchShippingSettings = () => async (dispatch: AppDispatch) => {
 };
 
 // Update settings
-export const updateSettings = (updatedData: Partial<Setting>) => async (dispatch: AppDispatch) => {
-  dispatch(setSettingLoading());
-  try {
-    // Convert object structure back to array structure for API
-    const apiData: Record<string, unknown> = {};
-    
-    if (updatedData.seoSetting) {
-      apiData.seoSetting = [updatedData.seoSetting];
+export const updateSettings =
+  (updatedData: Partial<Setting>) => async (dispatch: AppDispatch) => {
+    dispatch(setSettingLoading());
+    try {
+      // Convert object structure back to array structure for API
+      const apiData: Record<string, unknown> = {};
+
+      if (updatedData.seoSetting) {
+        apiData.seoSetting = [updatedData.seoSetting];
+      }
+      if (updatedData.businessSetting) {
+        apiData.businessSetting = [updatedData.businessSetting];
+      }
+      if (updatedData.shippingSetting) {
+        apiData.shippingSetting = [updatedData.shippingSetting];
+      }
+
+      const response = await axios.put(`${API_BASE_URL}/settings`, apiData);
+
+      if (response.data?.success) {
+        const mappedSetting = mapApiSettingToSetting(response.data.data);
+        dispatch(setSettingData(mappedSetting));
+        return true;
+      } else {
+        throw new Error(response.data?.message || "Failed to update settings");
+      }
+    } catch (error: unknown) {
+      const errorMessage = handleApiError(error);
+      dispatch(setSettingError(errorMessage));
+      return false;
     }
-    if (updatedData.businessSetting) {
-      apiData.businessSetting = [updatedData.businessSetting];
-    }
-    if (updatedData.shippingSetting) {
-      apiData.shippingSetting = [updatedData.shippingSetting];
-    }
-    
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/settings`,
-      apiData
-    );
-    
-    if (response.data?.success) {
-      const mappedSetting = mapApiSettingToSetting(response.data.data);
-      dispatch(setSettingData(mappedSetting));
-      return true;
-    } else {
-      throw new Error(response.data?.message || "Failed to update settings");
-    }
-  } catch (error: unknown) {
-    const errorMessage = handleApiError(error);
-    dispatch(setSettingError(errorMessage));
-    return false;
-  }
-};
+  };
 
 // Selectors
-export const selectSettingsData = (state: { settings: SettingState }) => state.settings.data;
-export const selectSettingsLoading = (state: { settings: SettingState }) => state.settings.isLoading;
-export const selectSettingsError = (state: { settings: SettingState }) => state.settings.error;
-export const selectSelectedSetting = (state: { settings: SettingState }) => state.settings.selectedSetting;
+export const selectSettingsData = (state: { settings: SettingState }) =>
+  state.settings.data;
+export const selectSettingsLoading = (state: { settings: SettingState }) =>
+  state.settings.isLoading;
+export const selectSettingsError = (state: { settings: SettingState }) =>
+  state.settings.error;
+export const selectSelectedSetting = (state: { settings: SettingState }) =>
+  state.settings.selectedSetting;
 
 // Export the reducer
 export default settingSlice.reducer;

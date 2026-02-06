@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch } from "@/lib/redux/store";
+import { getApiV1Url } from "@/lib/utils/api";
 
 const PrescriptionDetailPage = () => {
   const params = useParams();
@@ -30,9 +31,7 @@ const PrescriptionDetailPage = () => {
           return;
         }
 
-        const apiUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-        const url = `${apiUrl}/v1/prescriptions/${params.id}`;
+        const url = getApiV1Url(`/prescriptions/${params.id}`);
 
         const response = await fetch(url, {
           method: "GET",

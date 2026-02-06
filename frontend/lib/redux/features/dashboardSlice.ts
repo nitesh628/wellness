@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { RootState } from "../store";
+import { getApiV1BaseUrl } from "../../utils/api";
 
 interface Appointment {
   time: string;
@@ -74,8 +75,8 @@ const getAuthConfig = () => {
   };
 };
 
-const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/dashboard/doctor`;
-const APPOINTMENT_COUNT_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/v1/appointments/today/count`;
+const API_URL = `${getApiV1BaseUrl()}/dashboard/doctor`;
+const APPOINTMENT_COUNT_URL = `${getApiV1BaseUrl()}/appointments/today/count`;
 
 // --- Thunk ---
 export const fetchDoctorDashboard = createAsyncThunk(

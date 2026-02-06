@@ -1,6 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { AppDispatch } from "../store";
 import axios from "axios";
+import { getApiV1BaseUrl } from "../../utils/api";
+
+const API_BASE_URL = getApiV1BaseUrl();
 
 export interface User {
   _id: string;
@@ -124,7 +127,7 @@ const userSlice = createSlice({
   reducers: {
     setUserData: (
       state,
-      action: PayloadAction<{ data: User[]; total: number }>
+      action: PayloadAction<{ data: User[]; total: number }>,
     ) => {
       state.data = action.payload.data;
       state.pagination.total = action.payload.total;
@@ -146,14 +149,14 @@ const userSlice = createSlice({
     },
     setFilters: (
       state,
-      action: PayloadAction<Partial<UserState["filters"]>>
+      action: PayloadAction<Partial<UserState["filters"]>>,
     ) => {
       state.filters = { ...state.filters, ...action.payload };
       state.pagination.page = 1;
     },
     setPagination: (
       state,
-      action: PayloadAction<Partial<UserState["pagination"]>>
+      action: PayloadAction<Partial<UserState["pagination"]>>,
     ) => {
       state.pagination = { ...state.pagination, ...action.payload };
     },
@@ -162,7 +165,7 @@ const userSlice = createSlice({
     },
     updateUserInList: (state, action: PayloadAction<User>) => {
       const index = state.data.findIndex(
-        (user) => user._id === action.payload._id
+        (user) => user._id === action.payload._id,
       );
       if (index !== -1) {
         state.data[index] = action.payload;
@@ -245,20 +248,22 @@ export const fetchDoctors = () => async (dispatch: AppDispatch) => {
   dispatch(setUserLoading());
   try {
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/?role=Doctor&limit=50`
+      `${API_BASE_URL}/users/?role=Doctor&limit=50`,
     );
 
     if (response.data?.success) {
       const mappedUsers = response.data.data.map((user: ApiUser) =>
-        mapApiUserToUser(user)
+        mapApiUserToUser(user),
       );
-      const total = response.data.pagination ? response.data.pagination.total : mappedUsers.length;
+      const total = response.data.pagination
+        ? response.data.pagination.total
+        : mappedUsers.length;
 
       dispatch(
         setUserData({
           data: mappedUsers,
           total: total,
-        })
+        }),
       );
       return true;
     } else {
@@ -291,20 +296,18 @@ export const fetchUsersData =
         queryParams.append("search", filters.search);
       }
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/?${queryParams}`
-      );
+      const response = await axios.get(`${API_BASE_URL}/users/?${queryParams}`);
 
       if (response.data?.success) {
         const mappedUsers = response.data.data.map((user: ApiUser) =>
-          mapApiUserToUser(user)
+          mapApiUserToUser(user),
         );
 
         dispatch(
           setUserData({
             data: mappedUsers,
             total: response.data.pagination.total,
-          })
+          }),
         );
       } else {
         throw new Error(response.data?.message || "Failed to fetch users");
@@ -334,19 +337,18 @@ export const fetchActiveUsers =
         queryParams.append("search", filters.search);
       }
 
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/getActiveUsers?${queryParams}`
-      );
+      queryParams.append("status", "Active");
+      const response = await axios.get(`${API_BASE_URL}/users?${queryParams}`);
       if (response.data?.success) {
         const mappedUsers = response.data.data.map((user: ApiUser) =>
-          mapApiUserToUser(user)
+          mapApiUserToUser(user),
         );
 
         dispatch(
           setUserData({
             data: mappedUsers,
             total: response.data.pagination.total,
-          })
+          }),
         );
       } else {
         throw new Error(response.data?.message || "Failed to fetch users");
@@ -363,9 +365,7 @@ export const fetchUserById =
   (userId: string) => async (dispatch: AppDispatch) => {
     dispatch(setUserLoading());
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/getUserById/${userId}`
-      );
+      const response = await axios.get(`${API_BASE_URL}/users/${userId}`);
       if (response.data?.success) {
         const user = response.data.data;
         const mappedUser = mapApiUserToUser(user);
@@ -384,10 +384,7 @@ export const fetchUserById =
 export const createUser =
   (newUser: Partial<User>) => async (dispatch: AppDispatch) => {
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/newUser`,
-        newUser
-      );
+      const response = await axios.post(`${API_BASE_URL}/users`, newUser);
       if (response.data?.success) {
         dispatch(setUserLoading());
         return true;
@@ -406,18 +403,15 @@ export const createUser =
 export const updateUserStatus =
   (userId: string, status: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/updateUserStatus/${userId}`,
-        {
-          status,
-        }
-      );
+      const response = await axios.put(`${API_BASE_URL}/users/${userId}`, {
+        status,
+      });
       if (response.data?.success) {
         dispatch(setUserLoading());
         return true;
       } else {
         throw new Error(
-          response.data?.message || "Failed to update user status"
+          response.data?.message || "Failed to update user status",
         );
       }
     } catch (error: unknown) {
@@ -430,12 +424,9 @@ export const updateUserStatus =
 export const updateUserRole =
   (userId: string, role: string) => async (dispatch: AppDispatch) => {
     try {
-      const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/updateUserRole/${userId}`,
-        {
-          role,
-        }
-      );
+      const response = await axios.put(`${API_BASE_URL}/users/${userId}`, {
+        role,
+      });
       if (response.data?.success) {
         dispatch(setUserLoading());
         return true;
@@ -454,12 +445,12 @@ export const updateUser =
   async (dispatch: AppDispatch) => {
     try {
       const response = await axios.put(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userId}`,
-        updatedData
+        `${API_BASE_URL}/users/${userId}`,
+        updatedData,
       );
       if (response.data?.success) {
-        if (response.data.data) {
-          const mappedUser = mapApiUserToUser(response.data.data);
+        if (response.data.user) {
+          const mappedUser = mapApiUserToUser(response.data.user);
           dispatch(updateUserInList(mappedUser));
         }
         dispatch(setUserLoading());
@@ -476,9 +467,7 @@ export const updateUser =
 
 export const deleteUser = (userId: string) => async (dispatch: AppDispatch) => {
   try {
-    const response = await axios.delete(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/deleteUser/${userId}`
-    );
+    const response = await axios.delete(`${API_BASE_URL}/users/${userId}`);
     if (response.data?.success) {
       dispatch(removeUserFromList(userId));
       return true;
@@ -491,11 +480,17 @@ export const deleteUser = (userId: string) => async (dispatch: AppDispatch) => {
     return false;
   }
 };
-export const selectUsersData = (state: { users: UserState }) => state.users.data;
-export const selectUsersLoading = (state: { users: UserState }) => state.users.isLoading;
-export const selectUsersError = (state: { users: UserState }) => state.users.error;
-export const selectSelectedUser = (state: { users: UserState }) => state.users.selectedUser;
-export const selectUsersFilters = (state: { users: UserState }) => state.users.filters;
-export const selectUsersPagination = (state: { users: UserState }) => state.users.pagination;
+export const selectUsersData = (state: { users: UserState }) =>
+  state.users.data;
+export const selectUsersLoading = (state: { users: UserState }) =>
+  state.users.isLoading;
+export const selectUsersError = (state: { users: UserState }) =>
+  state.users.error;
+export const selectSelectedUser = (state: { users: UserState }) =>
+  state.users.selectedUser;
+export const selectUsersFilters = (state: { users: UserState }) =>
+  state.users.filters;
+export const selectUsersPagination = (state: { users: UserState }) =>
+  state.users.pagination;
 
 export default userSlice.reducer;

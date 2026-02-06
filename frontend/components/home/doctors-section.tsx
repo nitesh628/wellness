@@ -52,19 +52,11 @@ const DoctorsSection: React.FC = () => {
 
   // Fetch Doctors on Mount
   useEffect(() => {
-    console.log("Fetching doctors..."); // Debug log
     dispatch(fetchDoctors());
   }, [dispatch]);
 
   // Debug: Log raw users whenever they change
-  useEffect(() => {
-    console.log("Raw users from Redux:", rawUsers);
-    console.log("Number of users:", rawUsers.length);
-    console.log(
-      "Doctors only:",
-      rawUsers.filter((u) => u.role === "Doctor")
-    );
-  }, [rawUsers]);
+  useEffect(() => {}, [rawUsers]);
 
   // Filter and Map Redux Data to UI Structure
   const doctors: DoctorUI[] = rawUsers
@@ -107,7 +99,6 @@ const DoctorsSection: React.FC = () => {
     ));
   };
 
-
   return (
     <section className="py-20 relative overflow-hidden">
       {/* Enhanced Animated Blobs (Background) */}
@@ -145,7 +136,6 @@ const DoctorsSection: React.FC = () => {
           >
             <span className="text-foreground">
               Meet Our <span className="text-primary">Expert Doctors</span>
-             
             </span>
           </motion.h2>
           <motion.p
@@ -285,7 +275,6 @@ const DoctorsSection: React.FC = () => {
                     </p>
                   </div>
                 </div>
-
 
                 {/* Action Buttons */}
                 <div className="p-4 pt-0 mt-auto">
