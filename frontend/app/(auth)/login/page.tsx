@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ import Image from "next/image";
 
 const LoginPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const error = useAppSelector(selectAuthError);
   const loading = useAppSelector(selectAuthLoading);
@@ -45,6 +46,15 @@ const LoginPage = () => {
   // Check if user is already logged in
   useEffect(() => {
     if (isAuthenticated()) {
+      const redirectParam = searchParams.get("redirect");
+      const safeRedirect =
+        redirectParam && redirectParam.startsWith("/") ? redirectParam : null;
+
+      if (safeRedirect) {
+        router.push(safeRedirect);
+        return;
+      }
+
       const userCookie = document.cookie
         .split("; ")
         .find((row) => row.startsWith("user="));
@@ -62,7 +72,7 @@ const LoginPage = () => {
         router.push("/profile");
       }
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,12 +103,22 @@ const LoginPage = () => {
           dispatch(setUser(userDetails));
           updateUserRole(userDetails.role);
 
+          const redirectParam = searchParams.get("redirect");
+          const safeRedirect =
+            redirectParam && redirectParam.startsWith("/")
+              ? redirectParam
+              : null;
           const dashboardUrl = getDashboardForRole(userDetails.role);
 
-          router.replace(dashboardUrl);
+          router.replace(safeRedirect || dashboardUrl);
         } else {
           updateUserRole("user");
-          router.replace("/profile");
+          const redirectParam = searchParams.get("redirect");
+          const safeRedirect =
+            redirectParam && redirectParam.startsWith("/")
+              ? redirectParam
+              : null;
+          router.replace(safeRedirect || "/profile");
         }
       } else {
       }

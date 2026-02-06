@@ -88,7 +88,7 @@ const CheckoutPage = () => {
       // For now we might proceed if we want to allow guest checkout but backend requires user ID
       // So we should probably enforce login
       toast.error("Please login to place an order");
-      router.push("/login");
+      router.push("/login?redirect=/checkout");
     }
   }, [isAuthenticated, router, isLoading]);
 
