@@ -45,18 +45,74 @@ const InfluencerSchema = new mongoose.Schema(
             enum: ["active", "inactive"],
             default: "active",
         },
+        // Profile Fields
         platform: {
             type: String,
         },
         followers: {
             type: Number,
         },
+        engagementRate: {
+            type: Number,
+        },
         category: {
+            type: String,
+        },
+        location: {
+            type: String,
+        },
+        notes: {
+            type: String,
+        },
+        language: [
+            {
+                type: String,
+            },
+        ],
+        collaborationRate: {
+            type: Number,
+        },
+        sponsoredPostRate: {
+            type: Number,
+        },
+
+        // Business Fields
+        brandName: {
+            type: String,
+        },
+        businessAddress: {
+            type: String,
+        },
+        businessPhone: {
+            type: String,
+        },
+        businessEmail: {
+            type: String,
+        },
+        website: {
+            type: String,
+        },
+        taxId: {
+            type: String,
+        },
+        businessType: {
             type: String,
         },
         socialMediaLinks: {
             type: String,
         },
+        averagePostTime: {
+            type: Number,
+        },
+        maxCollaborationsPerMonth: {
+            type: Number,
+        },
+        brandPartnerships: {
+            type: Boolean,
+            default: true,
+        },
+
+        // Security Fields
         occupation: {
             type: String,
         },
@@ -77,6 +133,35 @@ const InfluencerSchema = new mongoose.Schema(
         twoFactorEnabled: {
             type: Boolean,
             default: false,
+        },
+        loginAlerts: {
+            type: Boolean,
+            default: false,
+        },
+        sessionTimeout: {
+            type: Number,
+            default: 30,
+        },
+        passwordExpiry: {
+            type: Number,
+            default: 90,
+        },
+        ipWhitelist: [
+            {
+                type: String,
+            },
+        ],
+        auditLogs: {
+            type: Boolean,
+            default: true,
+        },
+        dataEncryption: {
+            type: Boolean,
+            default: true,
+        },
+        backupFrequency: {
+            type: String,
+            default: "daily",
         },
     },
     { timestamps: true }

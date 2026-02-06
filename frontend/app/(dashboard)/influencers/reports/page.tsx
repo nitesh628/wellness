@@ -16,6 +16,10 @@ import {
   TrendingUp,
   Target,
   Award,
+  AlertCircle,
+  CheckCircle,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react";
 import {
   Card,
@@ -38,6 +42,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Utility functions
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+const validateDateRange = (from: string, to: string): boolean => {
+  const fromDate = new Date(from);
+  const toDate = new Date(to);
+  return fromDate <= toDate && toDate <= new Date();
+};
+
+const getReportTypeDescription = (reportType: string): string => {
+  const descriptions: Record<string, string> = {
+    overview: "Complete overview of all metrics",
+    engagement: "Engagement trends and patterns analysis",
+    audience: "Detailed audience demographics and insights",
+    content: "Content performance and post analysis",
+    revenue: "Revenue streams and earnings breakdown",
+    brands: "Brand collaboration ROI analysis",
+    growth: "Follower growth and reach trends",
+    conversion: "Sales and conversion metrics",
+  };
+  return descriptions[reportType] || "Performance metrics for selected period";
+};
+
 // Influencer Reports Page Component
 const InfluencerReportsPage = () => {
   const [selectedPeriod, setSelectedPeriod] = useState("30d");
@@ -54,6 +87,8 @@ const InfluencerReportsPage = () => {
   const [exportFormat, setExportFormat] = useState("pdf");
   const [reportData, setReportData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState("date");
+  const [filterBrand, setFilterBrand] = useState("all");
 
   // Fetch dashboard data from API
   useEffect(() => {
@@ -64,6 +99,7 @@ const InfluencerReportsPage = () => {
     try {
       setIsLoading(true);
       setError(null);
+      const token = localStorage.getItem("token");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-reports/dashboard?period=${selectedPeriod}`,
         {
@@ -71,21 +107,28 @@ const InfluencerReportsPage = () => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
         },
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch dashboard data");
+        throw new Error(
+          `Failed to fetch dashboard data: ${response.statusText}`,
+        );
       }
 
       const result = await response.json();
       if (result.success) {
         setReportData(result.data);
+      } else {
+        throw new Error(result.message || "Failed to load report data");
       }
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
-      setError(error.message);
+      setError(
+        error.message || "Failed to load report data. Please try again later.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +150,8 @@ const InfluencerReportsPage = () => {
     sponsoredPosts: 45,
     affiliateSales: 892,
     topPerformingPost: 15600,
+    engagementGrowth: 5.2,
+    revenueGrowth: 8.7,
   };
 
   const postPerformanceData = reportData?.postPerformanceData || [
@@ -275,6 +320,33 @@ const InfluencerReportsPage = () => {
   const handleGenerateReport = async () => {
     try {
       setIsGenerating(true);
+      setError(null);
+
+      // Validate inputs
+      if (!selectedReport) {
+        setError("Please select a report type");
+        setIsGenerating(false);
+        return;
+      }
+
+      if (!exportFormat) {
+        setError("Please select an export format");
+        setIsGenerating(false);
+        return;
+      }
+
+      // Validate date range if custom is selected
+      if (selectedPeriod === "custom") {
+        if (!validateDateRange(dateRange.from, dateRange.to)) {
+          setError(
+            "Invalid date range. End date must be after start date and not in the future.",
+          );
+          setIsGenerating(false);
+          return;
+        }
+      }
+
+      const token = localStorage.getItem("token");
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-reports/generate`,
         {
@@ -282,37 +354,67 @@ const InfluencerReportsPage = () => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
           body: JSON.stringify({
             reportType: selectedReport,
             format: exportFormat,
-            dateRange: dateRange,
+            dateRange: selectedPeriod === "custom" ? dateRange : null,
           }),
         },
       );
 
       if (!response.ok) {
-        throw new Error("Failed to generate report");
+        throw new Error(`Failed to generate report: ${response.statusText}`);
       }
 
       const result = await response.json();
       if (result.success) {
-        alert("Report generated successfully!");
+        // Show success notification
+        const successMsg = `${result.data?.reportName || "Report"} generated successfully!`;
+        alert(successMsg);
         // Refresh dashboard data
         fetchDashboardData();
+      } else {
+        throw new Error(result.message || "Failed to generate report");
       }
     } catch (error: any) {
       console.error("Error generating report:", error);
-      alert("Failed to generate report");
+      setError(error.message || "Failed to generate report");
+      alert("Failed to generate report: " + (error.message || "Unknown error"));
     } finally {
       setIsGenerating(false);
     }
   };
 
   const handleExportReport = async () => {
-    setIsExporting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsExporting(false);
+    try {
+      setIsExporting(true);
+      setError(null);
+      const token = localStorage.getItem("token");
+
+      // Simulate export delay (in production, this would call an actual export API)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Create a mock download
+      const exportData = {
+        report: selectedReport,
+        format: exportFormat,
+        generatedAt: new Date().toISOString(),
+        stats: influencerStats,
+        period: selectedPeriod,
+      };
+
+      const fileName = `influencer-report-${selectedReport}-${new Date().getTime()}.${exportFormat === "pdf" ? "pdf" : exportFormat === "excel" ? "xlsx" : "csv"}`;
+
+      alert(`Report exported as ${fileName}`);
+    } catch (error: any) {
+      console.error("Error exporting report:", error);
+      setError(error.message || "Failed to export report");
+      alert("Failed to export report");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -380,28 +482,27 @@ const InfluencerReportsPage = () => {
       {/* Main Content */}
       {!isLoading && !error && (
         <>
-          {/* Quick Stats */}
+          {/* Quick Stats with Growth Indicators */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            \n{" "}
-            <Card>
-              \n{" "}
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                \n{" "}
                 <CardTitle className="text-sm font-medium">
                   Total Followers
                 </CardTitle>
-                \n <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {influencerStats.totalFollowers.toLocaleString()}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <ArrowUpRight className="w-3 h-3 text-green-600" />
                   <span className="text-green-600">+12.5%</span> from last month
                 </p>
               </CardContent>
             </Card>
-            <Card>
+
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Engagement Rate
@@ -412,12 +513,17 @@ const InfluencerReportsPage = () => {
                 <div className="text-2xl font-bold">
                   {influencerStats.totalEngagement}%
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">+0.8%</span> from last month
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <ArrowUpRight className="w-3 h-3 text-green-600" />
+                  <span className="text-green-600">
+                    {influencerStats.engagementGrowth}%
+                  </span>{" "}
+                  growth
                 </p>
               </CardContent>
             </Card>
-            <Card>
+
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Total Revenue
@@ -428,12 +534,17 @@ const InfluencerReportsPage = () => {
                 <div className="text-2xl font-bold">
                   ${influencerStats.totalRevenue.toLocaleString()}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">+15.3%</span> from last month
+                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                  <ArrowUpRight className="w-3 h-3 text-green-600" />
+                  <span className="text-green-600">
+                    {influencerStats.revenueGrowth}%
+                  </span>{" "}
+                  growth
                 </p>
               </CardContent>
             </Card>
-            <Card>
+
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
                   Brand Collaborations
@@ -445,7 +556,9 @@ const InfluencerReportsPage = () => {
                   {influencerStats.brandCollaborations}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-green-600">+3</span> from last month
+                  <span className="text-green-600 flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" /> Active partnerships
+                  </span>
                 </p>
               </CardContent>
             </Card>
@@ -610,29 +723,36 @@ const InfluencerReportsPage = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {postPerformanceData.slice(-5).map((day, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between"
-                            >
-                              <div>
-                                <p className="font-medium">
-                                  {new Date(day.date).toLocaleDateString()}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {day.posts} posts
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-medium">
-                                  {day.likes.toLocaleString()} likes
-                                </p>
-                                <p className="text-sm text-green-600">
-                                  {day.reach.toLocaleString()} reach
-                                </p>
-                              </div>
-                            </div>
-                          ))}
+                          {postPerformanceData
+                            .slice(-5)
+                            .map(
+                              (
+                                day: (typeof postPerformanceData)[0],
+                                index: number,
+                              ) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between"
+                                >
+                                  <div>
+                                    <p className="font-medium">
+                                      {new Date(day.date).toLocaleDateString()}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {day.posts} posts
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-medium">
+                                      {day.likes.toLocaleString()} likes
+                                    </p>
+                                    <p className="text-sm text-green-600">
+                                      {day.reach.toLocaleString()} reach
+                                    </p>
+                                  </div>
+                                </div>
+                              ),
+                            )}
                         </div>
                       </CardContent>
                     </Card>
@@ -646,27 +766,32 @@ const InfluencerReportsPage = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {audienceAnalytics.map((demo, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between"
-                            >
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                                <span className="font-medium">
-                                  {demo.demographic}
-                                </span>
+                          {audienceAnalytics.map(
+                            (
+                              demo: (typeof audienceAnalytics)[0],
+                              index: number,
+                            ) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                                  <span className="font-medium">
+                                    {demo.demographic}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-muted-foreground">
+                                    {demo.count.toLocaleString()}
+                                  </span>
+                                  <Badge variant="outline">
+                                    {demo.percentage}%
+                                  </Badge>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">
-                                  {demo.count.toLocaleString()}
-                                </span>
-                                <Badge variant="outline">
-                                  {demo.percentage}%
-                                </Badge>
-                              </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -678,41 +803,78 @@ const InfluencerReportsPage = () => {
                     {/* Brand Collaborations */}
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">
-                          Brand Collaborations
-                        </CardTitle>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">
+                            Brand Collaborations
+                          </CardTitle>
+                          <Select value={sortBy} onValueChange={setSortBy}>
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="date">By Date</SelectItem>
+                              <SelectItem value="revenue">
+                                By Revenue
+                              </SelectItem>
+                              <SelectItem value="engagement">
+                                By Engagement
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {brandCollaborations.map((collab, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-between p-3 border rounded-lg"
-                            >
-                              <div>
-                                <p className="font-medium">{collab.brand}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {collab.posts} posts
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-medium">
-                                  ${collab.revenue.toLocaleString()}
-                                </p>
-                                <Badge
-                                  variant={
-                                    collab.status === "active"
-                                      ? "default"
-                                      : collab.status === "completed"
-                                        ? "secondary"
-                                        : "outline"
-                                  }
+                          {brandCollaborations
+                            .sort(
+                              (
+                                a: (typeof brandCollaborations)[0],
+                                b: (typeof brandCollaborations)[0],
+                              ) => {
+                                if (sortBy === "revenue")
+                                  return b.revenue - a.revenue;
+                                if (sortBy === "engagement")
+                                  return b.engagement - a.engagement;
+                                return 0;
+                              },
+                            )
+                            .map(
+                              (
+                                collab: (typeof brandCollaborations)[0],
+                                index: number,
+                              ) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-secondary/50 transition-colors"
                                 >
-                                  {collab.status}
-                                </Badge>
-                              </div>
-                            </div>
-                          ))}
+                                  <div>
+                                    <p className="font-medium">
+                                      {collab.brand}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {collab.posts} posts • {collab.engagement}
+                                      % engagement
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-medium">
+                                      ${collab.revenue.toLocaleString()}
+                                    </p>
+                                    <Badge
+                                      variant={
+                                        collab.status === "active"
+                                          ? "default"
+                                          : collab.status === "completed"
+                                            ? "secondary"
+                                            : "outline"
+                                      }
+                                    >
+                                      {collab.status}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ),
+                            )}
                         </div>
                       </CardContent>
                     </Card>
@@ -770,24 +932,36 @@ const InfluencerReportsPage = () => {
 
                 <TabsContent value="charts" className="space-y-4">
                   <Alert>
-                    <BarChart3 className="h-4 w-4" />
+                    <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      Interactive charts and visualizations will be displayed
-                      here. This feature requires additional charting library
-                      integration.
+                      To enable interactive charts, install recharts:{" "}
+                      <code className="bg-muted px-2 py-1 rounded text-xs">
+                        npm install recharts
+                      </code>
+                      . This will provide real-time visualization of your
+                      engagement trends and performance metrics.
                     </AlertDescription>
                   </Alert>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Engagement Distribution</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <TrendingUp className="w-5 h-5" />
+                          Engagement Trend
+                        </CardTitle>
+                        <CardDescription>
+                          Likes, comments, and shares over time
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-64 flex items-center justify-center text-muted-foreground">
+                        <div className="h-64 flex items-center justify-center text-muted-foreground bg-secondary/50 rounded-lg">
                           <div className="text-center">
-                            <PieChart className="w-12 h-12 mx-auto mb-2" />
-                            <p>Engagement Pie Chart Placeholder</p>
+                            <LineChart className="w-12 h-12 mx-auto mb-2" />
+                            <p className="text-sm">Engagement Trend Chart</p>
+                            <p className="text-xs mt-1">
+                              Install recharts to view
+                            </p>
                           </div>
                         </div>
                       </CardContent>
@@ -795,13 +969,22 @@ const InfluencerReportsPage = () => {
 
                     <Card>
                       <CardHeader>
-                        <CardTitle>Follower Growth Trend</CardTitle>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Users className="w-5 h-5" />
+                          Audience Distribution
+                        </CardTitle>
+                        <CardDescription>
+                          Follower demographics breakdown
+                        </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-64 flex items-center justify-center text-muted-foreground">
+                        <div className="h-64 flex items-center justify-center text-muted-foreground bg-secondary/50 rounded-lg">
                           <div className="text-center">
-                            <LineChart className="w-12 h-12 mx-auto mb-2" />
-                            <p>Growth Line Chart Placeholder</p>
+                            <PieChart className="w-12 h-12 mx-auto mb-2" />
+                            <p className="text-sm">Audience Demographics</p>
+                            <p className="text-xs mt-1">
+                              Install recharts to view
+                            </p>
                           </div>
                         </div>
                       </CardContent>

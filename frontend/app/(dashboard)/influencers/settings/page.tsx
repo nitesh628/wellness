@@ -29,6 +29,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Influencer Settings Page Component
 const InfluencerSettingsPage = () => {
+  // All state declarations at the top
   const [editStates, setEditStates] = useState({
     profile: false,
     business: false,
@@ -38,43 +39,6 @@ const InfluencerSettingsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Fetch settings data from API
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-settings`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch settings");
-      }
-
-      const result = await response.json();
-      if (result.success && result.data) {
-        setOriginalData(result.data);
-        setFormData(result.data);
-      }
-    } catch (error: any) {
-      console.error("Error fetching settings:", error);
-      setError(error.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const [originalData, setOriginalData] = useState({
     profile: {
@@ -133,6 +97,57 @@ const InfluencerSettingsPage = () => {
 
   const [formData, setFormData] = useState(originalData);
 
+  // Fetch settings data from API
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  // Sync formData when originalData changes after API fetch
+  useEffect(() => {
+    if (originalData && originalData.profile) {
+      setFormData(originalData);
+    }
+  }, [originalData]);
+
+  const fetchSettings = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const token = localStorage.getItem("token");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/v1/influencer-settings`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        },
+      );
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Unauthorized. Please log in again.");
+        }
+        throw new Error(`Failed to fetch settings: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        setOriginalData(result.data);
+        // Don't need to set formData here - the useEffect below will handle it
+      } else {
+        throw new Error(result.message || "Failed to load settings");
+      }
+    } catch (error: any) {
+      console.error("Error fetching settings:", error);
+      setError(error.message || "Failed to load settings. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleEdit = (section: string) => {
     setEditStates((prev) => ({ ...prev, [section]: true }));
   };
@@ -145,15 +160,68 @@ const InfluencerSettingsPage = () => {
     }));
   };
 
+  const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const validateWebsite = (url: string): boolean => {
+    if (!url) return true; // Optional field
+    try {
+      new URL(url.startsWith("http") ? url : `https://${url}`);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSave = async (section: string) => {
     try {
+      // Validation and data transformation
+      let dataToSend: any = { ...formData[section as keyof typeof formData] };
+
+      if (section === "profile") {
+        // Validate email
+        if (!validateEmail(dataToSend.email)) {
+          setError("Please enter a valid email address");
+          return;
+        }
+        // Validate phone
+        if (
+          dataToSend.phone &&
+          !validatePhoneNumber(dataToSend.phone.toString())
+        ) {
+          setError("Please enter a valid phone number (at least 10 digits)");
+          return;
+        }
+
+        // Transform name to firstName and lastName
+        const nameParts = (dataToSend.name as string).split(" ");
+        dataToSend.firstName = nameParts[0] || "";
+        dataToSend.lastName = nameParts.slice(1).join(" ") || "";
+        // Remove fields that shouldn't be sent to backend
+        delete dataToSend.name;
+        delete dataToSend.avatar;
+      } else if (section === "business") {
+        // Validate website if provided
+        if (dataToSend.website && !validateWebsite(dataToSend.website)) {
+          setError("Please enter a valid website URL");
+          return;
+        }
+        // Remove contentSchedule - not handled by backend
+        delete dataToSend.contentSchedule;
+      }
+
       setIsSaving(true);
+      setError(null);
+      const token = localStorage.getItem("token");
       const endpoint =
         section === "profile"
           ? "/v1/influencer-settings/profile"
           : section === "business"
             ? "/v1/influencer-settings/business"
             : "/v1/influencer-settings/security";
+
+      console.log(`Saving ${section} settings:`, dataToSend);
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
@@ -162,30 +230,47 @@ const InfluencerSettingsPage = () => {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
-          body: JSON.stringify(formData[section as keyof typeof formData]),
+          body: JSON.stringify(dataToSend),
         },
       );
 
       if (!response.ok) {
-        throw new Error("Failed to save settings");
+        if (response.status === 401) {
+          throw new Error("Unauthorized. Please log in again.");
+        }
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message ||
+            `Failed to save settings: ${response.statusText}`,
+        );
       }
 
       const result = await response.json();
       if (result.success) {
-        setOriginalData((prev) => ({
-          ...prev,
-          [section]: formData[section as keyof typeof formData],
-        }));
+        // Refresh the data from server to ensure we have the latest
+        await fetchSettings();
         setEditStates((prev) => ({ ...prev, [section]: false }));
-        alert("Settings saved successfully!");
+        setError(null);
+        alert(
+          `${section.charAt(0).toUpperCase() + section.slice(1)} settings saved successfully!`,
+        );
+      } else {
+        throw new Error(result.message || "Failed to save settings");
       }
     } catch (error: any) {
       console.error("Error saving settings:", error);
-      alert("Failed to save settings");
+      setError(error.message || "Failed to save settings. Please try again.");
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const validatePhoneNumber = (phone: string): boolean => {
+    return (
+      /^[\d\s\-\+\(\)]+$/.test(phone) && phone.replace(/\D/g, "").length >= 10
+    );
   };
 
   const handleInputChange = (
@@ -193,6 +278,16 @@ const InfluencerSettingsPage = () => {
     field: string,
     value: string | number | boolean | string[],
   ) => {
+    // Clear error when user starts typing
+    if (error) setError(null);
+
+    // Validate phone field in real-time
+    if (field === "phone" && typeof value === "string") {
+      if (value && !validatePhoneNumber(value)) {
+        // Still allow input but user will see validation error on save
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       [section]: {

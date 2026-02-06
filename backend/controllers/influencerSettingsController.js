@@ -1,6 +1,25 @@
 import User from "../models/userModel.js";
 import Influencer from "../models/influencerModel.js";
 
+// Validation helpers
+const validateEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const validatePhone = (phone) => {
+  return /^[\d\s\-\+\(\)]+$/.test(phone) && phone.replace(/\D/g, '').length >= 10;
+};
+
+const validateURL = (url) => {
+  try {
+    const urlWithProto = url.startsWith('http') ? url : `https://${url}`;
+    new URL(urlWithProto);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 // Get all settings (Profile, Business, Security)
 export const getInfluencerSettings = async (req, res) => {
   try {
@@ -78,7 +97,8 @@ export const getInfluencerSettings = async (req, res) => {
 export const updateProfileSettings = async (req, res) => {
   try {
     const {
-      name,
+      firstName,
+      lastName,
       email,
       phone,
       niche,
@@ -92,25 +112,38 @@ export const updateProfileSettings = async (req, res) => {
       sponsoredPostRate
     } = req.body;
 
-    const nameParts = name ? name.split(" ") : ["", ""];
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ");
+    // Validation
+    if (email && !validateEmail(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+
+    if (phone && !validatePhone(phone)) {
+      return res.status(400).json({ success: false, message: "Invalid phone number format" });
+    }
+
+    // Build update object with validated fields
+    const updateData = {
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      email: email || undefined,
+      phone: phone || undefined,
+      category: niche || undefined,
+      followers: followers ? parseInt(followers, 10) : undefined,
+      engagementRate: engagement ? parseFloat(engagement) : undefined,
+      platform: platform || undefined,
+      location: location || undefined,
+      notes: bio || undefined, // Using notes field for bio
+      language: Array.isArray(languages) ? languages : undefined,
+      collaborationRate: collaborationRate ? parseFloat(collaborationRate) : undefined
+    };
+
+    // Remove undefined fields to avoid overwriting with null
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
     // Try Influencer model first
     let updatedUser = await Influencer.findByIdAndUpdate(
       req.user._id,
-      {
-        firstName: firstName || req.user.firstName,
-        lastName: lastName || req.user.lastName,
-        phone,
-        category: niche,
-        followers,
-        platform,
-        location,
-        occupation: bio,
-        collaborationRate,
-        sponsoredPostRate
-      },
+      updateData,
       { new: true, runValidators: true }
     ).select("-password");
 
@@ -118,25 +151,22 @@ export const updateProfileSettings = async (req, res) => {
     if (!updatedUser) {
       updatedUser = await User.findByIdAndUpdate(
         req.user._id,
-        {
-          firstName: firstName || req.user.firstName,
-          lastName: lastName || req.user.lastName,
-          phone,
-          category: niche,
-          followers,
-          platform,
-          location,
-          notes: bio,
-          language: languages,
-          collaborationRate,
-          sponsoredPostRate
-        },
+        updateData,
         { new: true, runValidators: true }
       ).select("-password");
     }
 
-    res.status(200).json({ success: true, message: "Profile updated", data: updatedUser });
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Profile settings updated successfully",
+      data: updatedUser
+    });
   } catch (error) {
+    console.error("Profile settings update error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -158,12 +188,41 @@ export const updateBusinessSettings = async (req, res) => {
       brandPartnerships
     } = req.body;
 
+    // Validation
+    if (businessEmail && !validateEmail(businessEmail)) {
+      return res.status(400).json({ success: false, message: "Invalid business email format" });
+    }
+
+    if (businessPhone && !validatePhone(businessPhone)) {
+      return res.status(400).json({ success: false, message: "Invalid business phone format" });
+    }
+
+    if (website && !validateURL(website)) {
+      return res.status(400).json({ success: false, message: "Invalid website URL" });
+    }
+
+    // Build update object
+    const updateData = {
+      brandName: brandName || undefined,
+      businessAddress: businessAddress || undefined,
+      businessPhone: businessPhone || undefined,
+      businessEmail: businessEmail || undefined,
+      website: website || undefined,
+      taxId: taxId || undefined,
+      businessType: businessType || undefined,
+      socialMediaLinks: socialMedia ? JSON.stringify(socialMedia) : undefined,
+      averagePostTime: averagePostTime ? parseInt(averagePostTime, 10) : undefined,
+      maxCollaborationsPerMonth: maxCollaborationsPerMonth ? parseInt(maxCollaborationsPerMonth, 10) : undefined,
+      brandPartnerships: brandPartnerships !== undefined ? Boolean(brandPartnerships) : undefined
+    };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
     // Try Influencer model first
     let updatedUser = await Influencer.findByIdAndUpdate(
       req.user._id,
-      {
-        socialMediaLinks: socialMedia ? JSON.stringify(socialMedia) : undefined
-      },
+      updateData,
       { new: true, runValidators: true }
     ).select("-password");
 
@@ -171,15 +230,22 @@ export const updateBusinessSettings = async (req, res) => {
     if (!updatedUser) {
       updatedUser = await User.findByIdAndUpdate(
         req.user._id,
-        {
-          socialMediaLinks: socialMedia ? JSON.stringify(socialMedia) : undefined
-        },
+        updateData,
         { new: true, runValidators: true }
       ).select("-password");
     }
 
-    res.status(200).json({ success: true, message: "Business settings updated", data: updatedUser });
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Business settings updated successfully",
+      data: updatedUser
+    });
   } catch (error) {
+    console.error("Business settings update error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -198,12 +264,53 @@ export const updateSecuritySettings = async (req, res) => {
       backupFrequency
     } = req.body;
 
+    // Validation
+    if (sessionTimeout !== undefined && (sessionTimeout < 5 || sessionTimeout > 1440)) {
+      return res.status(400).json({
+        success: false,
+        message: "Session timeout must be between 5 and 1440 minutes"
+      });
+    }
+
+    if (passwordExpiry !== undefined && (passwordExpiry < 0 || passwordExpiry > 365)) {
+      return res.status(400).json({
+        success: false,
+        message: "Password expiry must be between 0 and 365 days"
+      });
+    }
+
+    // Validate IP whitelist
+    if (Array.isArray(ipWhitelist)) {
+      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/; // Simple IP validation
+      for (const ip of ipWhitelist) {
+        if (!ipRegex.test(ip)) {
+          return res.status(400).json({
+            success: false,
+            message: `Invalid IP address format: ${ip}`
+          });
+        }
+      }
+    }
+
+    // Build update object
+    const updateData = {
+      twoFactorEnabled: twoFactorAuth !== undefined ? Boolean(twoFactorAuth) : undefined,
+      loginAlerts: loginAlerts !== undefined ? Boolean(loginAlerts) : undefined,
+      sessionTimeout: sessionTimeout ? parseInt(sessionTimeout, 10) : undefined,
+      passwordExpiry: passwordExpiry !== undefined ? parseInt(passwordExpiry, 10) : undefined,
+      ipWhitelist: Array.isArray(ipWhitelist) ? ipWhitelist : undefined,
+      auditLogs: auditLogs !== undefined ? Boolean(auditLogs) : undefined,
+      dataEncryption: dataEncryption !== undefined ? Boolean(dataEncryption) : undefined,
+      backupFrequency: backupFrequency || undefined
+    };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
     // Try Influencer model first
     let updatedUser = await Influencer.findByIdAndUpdate(
       req.user._id,
-      {
-        twoFactorEnabled: twoFactorAuth
-      },
+      updateData,
       { new: true, runValidators: true }
     ).select("-password");
 
@@ -211,22 +318,22 @@ export const updateSecuritySettings = async (req, res) => {
     if (!updatedUser) {
       updatedUser = await User.findByIdAndUpdate(
         req.user._id,
-        {
-          twoFactorEnabled: twoFactorAuth,
-          loginAlerts,
-          sessionTimeout,
-          passwordExpiry,
-          ipWhitelist,
-          auditLogs,
-          dataEncryption,
-          backupFrequency
-        },
+        updateData,
         { new: true, runValidators: true }
       ).select("-password");
     }
 
-    res.status(200).json({ success: true, message: "Security settings updated", data: updatedUser });
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Security settings updated successfully",
+      data: updatedUser
+    });
   } catch (error) {
+    console.error("Security settings update error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -234,18 +341,44 @@ export const updateSecuritySettings = async (req, res) => {
 // Update Avatar (Handle file upload separately usually, or via URL here)
 export const updateAvatar = async (req, res) => {
   try {
-    const { avatarUrl } = req.body;
+    const { imageUrl } = req.body;
+
+    if (!imageUrl) {
+      return res.status(400).json({ success: false, message: "Image URL is required" });
+    }
+
+    // Validate URL format
+    if (!validateURL(imageUrl)) {
+      return res.status(400).json({ success: false, message: "Invalid image URL format" });
+    }
 
     // Try Influencer model first
-    let updatedUser = await Influencer.findByIdAndUpdate(req.user._id, { imageUrl: avatarUrl });
+    let updatedUser = await Influencer.findByIdAndUpdate(
+      req.user._id,
+      { imageUrl: imageUrl },
+      { new: true, runValidators: true }
+    ).select("-password");
 
     // Fallback to User model
     if (!updatedUser) {
-      updatedUser = await User.findByIdAndUpdate(req.user._id, { imageUrl: avatarUrl });
+      updatedUser = await User.findByIdAndUpdate(
+        req.user._id,
+        { imageUrl: imageUrl },
+        { new: true, runValidators: true }
+      ).select("-password");
     }
 
-    res.status(200).json({ success: true, message: "Avatar updated" });
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Avatar updated successfully",
+      data: updatedUser
+    });
   } catch (error) {
+    console.error("Avatar update error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
