@@ -6,20 +6,46 @@ import { getApiV1BaseUrl } from "../../utils/api";
 const API_BASE_URL = getApiV1BaseUrl();
 
 // Define the Order type
+export interface OrderUser {
+  _id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  name?: string;
+}
+
+export interface OrderAddress {
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pinCode?: string;
+  landmark?: string;
+}
+
+export interface OrderItem {
+  product:
+    | string
+    | {
+        _id?: string;
+        name?: string;
+        image?: string;
+        price?: number;
+      };
+  quantity: number;
+  price: number;
+  total: number;
+}
+
 export interface Order {
   _id?: string;
   orderNumber: string;
-  user: string;
-  shippingAddress: string;
-  billingAddress: string;
-  items: [
-    {
-      product: string;
-      quantity: number;
-      price: number;
-      total: number;
-    },
-  ];
+  user: string | OrderUser;
+  shippingAddress: string | OrderAddress;
+  billingAddress: string | OrderAddress;
+  items: OrderItem[];
   paymentMethod: "Credit Card" | "Debit Card" | "UPI" | "Net Banking" | "COD";
   paymentStatus: "Paid" | "Pending" | "Refunded" | "Failed";
   status:
@@ -49,7 +75,14 @@ interface OrderState {
   selectedOrder: Order | null;
   isLoading: boolean;
   error: string | null;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
   filters: {
+    user?: string;
     status:
       | ""
       | "Pending"
@@ -73,7 +106,14 @@ const initialState: OrderState = {
   selectedOrder: null,
   isLoading: false,
   error: null,
+  pagination: {
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1,
+  },
   filters: {
+    user: "",
     status: "",
     paymentStatus: "",
   },
@@ -102,6 +142,12 @@ const orderSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload;
     },
+    setOrderPagination: (
+      state,
+      action: PayloadAction<OrderState["pagination"]>,
+    ) => {
+      state.pagination = action.payload;
+    },
     clearSelectedOrder: (state) => {
       state.selectedOrder = null;
     },
@@ -123,6 +169,7 @@ export const {
   setSelectedOrder,
   setOrderLoading,
   setOrderError,
+  setOrderPagination,
   clearSelectedOrder,
   setFilters,
   clearFilters,
@@ -141,7 +188,7 @@ const handleApiError = (error: unknown) => {
 
 // Fetch orders with filters
 export const fetchOrdersData =
-  () =>
+  (params?: { page?: number; limit?: number }) =>
   async (dispatch: AppDispatch, getState: () => { order: OrderState }) => {
     dispatch(setOrderLoading());
     try {
@@ -155,12 +202,21 @@ export const fetchOrdersData =
       if (filters.paymentStatus) {
         queryParams.append("paymentStatus", filters.paymentStatus);
       }
+      if (filters.user) {
+        queryParams.append("user", filters.user);
+      }
       if (filters.search) {
         queryParams.append("q", filters.search);
       }
       if (filters.dateRange) {
         queryParams.append("fromDate", filters.dateRange.from);
         queryParams.append("toDate", filters.dateRange.to);
+      }
+      if (params?.page) {
+        queryParams.append("page", String(params.page));
+      }
+      if (params?.limit) {
+        queryParams.append("limit", String(params.limit));
       }
 
       const queryString = queryParams.toString();
@@ -171,7 +227,25 @@ export const fetchOrdersData =
       const response = await axios.get(url);
 
       if (response.data?.success) {
-        dispatch(setOrdersData(response.data.data));
+        dispatch(setOrdersData(response.data.data || []));
+        if (response.data.pagination) {
+          dispatch(setOrderPagination(response.data.pagination));
+        } else {
+          const inferredPage = params?.page ?? 1;
+          const inferredLimit =
+            params?.limit ?? response.data.data?.length ?? 0;
+          const inferredTotal = response.data.data?.length ?? 0;
+          dispatch(
+            setOrderPagination({
+              page: inferredPage,
+              limit: inferredLimit,
+              total: inferredTotal,
+              pages: inferredLimit
+                ? Math.max(1, Math.ceil(inferredTotal / inferredLimit))
+                : 1,
+            }),
+          );
+        }
         return true;
       } else {
         throw new Error(response.data?.message || "Failed to fetch orders");
@@ -326,6 +400,8 @@ export const selectOrderError = (state: { order: OrderState }) =>
   state.order.error;
 export const selectOrderFilters = (state: { order: OrderState }) =>
   state.order.filters;
+export const selectOrderPagination = (state: { order: OrderState }) =>
+  state.order.pagination;
 
 // Export the reducer
 export default orderSlice.reducer;

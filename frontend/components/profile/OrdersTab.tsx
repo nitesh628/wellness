@@ -1,83 +1,184 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { ShoppingBag, Eye, Truck, Package, Clock, CheckCircle, XCircle, MapPin, Calendar } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  ShoppingBag,
+  Eye,
+  Truck,
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
+  MapPin,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { useAppSelector } from '@/lib/redux/hooks'
+} from "@/components/ui/dialog";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   Order,
+  OrderAddress,
+  OrderItem,
   selectOrders,
   selectOrderLoading,
   selectOrderError,
-} from '@/lib/redux/features/orderSlice'
-import { selectUser } from '@/lib/redux/features/authSlice'
+  selectOrderPagination,
+  setFilters,
+  fetchOrdersData,
+} from "@/lib/redux/features/orderSlice";
+import { selectUser } from "@/lib/redux/features/authSlice";
 
 const OrdersTab = () => {
-  const router = useRouter()
-  const currentUser = useAppSelector(selectUser)
-  const allOrders = useAppSelector(selectOrders)
-  const loading = useAppSelector(selectOrderLoading)
-  const error = useAppSelector(selectOrderError)
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectUser);
+  const allOrders = useAppSelector(selectOrders);
+  const loading = useAppSelector(selectOrderLoading);
+  const error = useAppSelector(selectOrderError);
+  const pagination = useAppSelector(selectOrderPagination);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    if (!currentUser?._id) return;
+    dispatch(setFilters({ user: currentUser._id }));
+    setCurrentPage(1);
+  }, [currentUser?._id, dispatch]);
+
+  useEffect(() => {
+    if (!currentUser?._id) return;
+    dispatch(fetchOrdersData({ page: currentPage, limit: itemsPerPage }));
+  }, [currentUser?._id, currentPage, dispatch]);
 
   const handleViewOrder = (order: Order) => {
-    setSelectedOrder(order)
-    setIsDialogOpen(true)
-  }
+    setSelectedOrder(order);
+    setIsDialogOpen(true);
+  };
 
   const handleTrackOrder = (orderNumber: string) => {
-    router.push(`/track-order?order=${orderNumber}`)
-  }
+    router.push(`/track-order?order=${orderNumber}`);
+  };
+
+  const resolveUserId = (user: Order["user"]) => {
+    if (!user) return "";
+    if (typeof user === "string") return user;
+    return user._id || "";
+  };
+
+  const renderAddress = (address?: string | OrderAddress) => {
+    if (!address) return "N/A";
+    if (typeof address === "string") return address;
+    const parts = [
+      address.address,
+      address.city,
+      address.state,
+      address.pinCode,
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(", ") : "N/A";
+  };
+
+  const renderItemName = (item: OrderItem, index: number) => {
+    if (typeof item.product === "string") return `Product #${index + 1}`;
+    return item.product?.name || `Product #${index + 1}`;
+  };
 
   // Filter orders by current user
-  const orders = allOrders.filter(order => order.user === currentUser?._id)
+  const orders = useMemo(
+    () =>
+      allOrders.filter(
+        (order) => resolveUserId(order.user) === currentUser?._id,
+      ),
+    [allOrders, currentUser?._id],
+  );
+
+  const totalItems = pagination.total || orders.length;
+  const totalPages =
+    pagination.pages ||
+    (pagination.total
+      ? Math.max(1, Math.ceil(pagination.total / itemsPerPage))
+      : 1);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Delivered': return 'success'
-      case 'Shipped': return 'info'
-      case 'Processing': return 'warning'
-      case 'Pending': return 'secondary'
-      case 'Cancelled': return 'destructive'
-      case 'Returned': return 'destructive'
-      default: return 'secondary'
+      case "Delivered":
+        return "success";
+      case "Shipped":
+        return "info";
+      case "Processing":
+        return "warning";
+      case "Pending":
+        return "secondary";
+      case "Cancelled":
+        return "destructive";
+      case "Returned":
+        return "destructive";
+      default:
+        return "secondary";
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Delivered': return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'Shipped': return <Truck className="w-4 h-4 text-blue-500" />
-      case 'Processing': return <Package className="w-4 h-4 text-yellow-500" />
-      case 'Pending': return <Clock className="w-4 h-4 text-gray-500" />
-      case 'Cancelled': return <XCircle className="w-4 h-4 text-red-500" />
-      case 'Returned': return <XCircle className="w-4 h-4 text-red-500" />
-      default: return <Package className="w-4 h-4 text-gray-500" />
+      case "Delivered":
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case "Shipped":
+        return <Truck className="w-4 h-4 text-blue-500" />;
+      case "Processing":
+        return <Package className="w-4 h-4 text-yellow-500" />;
+      case "Pending":
+        return <Clock className="w-4 h-4 text-gray-500" />;
+      case "Cancelled":
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      case "Returned":
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return <Package className="w-4 h-4 text-gray-500" />;
     }
-  }
+  };
 
   const getStatusProgress = (status: string) => {
     switch (status) {
-      case 'Pending': return 16
-      case 'Confirmed': return 33
-      case 'Processing': return 50
-      case 'Shipped': return 66
-      case 'Out for Delivery': return 83
-      case 'Delivered': return 100
-      default: return 0
+      case "Pending":
+        return 16;
+      case "Confirmed":
+        return 33;
+      case "Processing":
+        return 50;
+      case "Shipped":
+        return 66;
+      case "Out for Delivery":
+        return 83;
+      case "Delivered":
+        return 100;
+      default:
+        return 0;
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -109,54 +210,78 @@ const OrdersTab = () => {
           {!loading && (
             <div className="space-y-4">
               {orders.map((order: Order) => (
-                <div key={order._id} className="border rounded-xl p-5 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                <div
+                  key={order._id}
+                  className="border rounded-xl p-5 hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors"
+                >
                   <div className="flex flex-col gap-4">
                     {/* Order Header */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div className="flex items-center gap-3">
                         {getStatusIcon(order.status)}
-                        <h3 className="font-semibold text-lg">{order.orderNumber}</h3>
-                        <Badge variant={getStatusColor(order.status) as 'default' | 'secondary' | 'destructive'}>
+                        <h3 className="font-semibold text-lg">
+                          {order.orderNumber}
+                        </h3>
+                        <Badge
+                          variant={
+                            getStatusColor(order.status) as
+                              | "default"
+                              | "secondary"
+                              | "destructive"
+                          }
+                        >
                           {order.status}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="w-4 h-4" />
-                        {new Date(order.createdAt || '').toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric'
-                        })}
+                        {new Date(order.createdAt || "").toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          },
+                        )}
                       </div>
                     </div>
 
                     {/* Progress Bar for active orders */}
-                    {order.status !== 'Cancelled' && order.status !== 'Returned' && order.status !== 'Delivered' && (
-                      <div className="w-full">
-                        <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                          <span>Order Placed</span>
-                          <span>Processing</span>
-                          <span>Shipped</span>
-                          <span>Delivered</span>
+                    {order.status !== "Cancelled" &&
+                      order.status !== "Returned" &&
+                      order.status !== "Delivered" && (
+                        <div className="w-full">
+                          <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                            <span>Order Placed</span>
+                            <span>Processing</span>
+                            <span>Shipped</span>
+                            <span>Delivered</span>
+                          </div>
+                          <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                              style={{
+                                width: `${getStatusProgress(order.status)}%`,
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
-                            style={{ width: `${getStatusProgress(order.status)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* Order Details */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                       <div>
                         <p className="text-muted-foreground">Total Amount</p>
-                        <p className="font-semibold text-lg">₹{order.totalAmount.toLocaleString()}</p>
+                        <p className="font-semibold text-lg">
+                          ₹{order.totalAmount.toLocaleString()}
+                        </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Items</p>
-                        <p className="font-medium">{order.items.length} item{order.items.length > 1 ? 's' : ''}</p>
+                        <p className="font-medium">
+                          {order.items.length} item
+                          {order.items.length > 1 ? "s" : ""}
+                        </p>
                       </div>
                       <div>
                         <p className="text-muted-foreground">Payment</p>
@@ -165,7 +290,9 @@ const OrdersTab = () => {
                       {order.trackingNumber && (
                         <div>
                           <p className="text-muted-foreground">Tracking</p>
-                          <p className="font-mono text-xs truncate">{order.trackingNumber}</p>
+                          <p className="font-mono text-xs truncate">
+                            {order.trackingNumber}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -181,7 +308,8 @@ const OrdersTab = () => {
                         <Eye className="w-4 h-4 mr-2" />
                         View Details
                       </Button>
-                      {(order.status === 'Shipped' || order.status === 'Processing') && (
+                      {(order.status === "Shipped" ||
+                        order.status === "Processing") && (
                         <Button
                           variant="default"
                           size="sm"
@@ -192,7 +320,7 @@ const OrdersTab = () => {
                           Track Order
                         </Button>
                       )}
-                      {order.status === 'Delivered' && (
+                      {order.status === "Delivered" && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -213,9 +341,52 @@ const OrdersTab = () => {
                   <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-30" />
                   <h3 className="text-lg font-semibold mb-2">No orders yet</h3>
                   <p className="mb-4">Start shopping to see your orders here</p>
-                  <Button onClick={() => router.push('/shop')} variant="default">
+                  <Button
+                    onClick={() => router.push("/shop")}
+                    variant="default"
+                  >
                     Start Shopping
                   </Button>
+                </div>
+              )}
+
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    {totalItems > 0
+                      ? `Showing ${(currentPage - 1) * itemsPerPage + 1}-${Math.min(
+                          currentPage * itemsPerPage,
+                          totalItems,
+                        )} of ${totalItems}`
+                      : "Showing 0 results"}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.max(1, page - 1))
+                      }
+                      disabled={currentPage <= 1}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Prev
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.min(totalPages, page + 1))
+                      }
+                      disabled={currentPage >= totalPages}
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -244,12 +415,16 @@ const OrdersTab = () => {
                   <p className="text-sm text-muted-foreground">Status</p>
                   <div className="flex items-center gap-2 mt-1">
                     {getStatusIcon(selectedOrder.status)}
-                    <span className="font-semibold">{selectedOrder.status}</span>
+                    <span className="font-semibold">
+                      {selectedOrder.status}
+                    </span>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Total Amount</p>
-                  <p className="text-xl font-bold text-blue-600">₹{selectedOrder.totalAmount.toLocaleString()}</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    ₹{selectedOrder.totalAmount.toLocaleString()}
+                  </p>
                 </div>
               </div>
 
@@ -258,17 +433,26 @@ const OrdersTab = () => {
                 <h4 className="font-semibold mb-3">Order Items</h4>
                 <div className="space-y-3">
                   {selectedOrder.items.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
                           <Package className="w-6 h-6 text-slate-400" />
                         </div>
                         <div>
-                          <p className="font-medium">Product #{index + 1}</p>
-                          <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                          <p className="font-medium">
+                            {renderItemName(item, index)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Qty: {item.quantity}
+                          </p>
                         </div>
                       </div>
-                      <p className="font-semibold">₹{(item.price * item.quantity).toLocaleString()}</p>
+                      <p className="font-semibold">
+                        ₹{(item.price * item.quantity).toLocaleString()}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -282,7 +466,7 @@ const OrdersTab = () => {
                     Shipping Address
                   </h4>
                   <p className="text-muted-foreground p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                    {selectedOrder.shippingAddress}
+                    {renderAddress(selectedOrder.shippingAddress)}
                   </p>
                 </div>
               )}
@@ -290,7 +474,9 @@ const OrdersTab = () => {
               {/* Tracking Info */}
               {selectedOrder.trackingNumber && (
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">Tracking Number</p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
+                    Tracking Number
+                  </p>
                   <p className="font-mono">{selectedOrder.trackingNumber}</p>
                 </div>
               )}
@@ -307,8 +493,8 @@ const OrdersTab = () => {
                 <Button
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
                   onClick={() => {
-                    setIsDialogOpen(false)
-                    handleTrackOrder(selectedOrder.orderNumber)
+                    setIsDialogOpen(false);
+                    handleTrackOrder(selectedOrder.orderNumber);
                   }}
                 >
                   <Truck className="w-4 h-4 mr-2" />
@@ -320,8 +506,7 @@ const OrdersTab = () => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};
 
 export default OrdersTab;
-
