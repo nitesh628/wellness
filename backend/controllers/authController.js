@@ -1,9 +1,5 @@
 import Session from "../models/sessionModel.js";
-import Customer from "../models/customerModel.js";
-import Doctor from "../models/doctorModel.js";
-import Influencer from "../models/influencerModel.js";
-import Admin from "../models/adminModel.js";
-import User from "../models/userModel.js"; // Keep for backward compatibility during migration
+import User from "../models/userModel.js";
 import generateToken from "../utils/generateToken.js";
 import passwordCheck from "../utils/passwordCheck.js";
 import { UAParser } from "ua-parser-js";
@@ -35,21 +31,27 @@ export const signup = async (req, res) => {
       });
     }
 
-    // Check in all role-specific collections
-    const existingCustomer = await Customer.findOne({ email });
-    const existingDoctor = await Doctor.findOne({ email });
-    const existingInfluencer = await Influencer.findOne({ email });
-    const existingAdmin = await Admin.findOne({ email });
+    // Check if user exists in unified User collection
+    const existingUser = await User.findOne({ email });
 
-    if (existingCustomer || existingDoctor || existingInfluencer || existingAdmin) {
+    if (existingUser) {
       return res.status(409).json({
         success: false,
         message: "User already exists",
       });
     }
 
-    // Create user in appropriate collection based on userType
-    let user;
+    // Determine role based on userType
+    let role = "Customer"; // Default
+    if (userType === 'doctor') {
+      role = "Doctor";
+    } else if (userType === 'influencer') {
+      role = "Influencer";
+    } else if (userType === 'admin') {
+      role = "Admin";
+    }
+
+    // Create user in unified User collection
     const userData = {
       firstName,
       lastName,
@@ -61,18 +63,10 @@ export const signup = async (req, res) => {
       city,
       state,
       zipCode,
+      role,
     };
 
-    if (userType === 'doctor') {
-      user = await Doctor.create(userData);
-    } else if (userType === 'influencer') {
-      user = await Influencer.create(userData);
-    } else if (userType === 'admin') {
-      user = await Admin.create(userData);
-    } else {
-      // Default to Customer for 'user' or any other type
-      user = await Customer.create(userData);
-    }
+    const user = await User.create(userData);
 
     // Auto-login logic
     const token = generateToken(user._id);
@@ -104,9 +98,9 @@ export const signup = async (req, res) => {
       .json({
         success: true,
         message: "User registered successfully",
-        data: user, // Retain for backward compatibility in reducers if needed
-        session, // Added session for auto-login
-        user: { // Sending user info back useful for frontend immediate state update
+        data: user,
+        session,
+        user: {
           _id: user._id,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -141,27 +135,8 @@ export const login = async (req, res) => {
   const userAgent = req.headers["user-agent"];
 
   try {
-    // Search across all role-specific collections
-    let user = await Customer.findOne({ email });
-    let resolvedRole = user ? "Customer" : null;
-    if (!user) {
-      user = await Doctor.findOne({ email });
-      resolvedRole = user ? "Doctor" : null;
-    }
-    if (!user) {
-      user = await Influencer.findOne({ email });
-      resolvedRole = user ? "Influencer" : null;
-    }
-    if (!user) {
-      user = await Admin.findOne({ email });
-      resolvedRole = user ? (user.role || "admin") : null;
-    }
-
-    // Fallback to old User collection for backward compatibility
-    if (!user) {
-      user = await User.findOne({ email });
-      resolvedRole = user ? user.role : resolvedRole;
-    }
+    // Search in unified User collection
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({
@@ -206,12 +181,12 @@ export const login = async (req, res) => {
         success: true,
         message: "login successful",
         session,
-        user: { // Sending user info back useful for frontend immediate state update
+        user: {
           _id: user._id,
           firstName: user.firstName,
           lastName: user.lastName,
           email: user.email,
-          role: user.role || resolvedRole
+          role: user.role
         }
       });
   } catch (error) {

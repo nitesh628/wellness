@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Customer from '../models/customerModel.js';
+import User from '../models/userModel.js';
 import Appointment from '../models/appointmentModel.js';
 import { Parser } from 'json2csv';
 
@@ -94,7 +94,7 @@ export const createPatient = async (req, res) => {
             createdBy: req.user._id, // Save which doctor created this patient
         };
 
-        const newPatient = await Customer.create(patientData);
+        const newPatient = await User.create(patientData);
 
         // ✅ Hide password in response
         const patientResponse = newPatient.toObject();
@@ -158,7 +158,7 @@ export const getPatients = async (req, res) => {
         const sortOptions = {};
         sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-        const patients = await Customer.find(filter)
+        const patients = await User.find(filter)
             .sort(sortOptions)
             .skip((page - 1) * limit)
             .limit(Number(limit))
@@ -173,7 +173,7 @@ export const getPatients = async (req, res) => {
                 })
         );
 
-        const total = await Customer.countDocuments(filter);
+        const total = await User.countDocuments(filter);
 
         const patientIds = patients.map(p => p._id);
 
@@ -223,7 +223,7 @@ export const getPatientById = async (req, res) => {
         const { id } = req.params;
         if (!isId(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
 
-        const patient = await Customer.findOne({ _id: id, createdBy: req.user._id }).select('-password');
+        const patient = await User.findOne({ _id: id, createdBy: req.user._id }).select('-password');
         if (!patient) return res.status(404).json({ success: false, message: 'Patient not found or access denied' });
 
         if (!patient.patientId) {
@@ -265,7 +265,7 @@ export const updatePatient = async (req, res) => {
         delete updateData.createdBy; // Prevent changing who created the patient
         delete updateData.patientId; // Prevent changing patient ID
 
-        const updatedPatient = await Customer.findOneAndUpdate(
+        const updatedPatient = await User.findOneAndUpdate(
             { _id: id, createdBy: req.user._id },
             updateData,
             { new: true, runValidators: true }
@@ -284,7 +284,7 @@ export const deletePatient = async (req, res) => {
         if (!isId(id)) return res.status(400).json({ success: false, message: 'Invalid ID' });
 
         // Soft delete can also be an option by setting status to 'inactive'
-        const deletedPatient = await Customer.findOneAndDelete({ _id: id, createdBy: req.user._id });
+        const deletedPatient = await User.findOneAndDelete({ _id: id, createdBy: req.user._id });
 
         if (!deletedPatient) return res.status(404).json({ success: false, message: 'Patient not found or access denied' });
 
@@ -305,9 +305,9 @@ export const getPatientStats = async (req, res) => {
             vipPatients,
             visitStats
         ] = await Promise.all([
-            Customer.countDocuments({ createdBy: req.user._id }),
-            Customer.countDocuments({ createdBy: req.user._id, status: 'active' }),
-            Customer.countDocuments({ createdBy: req.user._id, patientType: 'vip' }),
+            User.countDocuments({ createdBy: req.user._id }),
+            User.countDocuments({ createdBy: req.user._id, status: 'active' }),
+            User.countDocuments({ createdBy: req.user._id, patientType: 'vip' }),
             Appointment.aggregate([
                 { $group: { _id: null, totalVisits: { $sum: 1 }, totalFees: { $sum: '$fee' } } }
             ])
@@ -332,7 +332,7 @@ export const getPatientStats = async (req, res) => {
 
 export const getTotalPatientsCount = async (req, res) => {
     try {
-        const totalPatients = await Customer.countDocuments({ createdBy: req.user._id });
+        const totalPatients = await User.countDocuments({ createdBy: req.user._id });
 
         res.json({
             success: true,
@@ -347,7 +347,7 @@ export const getTotalPatientsCount = async (req, res) => {
 
 export const exportPatients = async (req, res) => {
     try {
-        const patients = await Customer.find().select('-password').lean();
+        const patients = await User.find().select('-password').lean();
 
         if (patients.length === 0) {
             return res.status(404).json({ success: false, message: 'No patients found to export' });

@@ -1,5 +1,5 @@
 import { validationResult } from 'express-validator';
-import Influencer from '../models/influencerModel.js';
+import User from '../models/userModel.js';
 
 // Generate a unique referral code for influencer
 const generateUniqueReferralCode = async (firstName) => {
@@ -12,8 +12,8 @@ const generateUniqueReferralCode = async (firstName) => {
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const code = namePrefix + randomNum;
 
-    // Check if code already exists in Influencer collection
-    const existingInfluencer = await Influencer.findOne({ referralCode: code });
+    // Check if code already exists in User collection
+    const existingInfluencer = await User.findOne({ referralCode: code });
     if (!existingInfluencer) {
       return code;
     }
@@ -55,7 +55,7 @@ export async function updateInfluencer(req, res) {
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
   try {
-    const updatedInfluencer = await Influencer.findOneAndUpdate(
+    const updatedInfluencer = await User.findOneAndUpdate(
       { _id: req.params.id },
       req.body,
       { new: true }
@@ -71,7 +71,7 @@ export async function updateInfluencer(req, res) {
 // Toggle influencer status
 export async function toggleInfluencerStatus(req, res) {
   try {
-    const influencer = await Influencer.findOne({ _id: req.params.id });
+    const influencer = await User.findOne({ _id: req.params.id });
     if (!influencer) return res.status(404).json({ error: 'Influencer not found' });
 
     const newStatus = influencer.status === 'active' ? 'inactive' : 'active';
@@ -90,7 +90,7 @@ export async function toggleInfluencerStatus(req, res) {
 // Get all influencers
 export async function getAllInfluencers(req, res) {
   try {
-    const influencers = await Influencer.find().select('-password');
+    const influencers = await User.find().select('-password');
     res.json(influencers);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -100,7 +100,7 @@ export async function getAllInfluencers(req, res) {
 // Get influencer by ID
 export async function getInfluencerById(req, res) {
   try {
-    const influencer = await Influencer.findOne({ _id: req.params.id }).select('-password');
+    const influencer = await User.findOne({ _id: req.params.id }).select('-password');
     if (!influencer) return res.status(404).json({ error: 'Influencer not found' });
     res.json(influencer);
   } catch (error) {

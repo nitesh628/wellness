@@ -41,6 +41,35 @@ const UserSchema = new mongoose.Schema(
       default: "Customer",
     },
 
+    // Admin-specific fields
+    adminRole: {
+      type: String,
+      enum: ["super_admin", "admin", "moderator"],
+      required: function () {
+        return this.role === "Admin";
+      },
+    },
+
+    permissions: [{ type: String }],
+
+    // Customer-specific fields
+    patientId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+    },
+
+    age: {
+      type: Number,
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     referralCode: {
       type: String,
       unique: true,
@@ -69,7 +98,6 @@ const UserSchema = new mongoose.Schema(
       default: "",
     },
 
-    // ✅ FIX: required only for customers
     dateOfBirth: {
       type: Date,
       required: function () {
@@ -110,22 +138,83 @@ const UserSchema = new mongoose.Schema(
 
     notes: String,
 
-    // doctor fields
+    // Doctor-specific fields
     hospital: String,
     experience: Number,
     consultationFee: Number,
     specialization: String,
     qualifications: String,
     availability: String,
+    licenseNumber: String,
+    bio: String,
+    emergencyFee: Number,
+
+    // Clinic/Business fields (for Doctors/Influencers)
+    clinicName: String,
+    clinicAddress: String,
+    clinicPhone: String,
+    clinicEmail: String,
+    brandName: String,
+    businessAddress: String,
+    businessPhone: String,
+    businessEmail: String,
+    website: String,
+    taxId: String,
+    businessType: String,
+
+    operatingHours: {
+      type: Object,
+      default: function () {
+        if (this.role === "Doctor") {
+          return {
+            monday: { start: "09:00", end: "17:00", closed: false },
+            tuesday: { start: "09:00", end: "17:00", closed: false },
+            wednesday: { start: "09:00", end: "17:00", closed: false },
+            thursday: { start: "09:00", end: "17:00", closed: false },
+            friday: { start: "09:00", end: "17:00", closed: false },
+            saturday: { start: "10:00", end: "14:00", closed: false },
+            sunday: { start: "00:00", end: "00:00", closed: true },
+          };
+        }
+        return {};
+      },
+    },
+
+    appointmentDuration: {
+      type: Number,
+      default: 30,
+    },
+
+    maxPatientsPerDay: {
+      type: Number,
+      default: 20,
+    },
+
+    emergencyAvailability: {
+      type: Boolean,
+      default: function () {
+        return this.role === "Doctor";
+      },
+    },
+
     language: [{ type: String }],
 
-    // influencer fields
+    // Influencer-specific fields
     platform: String,
     followers: Number,
+    engagementRate: Number,
     category: String,
     socialMediaLinks: String,
+    collaborationRate: Number,
+    sponsoredPostRate: Number,
+    averagePostTime: Number,
+    maxCollaborationsPerMonth: Number,
+    brandPartnerships: {
+      type: Boolean,
+      default: true,
+    },
 
-    // customer fields
+    // Customer fields
     occupation: String,
 
     maritalStatus: {
@@ -133,13 +222,49 @@ const UserSchema = new mongoose.Schema(
       enum: ["Single", "Married", "Divorced", "Widowed"],
     },
 
+    // Security fields (for Admin/Doctor/Influencer)
     twoFactorEnabled: {
       type: Boolean,
       default: false,
     },
 
+    loginAlerts: {
+      type: Boolean,
+      default: false,
+    },
+
+    sessionTimeout: {
+      type: Number,
+      default: 30,
+    },
+
+    passwordExpiry: {
+      type: Number,
+      default: 90,
+    },
+
+    ipWhitelist: [{ type: String }],
+
+    auditLogs: {
+      type: Boolean,
+      default: function () {
+        return ["Admin", "Doctor", "Influencer"].includes(this.role);
+      },
+    },
+
+    dataEncryption: {
+      type: Boolean,
+      default: function () {
+        return ["Admin", "Doctor", "Influencer"].includes(this.role);
+      },
+    },
+
+    backupFrequency: {
+      type: String,
+      default: "daily",
+    },
+
     // ⚠️ WARNING: avoid storing real card numbers (PCI risk)
-    // keeping your structure but recommended to store token/last4 only
     paymentMethods: [
       {
         cardType: { type: String, required: true },
@@ -157,6 +282,29 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Auto-generate patientId for Customers
+UserSchema.pre("validate", async function (next) {
+  if (this.role !== "Customer" || this.patientId) {
+    return next();
+  }
+  try {
+    const User = this.constructor;
+    let patientId;
+    let exists = true;
+    while (exists) {
+      const random = Math.floor(Math.random() * 1000000)
+        .toString()
+        .padStart(6, "0");
+      patientId = `PI${random}`;
+      exists = await User.exists({ patientId });
+    }
+    this.patientId = patientId;
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 // ✅ password hashing middleware
 UserSchema.pre("save", async function (next) {

@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import Prescription from '../models/prescriptionModel.js';
 import User from '../models/userModel.js';
-import Customer from '../models/customerModel.js';
 import { Parser } from 'json2csv';
 
 const isId = (id) => mongoose.isValidObjectId(id);
@@ -18,12 +17,12 @@ export const createPrescription = async (req, res) => {
         // Fetch patient by Patient ID (PI######) or fallback to Mongo ObjectId
         let patient = null;
         if (isId(patientId)) {
-            patient = await Customer.findById(patientId).select('firstName lastName patientId');
+            patient = await User.findById(patientId).select('firstName lastName patientId');
             if (!patient) {
                 patient = await User.findById(patientId).select('firstName lastName');
             }
         } else {
-            patient = await Customer.findOne({ patientId }).select('firstName lastName patientId');
+            patient = await User.findOne({ patientId }).select('firstName lastName patientId');
         }
 
         if (!patient) {

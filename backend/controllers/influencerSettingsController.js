@@ -1,5 +1,4 @@
 import User from "../models/userModel.js";
-import Influencer from "../models/influencerModel.js";
 
 // Validation helpers
 const validateEmail = (email) => {
@@ -25,8 +24,8 @@ export const getInfluencerSettings = async (req, res) => {
   try {
     console.log("Fetching settings for user:", req.user._id);
 
-    // Try to find in Influencer collection first, then fallback to User
-    let user = await Influencer.findById(req.user._id).select("-password");
+    // Try to find in User collection first, then fallback to User
+    let user = await User.findById(req.user._id).select("-password");
     if (!user) {
       user = await User.findById(req.user._id).select("-password");
     }
@@ -140,8 +139,8 @@ export const updateProfileSettings = async (req, res) => {
     // Remove undefined fields to avoid overwriting with null
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    // Try Influencer model first
-    let updatedUser = await Influencer.findByIdAndUpdate(
+    // Try User model first
+    let updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       updateData,
       { new: true, runValidators: true }
@@ -219,8 +218,8 @@ export const updateBusinessSettings = async (req, res) => {
     // Remove undefined fields
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    // Try Influencer model first
-    let updatedUser = await Influencer.findByIdAndUpdate(
+    // Try User model first
+    let updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       updateData,
       { new: true, runValidators: true }
@@ -307,8 +306,8 @@ export const updateSecuritySettings = async (req, res) => {
     // Remove undefined fields
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    // Try Influencer model first
-    let updatedUser = await Influencer.findByIdAndUpdate(
+    // Try User model first
+    let updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       updateData,
       { new: true, runValidators: true }
@@ -352,8 +351,8 @@ export const updateAvatar = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid image URL format" });
     }
 
-    // Try Influencer model first
-    let updatedUser = await Influencer.findByIdAndUpdate(
+    // Try User model first
+    let updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       { imageUrl: imageUrl },
       { new: true, runValidators: true }

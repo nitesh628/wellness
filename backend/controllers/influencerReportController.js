@@ -3,7 +3,6 @@ import BrandCollaboration from "../models/brandCollaborationModel.js";
 import AudienceInsight from "../models/audienceInsightModel.js";
 import ReportLog from "../models/reportLogModel.js";
 import User from "../models/userModel.js";
-import Influencer from "../models/influencerModel.js";
 
 // Helper function to calculate date range
 const getDateRange = (period) => {
@@ -110,7 +109,7 @@ export const getReportDashboardData = async (req, res) => {
       }).sort({ date: 1 }),
       BrandCollaboration.find({ influencerId }).select("brandName postsCount revenue engagementRate status"),
       AudienceInsight.find({ influencerId, demographicType: "age" }).select("label count percentage trend"),
-      Influencer.findById(influencerId).select("followers").catch(() => User.findById(influencerId).select("followers"))
+      User.findById(influencerId).select("followers").catch(() => User.findById(influencerId).select("followers"))
     ]);
 
     const totalFollowers = user?.followers || 0;

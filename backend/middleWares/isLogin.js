@@ -1,8 +1,4 @@
 import jwt from "jsonwebtoken"
-import Customer from "../models/customerModel.js";
-import Doctor from "../models/doctorModel.js";
-import Influencer from "../models/influencerModel.js";
-import Admin from "../models/adminModel.js";
 import User from "../models/userModel.js";
 
 export const isLogin = async (req, res, next) => {
@@ -22,14 +18,8 @@ export const isLogin = async (req, res, next) => {
             })
         }
 
-        // Search across all role-specific collections first
-        let user = await Customer.findOne({ _id: tokenUser.id })
-        if (!user) user = await Doctor.findOne({ _id: tokenUser.id })
-        if (!user) user = await Influencer.findOne({ _id: tokenUser.id })
-        if (!user) user = await Admin.findOne({ _id: tokenUser.id })
-
-        // Fallback to old User collection for backward compatibility
-        if (!user) user = await User.findOne({ _id: tokenUser.id })
+        // Search in unified User collection
+        const user = await User.findOne({ _id: tokenUser.id })
 
         if (!user) {
             return res.status(401).json({

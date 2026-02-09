@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import Appointment from '../models/appointmentModel.js';
-import Customer from '../models/customerModel.js';
 import User from '../models/userModel.js';
 import { Parser } from 'json2csv';
 
@@ -16,8 +15,8 @@ export const createAppointment = async (req, res) => {
     // If patientId not provided, try to find or create patient by email
     if (!patientId && patientEmail) {
       try {
-        // Try to find existing patient by email in Customer
-        const existingCustomer = await Customer.findOne({ email: patientEmail });
+        // Try to find existing patient by email in User
+        const existingCustomer = await User.findOne({ email: patientEmail });
         if (existingCustomer) {
           actualPatientId = existingCustomer._id;
         } else {
@@ -28,7 +27,7 @@ export const createAppointment = async (req, res) => {
           } else {
             // Create new patient if doesn't exist
             const nameParts = patientName ? patientName.split(' ') : ['Patient', 'User'];
-            const newCustomer = await Customer.create({
+            const newCustomer = await User.create({
               firstName: nameParts[0],
               lastName: nameParts.slice(1).join(' ') || '',
               email: patientEmail,
@@ -51,7 +50,7 @@ export const createAppointment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Valid patient ID is required' });
     }
 
-    let patientExists = await Customer.findById(actualPatientId);
+    let patientExists = await User.findById(actualPatientId);
     if (!patientExists) patientExists = await User.findById(actualPatientId);
     if (!patientExists) {
       return res.status(404).json({ success: false, message: 'Patient not found' });

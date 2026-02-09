@@ -1,5 +1,4 @@
 import User from "../models/userModel.js";
-import Influencer from "../models/influencerModel.js";
 import ReferralUsage from "../models/referralUsageModel.js";
 
 // Generate a unique referral code
@@ -42,11 +41,11 @@ export const getReferralDashboardData = async (req, res) => {
     }
 
     // Use req.user directly (already populated by middleware)
-    // But fetch from Influencer model to ensure we can save changes
-    let influencer = await Influencer.findById(userId);
+    // But fetch from User model to ensure we can save changes
+    let influencer = await User.findById(userId);
 
     if (!influencer) {
-      console.log("Influencer not found in Influencer collection, checking User collection");
+      console.log("Influencer not found in User collection, checking User collection");
       // Fallback to User collection for backward compatibility
       influencer = await User.findById(userId);
     }

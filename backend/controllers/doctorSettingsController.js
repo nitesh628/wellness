@@ -1,9 +1,9 @@
-import Doctor from "../models/doctorModel.js";
+import User from "../models/userModel.js";
 
 // Get all settings (Profile, Business, Security)
 export const getDoctorSettings = async (req, res) => {
     try {
-        const doctor = await Doctor.findById(req.user._id).select("-password");
+        const doctor = await User.findById(req.user._id).select("-password");
 
         if (!doctor) {
             return res.status(404).json({ success: false, message: "Doctor not found" });
@@ -113,7 +113,7 @@ export const updateDoctorProfileSettings = async (req, res) => {
             ...(avatar && { imageUrl: avatar }),
         };
 
-        const updatedDoctor = await Doctor.findByIdAndUpdate(
+        const updatedDoctor = await User.findByIdAndUpdate(
             req.user._id,
             updateData,
             { new: true, runValidators: true }
@@ -162,7 +162,7 @@ export const updateDoctorBusinessSettings = async (req, res) => {
             ...(emergencyAvailability !== undefined && { emergencyAvailability }),
         };
 
-        const updatedDoctor = await Doctor.findByIdAndUpdate(
+        const updatedDoctor = await User.findByIdAndUpdate(
             req.user._id,
             updateData,
             { new: true, runValidators: true }
@@ -205,7 +205,7 @@ export const updateDoctorSecuritySettings = async (req, res) => {
             ...(backupFrequency && { backupFrequency }),
         };
 
-        const updatedDoctor = await Doctor.findByIdAndUpdate(
+        const updatedDoctor = await User.findByIdAndUpdate(
             req.user._id,
             updateData,
             { new: true, runValidators: true }
