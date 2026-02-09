@@ -5,6 +5,31 @@ import { getApiV1BaseUrl } from "../../utils/api";
 
 const API_BASE_URL = getApiV1BaseUrl();
 
+// Create axios instance with interceptors
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
+api.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      let token =
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("accessToken");
+      if (token) {
+        token = token.replace(/^"|"$/g, "");
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
 // Define the Order type
 export interface OrderUser {
   _id?: string;
@@ -57,14 +82,15 @@ export interface Order {
     | "Returned";
   trackingNumber?: string;
   shippingCost: string;
-  subTotal: number;
+  subtotal: number;
   totalAmount: number;
   notes?: string;
   isCouponApplied: boolean;
   couponCode?: string;
-  couponDiscount: number;
   discountType: "Percentage" | "Fixed";
   discountValue: number;
+  cancelReason?: string;
+  returnReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -209,8 +235,8 @@ export const fetchOrdersData =
         queryParams.append("q", filters.search);
       }
       if (filters.dateRange) {
-        queryParams.append("fromDate", filters.dateRange.from);
-        queryParams.append("toDate", filters.dateRange.to);
+        queryParams.append("from", filters.dateRange.from);
+        queryParams.append("to", filters.dateRange.to);
       }
       if (params?.page) {
         queryParams.append("page", String(params.page));
@@ -220,11 +246,9 @@ export const fetchOrdersData =
       }
 
       const queryString = queryParams.toString();
-      const url = queryString
-        ? `${API_BASE_URL}/orders?${queryString}`
-        : `${API_BASE_URL}/orders`;
+      const url = queryString ? `/orders?${queryString}` : `/orders`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
 
       if (response.data?.success) {
         dispatch(setOrdersData(response.data.data || []));
@@ -262,7 +286,7 @@ export const fetchOrderById =
   (orderId: string) => async (dispatch: AppDispatch) => {
     dispatch(setOrderLoading());
     try {
-      const response = await axios.get(`${API_BASE_URL}/orders/${orderId}`);
+      const response = await api.get(`/orders/${orderId}`);
       if (response.data?.success) {
         dispatch(setSelectedOrder(response.data.data));
         return true;
@@ -282,7 +306,7 @@ export const createOrder =
   async (dispatch: AppDispatch) => {
     dispatch(setOrderLoading());
     try {
-      const response = await axios.post(`${API_BASE_URL}/orders`, orderData);
+      const response = await api.post(`/orders`, orderData);
       if (response.data?.success) {
         dispatch(setSelectedOrder(response.data.data));
         return response.data.data;
@@ -302,7 +326,7 @@ export const updateOrderStatus =
   async (dispatch: AppDispatch) => {
     dispatch(setOrderLoading());
     try {
-      const response = await axios.put(`${API_BASE_URL}/orders/${orderId}`, {
+      const response = await api.put(`/orders/${orderId}`, {
         status,
         trackingNumber,
       });
@@ -327,7 +351,7 @@ export const updatePaymentStatus =
   async (dispatch: AppDispatch) => {
     dispatch(setOrderLoading());
     try {
-      const response = await axios.put(`${API_BASE_URL}/orders/${orderId}`, {
+      const response = await api.put(`/orders/${orderId}`, {
         paymentStatus,
       });
       if (response.data?.success) {
@@ -350,7 +374,7 @@ export const cancelOrder =
   (orderId: string, reason: string) => async (dispatch: AppDispatch) => {
     dispatch(setOrderLoading());
     try {
-      const response = await axios.put(`${API_BASE_URL}/orders/${orderId}`, {
+      const response = await api.put(`/orders/${orderId}`, {
         status: "Cancelled",
         cancelReason: reason,
       });
@@ -372,7 +396,7 @@ export const returnOrder =
   (orderId: string, reason: string) => async (dispatch: AppDispatch) => {
     dispatch(setOrderLoading());
     try {
-      const response = await axios.put(`${API_BASE_URL}/orders/${orderId}`, {
+      const response = await api.put(`/orders/${orderId}`, {
         status: "Returned",
         returnReason: reason,
       });

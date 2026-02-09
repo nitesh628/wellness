@@ -14,7 +14,13 @@ export interface User {
   email: string;
   password: string;
   phone: string;
-  role: "Admin" | "Doctor" | "Influencer" | "Customer";
+  role:
+    | "admin"
+    | "super_admin"
+    | "Admin"
+    | "Doctor"
+    | "Influencer"
+    | "Customer";
   status: "Active" | "Inactive";
   dateOfBirth?: string;
   verified: boolean;

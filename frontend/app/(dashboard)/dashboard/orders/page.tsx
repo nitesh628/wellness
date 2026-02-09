@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUser } from "@/lib/redux/features/authSlice";
 import {
   Search,
   Grid3X3,
@@ -115,6 +117,7 @@ const OrdersPage = () => {
     status: "",
     paymentStatus: "",
   });
+  const currentUser = useAppSelector(selectUser);
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showViewModal, setShowViewModal] = useState(false);
@@ -126,16 +129,39 @@ const OrdersPage = () => {
   const fetchOrders = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(getApiV1Url("/orders"), {
+
+      if (!currentUser) {
+        setOrders([]);
+        setError("User not logged in");
+        setIsLoading(false);
+        return;
+      }
+
+      // Admins can see all orders, regular users only see their own
+      // Check for lowercase admin roles from backend (admin, super_admin)
+      const isAdmin =
+        currentUser.role === "admin" ||
+        currentUser.role === "super_admin" ||
+        currentUser.role === "Admin";
+      const apiUrl = isAdmin
+        ? getApiV1Url(`/orders`)
+        : getApiV1Url(`/orders?user=${currentUser._id}`);
+
+      const response = await axios.get(apiUrl, {
         withCredentials: true,
       });
+      console.log("Orders API response:", response.data);
       let ordersData = [];
       if (Array.isArray(response.data)) {
         ordersData = response.data;
       } else if (response.data?.orders && Array.isArray(response.data.orders)) {
         ordersData = response.data.orders;
-      } else if (response.data?.data && Array.isArray(response.data.data)) {
-        ordersData = response.data.data;
+      } else if (response.data?.data) {
+        if (Array.isArray(response.data.data)) {
+          ordersData = response.data.data;
+        } else if (typeof response.data.data === "object") {
+          ordersData = [response.data.data];
+        }
       }
       setOrders(ordersData);
       setError("");
@@ -150,7 +176,8 @@ const OrdersPage = () => {
   // Fetch orders on mount and when filters change
   useEffect(() => {
     fetchOrders();
-  }, []);
+    // refetch when user changes (e.g., login/logout)
+  }, [currentUser]);
 
   // Filter orders
   const filteredOrders = React.useMemo(() => {

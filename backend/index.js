@@ -48,6 +48,7 @@ const port = process.env.PORT || 5000;
 const app = express();
 
 app.use(cookieParser());
+
 const allowedOrigins = [
   "http://localhost:3000",
   "https://wellness-fuel.vercel.app"

@@ -135,7 +135,7 @@ const OrderSchema = new Schema(
     paymentMethod: {
       type: String,
       enum: {
-        values: ['Credit Card', 'Debit Card', 'NetBanking', 'UPI', 'COD', 'Online'],
+        values: ['Credit Card', 'Debit Card', 'Net Banking', 'UPI', 'COD', 'Online'],
         message: '{VALUE} is not a valid payment method'
       },
       default: 'COD'
@@ -168,6 +168,11 @@ const OrderSchema = new Schema(
       enum: ['Percentage', 'Fixed']
     },
     discountValue: { type: Number, default: 0, min: 0 },
+    cancelReason: { type: String, trim: true },
+    returnReason: { type: String, trim: true },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     isPaid: { type: Boolean, default: false }
   },
   {
@@ -201,9 +206,12 @@ OrderSchema.pre('save', function (next) {
     let discountAmount = 0;
     if (this.isCouponApplied && this.discountValue > 0) {
       if (this.discountType === 'Percentage') {
-        discountAmount = (this.subtotal * this.discountValue) / 100;
+        // Cap percentage at 100%
+        const percentage = Math.min(this.discountValue, 100);
+        discountAmount = (this.subtotal * percentage) / 100;
       } else if (this.discountType === 'Fixed') {
-        discountAmount = this.discountValue;
+        // Cap fixed discount at subtotal
+        discountAmount = Math.min(this.discountValue, this.subtotal);
       }
     }
 
@@ -227,12 +235,24 @@ OrderSchema.pre('save', function (next) {
   }
 });
 
+// Automatically exclude soft-deleted orders from all queries
+OrderSchema.pre(/^find/, function (next) {
+  // Skip if explicitly looking for deleted orders
+  if (this.options._recursed) {
+    return next();
+  }
+  // Exclude deleted orders by default
+  this.where({ isDeleted: { $ne: true } });
+  next();
+});
+
 // Index for faster queries
 // OrderSchema.index({ orderNumber: 1 }); // Removed to avoid duplicate index warning
 OrderSchema.index({ user: 1 });
 OrderSchema.index({ status: 1 });
 OrderSchema.index({ paymentStatus: 1 });
 OrderSchema.index({ createdAt: -1 });
+OrderSchema.index({ isDeleted: 1 });
 
 // Virtual for order age
 OrderSchema.virtual('orderAge').get(function () {

@@ -310,7 +310,12 @@ const UsersPage = () => {
   };
 
   const handleDeleteUser = async () => {
-    if (!selectedUser || selectedUser.role === "Admin") return;
+    // Prevent deleting admin users (check both lowercase and capitalized formats)
+    const isAdminUser =
+      selectedUser?.role === "Admin" ||
+      selectedUser?.role === "admin" ||
+      selectedUser?.role === "super_admin";
+    if (!selectedUser || isAdminUser) return;
 
     Swal.fire({
       title: "Are you sure?",
@@ -1739,7 +1744,9 @@ const UsersPage = () => {
               <DialogDescription>
                 Are you sure you want to delete {selectedUser?.firstName}{" "}
                 {selectedUser?.lastName}? This action cannot be undone.
-                {selectedUser?.role === "Admin" && (
+                {(selectedUser?.role === "Admin" ||
+                  selectedUser?.role === "admin" ||
+                  selectedUser?.role === "super_admin") && (
                   <span className="block mt-2 text-destructive font-medium">
                     Admin users cannot be deleted.
                   </span>
@@ -1757,7 +1764,12 @@ const UsersPage = () => {
               <Button
                 variant="destructive"
                 onClick={handleDeleteUser}
-                disabled={isLoading || selectedUser?.role === "Admin"}
+                disabled={
+                  isLoading ||
+                  selectedUser?.role === "Admin" ||
+                  selectedUser?.role === "admin" ||
+                  selectedUser?.role === "super_admin"
+                }
               >
                 {modalLoading ? (
                   <>

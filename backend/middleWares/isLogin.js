@@ -3,8 +3,7 @@ import Customer from "../models/customerModel.js";
 import Doctor from "../models/doctorModel.js";
 import Influencer from "../models/influencerModel.js";
 import Admin from "../models/adminModel.js";
-import User from "../models/userModel.js"; // Keep for backward compatibility during migration
-
+import User from "../models/userModel.js";
 
 export const isLogin = async (req, res, next) => {
 
@@ -45,5 +44,4 @@ export const isLogin = async (req, res, next) => {
         console.log(error);
         res.status(500).clearCookie("token").json({ message: "islogin error" })
     }
-
 }
