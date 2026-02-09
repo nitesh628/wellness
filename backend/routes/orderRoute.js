@@ -6,7 +6,8 @@ import {
     getOrderById,
     listOrders,
     updateOrder,
-    getUserOrders
+    getUserOrders,
+    getUsersWithOrders
 } from "../controllers/orderController.js";
 import { isLogin } from "../middleWares/isLogin.js";
 import { isAdmin } from "../middleWares/isAdmin.js";
@@ -39,6 +40,10 @@ router.get('/user/my-orders', isLogin, getUserOrders);
 // Count Orders - Admin only
 // GET /v1/orders/admin/count
 router.get('/admin/count', isLogin, isAdmin, countOrders);
+
+// Get Users with Orders - Admin only
+// GET /v1/orders/admin/users-with-orders
+router.get('/admin/users-with-orders', isLogin, isAdmin, getUsersWithOrders);
 
 // Get Orders - Users see their own, admins see all
 // GET /v1/orders (MUST come before /:id)

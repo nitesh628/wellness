@@ -190,6 +190,22 @@ const CheckoutPage = () => {
         return;
       }
 
+      // Get authentication token
+      let token =
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken");
+
+      if (token) {
+        token = token.replace(/^"|"$/g, "");
+      }
+
+      if (!token) {
+        toast.error("Authentication token not found. Please login again.");
+        setIsLoading(false);
+        return;
+      }
+
       // Generate a unique order number (e.g., timestamp + random)
       const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -215,7 +231,13 @@ const CheckoutPage = () => {
         // Add more fields if needed
       };
 
-      const response = await axios.post(getApiV1Url("/orders"), orderPayload);
+      const response = await axios.post(getApiV1Url("/orders"), orderPayload, {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       clearCart();
       setIsOrderPlaced(true);
@@ -259,6 +281,22 @@ const CheckoutPage = () => {
         return;
       }
 
+      // Get authentication token
+      let token =
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken");
+
+      if (token) {
+        token = token.replace(/^"|"$/g, "");
+      }
+
+      if (!token) {
+        toast.error("Authentication token not found. Please login again.");
+        setIsLoading(false);
+        return;
+      }
+
       // Generate a unique order number (e.g., timestamp + random)
       const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -286,7 +324,13 @@ const CheckoutPage = () => {
         razorpaySignature: paymentData.razorpay_signature,
       };
 
-      const response = await axios.post(getApiV1Url("/orders"), orderPayload);
+      const response = await axios.post(getApiV1Url("/orders"), orderPayload, {
+        withCredentials: true,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
       clearCart();
       setIsOrderPlaced(true);

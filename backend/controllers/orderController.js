@@ -3,7 +3,7 @@ import Order from '../models/orderModel.js';
 
 const isId = (id) => mongoose.isValidObjectId(id);
 
- 
+
 export async function createOrder(req, res) {
   try {
     console.log('📥 Received order data from user:', req.user._id);
@@ -488,6 +488,173 @@ export async function deleteOrder(req, res) {
     res.status(500).json({
       success: false,
       message: err.message || 'Failed to delete order'
+    });
+  }
+}
+
+/**
+ * Get Users with Orders - Admin only
+ * Returns list of users who have placed orders with their order statistics
+ * 
+ * @route GET /v1/orders/admin/users-with-orders
+ * @access Private - Admin only
+ * @query {page, limit, status, q, from, to, sort}
+ */
+export async function getUsersWithOrders(req, res) {
+  try {
+    const MAX_LIMIT = 100;
+    const userRole = req.user.role;
+
+    // Check if user is admin
+    const isAdmin = ['super_admin', 'admin'].includes(userRole);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can view users with orders'
+      });
+    }
+
+    let {
+      page = 1,
+      limit = 10,
+      status,
+      q,
+      from,
+      to,
+      sort = '-totalOrders'
+    } = req.query;
+
+    // Enforce max limit
+    limit = Math.min(Number(limit) || 10, MAX_LIMIT);
+    page = Math.max(Number(page) || 1, 1);
+
+    console.log('📊 Admin fetching users with orders');
+
+    // Build match stage for order filtering
+    const orderMatch = {};
+    if (status) orderMatch.status = status;
+    if (from || to) {
+      orderMatch.createdAt = {};
+      if (from) orderMatch.createdAt.$gte = new Date(from);
+      if (to) orderMatch.createdAt.$lte = new Date(to);
+    }
+
+    // Aggregation pipeline to get users with their order statistics
+    const pipeline = [
+      { $match: orderMatch },
+      {
+        $group: {
+          _id: '$user',
+          totalOrders: { $sum: 1 },
+          totalSpent: { $sum: '$totalAmount' },
+          averageOrderValue: { $avg: '$totalAmount' },
+          lastOrderDate: { $max: '$createdAt' },
+          firstOrderDate: { $min: '$createdAt' },
+          pendingOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Pending'] }, 1, 0] }
+          },
+          processingOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Processing'] }, 1, 0] }
+          },
+          shippedOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Shipped'] }, 1, 0] }
+          },
+          deliveredOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Delivered'] }, 1, 0] }
+          },
+          cancelledOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Cancelled'] }, 1, 0] }
+          },
+          returnedOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'Returned'] }, 1, 0] }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: '$user' },
+      {
+        $project: {
+          _id: 1,
+          userId: '$user._id',
+          firstName: '$user.firstName',
+          lastName: '$user.lastName',
+          email: '$user.email',
+          phone: '$user.phone',
+          role: '$user.role',
+          imageUrl: '$user.imageUrl',
+          totalOrders: 1,
+          totalSpent: 1,
+          averageOrderValue: 1,
+          lastOrderDate: 1,
+          firstOrderDate: 1,
+          pendingOrders: 1,
+          processingOrders: 1,
+          shippedOrders: 1,
+          deliveredOrders: 1,
+          cancelledOrders: 1,
+          returnedOrders: 1
+        }
+      }
+    ];
+
+    // Add search filter if provided
+    if (q) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { firstName: new RegExp(q, 'i') },
+            { lastName: new RegExp(q, 'i') },
+            { email: new RegExp(q, 'i') },
+            { phone: new RegExp(q, 'i') }
+          ]
+        }
+      });
+    }
+
+    // Get total count before pagination
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const countResult = await Order.aggregate(countPipeline);
+    const total = countResult.length > 0 ? countResult[0].total : 0;
+
+    // Add sorting
+    let sortStage = {};
+    if (sort.startsWith('-')) {
+      sortStage[sort.substring(1)] = -1;
+    } else {
+      sortStage[sort] = 1;
+    }
+    pipeline.push({ $sort: sortStage });
+
+    // Add pagination
+    pipeline.push({ $skip: (page - 1) * limit });
+    pipeline.push({ $limit: limit });
+
+    const usersWithOrders = await Order.aggregate(pipeline);
+
+    console.log(`✅ Found ${usersWithOrders.length} users with orders`);
+
+    res.json({
+      success: true,
+      data: usersWithOrders,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    console.error('❌ Error fetching users with orders:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Failed to fetch users with orders'
     });
   }
 }
