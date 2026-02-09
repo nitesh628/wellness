@@ -114,13 +114,7 @@ export async function createOrder(req, res) {
   }
 }
 
-/**
- * Get User's Own Orders - Users can only see their own orders
- * 
- * @route GET /v1/orders/user/my-orders
- * @access Private - Authenticated users
- * @query {page, limit, status, paymentStatus, sort}
- */
+
 export async function getUserOrders(req, res) {
   try {
     const MAX_LIMIT = 100;
@@ -178,13 +172,6 @@ export async function getUserOrders(req, res) {
   }
 }
 
-/**
- * Get All Orders - Admin only endpoint
- * 
- * @route GET /v1/orders
- * @access Private - Admin users only
- * @query {page, limit, userId, status, paymentStatus, q, from, to, sort}
- */
 export async function listOrders(req, res) {
   try {
     const MAX_LIMIT = 100;
@@ -268,12 +255,6 @@ export async function listOrders(req, res) {
   }
 }
 
-/**
- * Count Orders - Admin only
- * 
- * @route GET /v1/orders/admin/count
- * @access Private - Admin only
- */
 export const countOrders = async (req, res) => {
   try {
     const userRole = req.user.role;
@@ -304,13 +285,6 @@ export const countOrders = async (req, res) => {
   }
 };
 
-/**
- * Get Single Order by ID - With access control
- * 
- * @route GET /v1/orders/:id
- * @access Private - Owner or Admin
- * @param {string} id - Order ID
- */
 export async function getOrderById(req, res) {
   try {
     const { id } = req.params;
@@ -363,14 +337,7 @@ export async function getOrderById(req, res) {
   }
 }
 
-/**
- * Update Order - Admin only (or limited user updates for status)
- * 
- * @route PUT /v1/orders/:id
- * @access Private - Admin only
- * @param {string} id - Order ID
- * @body {status, paymentStatus, notes, etc.}
- */
+
 export async function updateOrder(req, res) {
   try {
     const { id } = req.params;
@@ -430,13 +397,7 @@ export async function updateOrder(req, res) {
   }
 }
 
-/**
- * Delete Order - Admin only
- * 
- * @route DELETE /v1/orders/:id
- * @access Private - Admin only
- * @param {string} id - Order ID
- */
+
 export async function deleteOrder(req, res) {
   try {
     const { id } = req.params;
@@ -492,14 +453,7 @@ export async function deleteOrder(req, res) {
   }
 }
 
-/**
- * Get Users with Orders - Admin only
- * Returns list of users who have placed orders with their order statistics
- * 
- * @route GET /v1/orders/admin/users-with-orders
- * @access Private - Admin only
- * @query {page, limit, status, q, from, to, sort}
- */
+
 export async function getUsersWithOrders(req, res) {
   try {
     const MAX_LIMIT = 100;

@@ -10,6 +10,9 @@ import bcrypt from "bcrypt";
 // Signup
 export const signup = async (req, res) => {
   try {
+    console.log('Signup request received');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
     const {
       firstName,
       lastName,

@@ -189,10 +189,20 @@ export const registerUser =
   (userData: any) => async (dispatch: AppDispatch) => {
     dispatch(setAuthLoading());
     try {
+      console.log("Sending registration data:", userData);
+
       const response = await axios.post(
         `${API_BASE_URL}/auth/register`,
         userData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        },
       );
+
+      console.log("Registration response:", response.data);
 
       if (response.data?.success) {
         dispatch(setUser(response.data.user));
@@ -201,6 +211,11 @@ export const registerUser =
         throw new Error(response.data?.message || "Registration failed");
       }
     } catch (error: unknown) {
+      console.error("Registration error:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("Error response:", error.response?.data);
+        console.error("Error status:", error.response?.status);
+      }
       const errorMessage = handleApiError(error);
       dispatch(setAuthError(errorMessage));
       return false;

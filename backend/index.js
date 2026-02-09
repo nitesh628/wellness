@@ -76,6 +76,23 @@ app.use(
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 
+// Error handling middleware for JSON parsing errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    console.error('JSON Parsing Error:', err.message);
+    console.error('Request URL:', req.url);
+    console.error('Request method:', req.method);
+    console.error('Content-Type:', req.headers['content-type']);
+
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid JSON format in request body',
+      error: err.message
+    });
+  }
+  next(err);
+});
+
 // Serve static files from uploads directory (for local storage)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
