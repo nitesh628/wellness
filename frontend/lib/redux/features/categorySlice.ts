@@ -12,6 +12,11 @@ export interface Category {
   status: string;
   metaTitle: string;
   metaDescription: string;
+  parentCategory?: {
+    _id: string;
+    name: string;
+    slug: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,12 +26,17 @@ interface ApiCategory {
   name: string;
   slug: string;
   description: string;
-  image: string;
+  imageUrl: string;
   status: string;
   createdAt: string;
   updatedAt: string;
   metaTitle?: string;
   metaDescription?: string;
+  parentCategory?: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
 }
 
 interface CategoryState {
@@ -124,7 +134,7 @@ const mapApiCategoryToCategory = (apiCategory: ApiCategory): Category => ({
   name: apiCategory.name,
   slug: apiCategory.slug,
   description: apiCategory.description,
-  imageUrl: apiCategory.image,
+  imageUrl: apiCategory.imageUrl,
   status: apiCategory.status,
   metaTitle: apiCategory.metaTitle || apiCategory.name,
   metaDescription: apiCategory.metaDescription || apiCategory.description,

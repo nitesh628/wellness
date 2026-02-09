@@ -1,16 +1,26 @@
 import Category from "../models/categoryModel.js";
-import { uploadToS3, deleteOldImage, upload } from "../config/s3Config.js"
+import { uploadToS3, deleteOldImage, upload, isS3Configured } from "../config/s3Config.js"
 
 
 // Create Category
 export const createCategory = async (req, res) => {
   try {
-    const { name, slug, description, status, parentCategory, metaTitle, metaDescription } = req.body;
-    let imageUrl = "";
+    const { name, slug, description, status, parentCategory, metaTitle, metaDescription, imageUrl } = req.body;
+    let finalImageUrl = "";
 
     if (req.file) {
-      imageUrl = await uploadToS3(req.file);
+      // File uploaded - upload to S3
+      try {
+        finalImageUrl = await uploadToS3(req.file);
+      } catch (error) {
+        console.error("Failed to upload image:", error.message);
+        return res.status(500).json({ success: false, message: "Failed to upload image", error: error.message });
+      }
+    } else if (imageUrl) {
+      // Image URL provided as string
+      finalImageUrl = imageUrl;
     }
+
     if (!name || !slug) {
       return res.status(400).json({ success: false, message: "Name and slug are required" });
     }
@@ -24,7 +34,7 @@ export const createCategory = async (req, res) => {
       name,
       slug,
       description,
-      imageUrl,
+      imageUrl: finalImageUrl,
       status,
       parentCategory: parentCategory || null,
       metaTitle,
@@ -69,7 +79,7 @@ export const getCategoryById = async (req, res) => {
 // Update Category
 export const updateCategory = async (req, res) => {
   try {
-    const { name, description, status, parentCategory, metaTitle, metaDescription } = req.body;
+    const { name, description, status, parentCategory, metaTitle, metaDescription, imageUrl } = req.body;
 
     const category = await Category.findById(req.params.id);
     if (!category) {
@@ -99,20 +109,29 @@ export const updateCategory = async (req, res) => {
       }
     }
 
-    // Handle new image upload
+    // Handle image update
     if (req.file) {
-      const oldImageUrl = category.imageUrl;
-      const newImageUrl = await uploadToS3(req.file);
-      category.imageUrl = newImageUrl;
+      // New file uploaded
+      try {
+        const oldImageUrl = category.imageUrl;
+        const newImageUrl = await uploadToS3(req.file);
+        category.imageUrl = newImageUrl;
 
-      // Delete old image from S3 if exists
-      if (oldImageUrl) {
-        try {
-          await deleteOldImage(oldImageUrl);
-        } catch (error) {
-          console.error("Failed to delete old image:", error.message);
+        // Delete old image from S3 if exists
+        if (oldImageUrl) {
+          try {
+            await deleteOldImage(oldImageUrl);
+          } catch (error) {
+            console.error("Failed to delete old image:", error.message);
+          }
         }
+      } catch (error) {
+        console.error("Failed to upload new image:", error.message);
+        return res.status(500).json({ success: false, message: "Failed to upload image", error: error.message });
       }
+    } else if (imageUrl !== undefined) {
+      // Image URL provided as string (no new file uploaded)
+      category.imageUrl = imageUrl;
     }
 
     // Update fields (use !== undefined to allow empty strings)
