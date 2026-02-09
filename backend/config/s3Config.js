@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import multer from 'multer';
 import dotenv from 'dotenv';
+import { uploadLocal, saveFileLocally, deleteLocalFile } from './localStorage.js';
 
 dotenv.config();
 
@@ -11,6 +12,9 @@ const isS3Configured = () => {
     process.env.AWS_SECRET_ACCESS_KEY &&
     process.env.AWS_BUCKET_NAME);
 };
+
+// Determine storage type (s3 or local)
+const useLocalStorage = process.env.STORAGE_TYPE === 'local' || !isS3Configured();
 
 // Configure AWS SDK v3 S3 Client only if credentials are available
 let s3 = null;
@@ -27,11 +31,19 @@ if (isS3Configured()) {
 // Set default folder name or use an environment variable to make it configurable
 const folderName = process.env.AWS_FOLDER_NAME || "tax-consultancy";
 
-// Use memory storage to store the file as a buffer
-const storage = multer.memoryStorage();
+// Choose appropriate upload middleware based on storage type
+const upload = useLocalStorage ? uploadLocal : multer({ storage: multer.memoryStorage() });
 
-// Multer upload instance
-const upload = multer({ storage });
+// Unified upload function - uses S3 or local storage based on configuration
+const uploadFile = async (file) => {
+  if (useLocalStorage) {
+    // Use local storage
+    return await saveFileLocally(file);
+  } else {
+    // Use S3
+    return await uploadToS3(file);
+  }
+};
 
 // Function to upload file to S3
 const uploadToS3 = async (file) => {
@@ -59,32 +71,40 @@ const uploadToS3 = async (file) => {
   }
 };
 
-// Function to delete old image from S3
+// Function to delete old image (S3 or local)
 const deleteOldImage = async (oldImageUrl) => {
   if (!oldImageUrl) return;
 
-  if (!isS3Configured()) {
-    console.warn('S3 is not configured. Skipping image deletion.');
-    return;
-  }
+  if (useLocalStorage) {
+    // Delete from local storage
+    deleteLocalFile(oldImageUrl);
+  } else {
+    // Delete from S3
+    if (!isS3Configured()) {
+      console.warn('S3 is not configured. Skipping image deletion.');
+      return;
+    }
 
-  const oldImageKey = oldImageUrl.split('/').pop();
-  const deleteParams = {
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: `${folderName}/${oldImageKey}`,
-  };
+    const oldImageKey = oldImageUrl.split('/').pop();
+    const deleteParams = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `${folderName}/${oldImageKey}`,
+    };
 
-  try {
-    await s3.send(new DeleteObjectCommand(deleteParams));
-  } catch (error) {
-    console.error(`Error deleting old image: ${error.message}`);
-    throw error;
+    try {
+      await s3.send(new DeleteObjectCommand(deleteParams));
+    } catch (error) {
+      console.error(`Error deleting old image: ${error.message}`);
+      throw error;
+    }
   }
 };
 
 export {
   upload,
   uploadToS3,
+  uploadFile,
   deleteOldImage,
   isS3Configured,
+  useLocalStorage,
 };

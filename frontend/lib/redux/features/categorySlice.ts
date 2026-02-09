@@ -134,7 +134,7 @@ const mapApiCategoryToCategory = (apiCategory: ApiCategory): Category => ({
   name: apiCategory.name,
   slug: apiCategory.slug,
   description: apiCategory.description,
-  imageUrl: apiCategory.imageUrl,
+  imageUrl: apiCategory.imageUrl || "/placeholder-product.svg",
   status: apiCategory.status,
   metaTitle: apiCategory.metaTitle || apiCategory.name,
   metaDescription: apiCategory.metaDescription || apiCategory.description,
@@ -200,7 +200,7 @@ export const fetchActiveCategories = () => async (dispatch: AppDispatch) => {
         mapApiCategoryToCategory(cat),
       );
       const activeOnly = mappedCategories.filter(
-        (cat) => String(cat.status).toLowerCase() === "active",
+        (cat: Category) => String(cat.status).toLowerCase() === "active",
       );
       dispatch(setCategoryData(activeOnly));
     } else {
@@ -243,7 +243,9 @@ export const fetchCategoryBySlug =
         const mappedCategories = response.data.data.map((cat: ApiCategory) =>
           mapApiCategoryToCategory(cat),
         );
-        const match = mappedCategories.find((cat) => cat.slug === slug);
+        const match = mappedCategories.find(
+          (cat: Category) => cat.slug === slug,
+        );
         if (match) {
           dispatch(setSelectedCategory(match));
           return true;
@@ -266,7 +268,7 @@ export const fetchLatestCategories = () => async (dispatch: AppDispatch) => {
       const mappedCategories = response.data.data.map((cat: ApiCategory) =>
         mapApiCategoryToCategory(cat),
       );
-      const sorted = mappedCategories.sort((a, b) =>
+      const sorted = mappedCategories.sort((a: Category, b: Category) =>
         String(b.createdAt).localeCompare(String(a.createdAt)),
       );
       dispatch(setCategoryData(sorted));

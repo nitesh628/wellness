@@ -6,7 +6,7 @@ const nextConfig = {
         protocol: "https",
         hostname: "images.unsplash.com",
         port: "",
-        pathname: "/**", 
+        pathname: "/**",
       },
       {
         protocol: "https",
@@ -18,7 +18,7 @@ const nextConfig = {
         protocol: "https",
         hostname: "example.com",
         port: "",
-        pathname: "/**", 
+        pathname: "/**",
       },
       {
         protocol: "https",
@@ -31,6 +31,12 @@ const nextConfig = {
         hostname: "picsum.photos",
         port: "",
         pathname: "/**",
+      },
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "5000",
+        pathname: "/uploads/**",
       },
     ],
   },

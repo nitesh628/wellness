@@ -1,5 +1,5 @@
 import Category from "../models/categoryModel.js";
-import { uploadToS3, deleteOldImage, upload, isS3Configured } from "../config/s3Config.js"
+import { uploadFile, deleteOldImage, upload, isS3Configured } from "../config/s3Config.js"
 
 
 // Create Category
@@ -9,9 +9,9 @@ export const createCategory = async (req, res) => {
     let finalImageUrl = "";
 
     if (req.file) {
-      // File uploaded - upload to S3
+      // File uploaded - upload to storage (S3 or local)
       try {
-        finalImageUrl = await uploadToS3(req.file);
+        finalImageUrl = await uploadFile(req.file);
       } catch (error) {
         console.error("Failed to upload image:", error.message);
         return res.status(500).json({ success: false, message: "Failed to upload image", error: error.message });
@@ -30,13 +30,19 @@ export const createCategory = async (req, res) => {
       return res.status(400).json({ success: false, message: "Slug already exists" });
     }
 
+    // Convert empty string or invalid parentCategory to null
+    let validParentCategory = null;
+    if (parentCategory && parentCategory !== "" && parentCategory !== "null") {
+      validParentCategory = parentCategory;
+    }
+
     const category = await Category.create({
       name,
       slug,
       description,
       imageUrl: finalImageUrl,
       status,
-      parentCategory: parentCategory || null,
+      parentCategory: validParentCategory,
       metaTitle,
       metaDescription,
     });
@@ -114,10 +120,10 @@ export const updateCategory = async (req, res) => {
       // New file uploaded
       try {
         const oldImageUrl = category.imageUrl;
-        const newImageUrl = await uploadToS3(req.file);
+        const newImageUrl = await uploadFile(req.file);
         category.imageUrl = newImageUrl;
 
-        // Delete old image from S3 if exists
+        // Delete old image from storage if exists
         if (oldImageUrl) {
           try {
             await deleteOldImage(oldImageUrl);
@@ -139,7 +145,12 @@ export const updateCategory = async (req, res) => {
     if (description !== undefined) category.description = description;
     if (status !== undefined) category.status = status;
     if (parentCategory !== undefined) {
-      category.parentCategory = parentCategory === 'null' ? null : parentCategory;
+      // Convert empty strings or 'null' string to actual null
+      if (parentCategory === 'null' || parentCategory === '' || !parentCategory) {
+        category.parentCategory = null;
+      } else {
+        category.parentCategory = parentCategory;
+      }
     }
     if (metaTitle !== undefined) category.metaTitle = metaTitle;
     if (metaDescription !== undefined) category.metaDescription = metaDescription;

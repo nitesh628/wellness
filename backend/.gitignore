@@ -140,3 +140,7 @@ dist
 
 # SvelteKit build / generate output
 .svelte-kit
+
+# Uploaded files (local storage)
+uploads/
+*.log

@@ -1,4 +1,6 @@
 import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import blogRoute from "./routes/blogRoute.js";
 import productRoute from "./routes/productRoutes.js";
 import userRoute from "./routes/userRoute.js";
@@ -43,6 +45,9 @@ dotenv.config();
 
 dbConnection();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const port = process.env.PORT || 5000;
 
 const app = express();
@@ -70,6 +75,9 @@ app.use(
 // Increase payload size limit to handle large FormData and base64 images
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
+
+// Serve static files from uploads directory (for local storage)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use("/v1/blogs", blogRoute);
 app.use("/v1/products", productRoute);
