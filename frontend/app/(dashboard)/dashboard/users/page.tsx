@@ -77,8 +77,8 @@ interface UserType {
   lastName: string;
   email: string;
   phone: string;
-  role: "Admin" | "Doctor" | "Influencer" | "Customer";
-  status: "Active" | "Inactive";
+  role: "Admin" | "Doctor" | "Influencer" | "Customer" | "admin" | "doctor" | "influencer" | "customer";
+  status: "Active" | "Inactive" | "active" | "inactive";
   imageUrl?: string;
   verified: boolean;
   createdAt: string;
@@ -213,9 +213,12 @@ const UsersPage = () => {
       const res = await fetch(getApiV1Url(`/users?${queryParams.toString()}`));
       const data = await res.json();
 
-      if (data.success) {
-        setUsers(data.data);
-        setPagination((prev) => ({ ...prev, total: data.pagination.total }));
+      if (res.ok || data.success) {
+        setUsers(data.users || data.data || []);
+        setPagination((prev) => ({
+          ...prev,
+          total: data.total || data.pagination?.total || 0,
+        }));
         setError("");
       } else {
         setError(data.message || "Failed to fetch users");
@@ -313,8 +316,8 @@ const UsersPage = () => {
     // Prevent deleting admin users (check both lowercase and capitalized formats)
     const isAdminUser =
       selectedUser?.role === "Admin" ||
-      selectedUser?.role === "admin" ||
-      selectedUser?.role === "super_admin";
+      selectedUser?.role === "admin";
+    
     if (!selectedUser || isAdminUser) return;
 
     Swal.fire({
@@ -522,8 +525,12 @@ const UsersPage = () => {
                       </p>
                       <p className="text-3xl font-bold text-foreground mt-1">
                         {
-                          (users || []).filter((u) => u.status === "Active")
-                            .length
+                          (users || []).filter(
+                            (u) =>
+                              u.status === "Active" ||
+                              u.status === "active" ||
+                              u.isActive,
+                          ).length
                         }
                       </p>
                     </div>
@@ -1745,11 +1752,12 @@ const UsersPage = () => {
                 Are you sure you want to delete {selectedUser?.firstName}{" "}
                 {selectedUser?.lastName}? This action cannot be undone.
                 {(selectedUser?.role === "Admin" ||
-                  selectedUser?.role === "admin" ||
-                  selectedUser?.role === "super_admin") && (
-                  <span className="block mt-2 text-destructive font-medium">
+                  selectedUser?.role === "admin") && (  
+                  <span className="text-red-500 font-semibold">
+                    {" "}
                     Admin users cannot be deleted.
-                  </span>
+                  </span> 
+                
                 )}
               </DialogDescription>
             </DialogHeader>
@@ -1767,8 +1775,8 @@ const UsersPage = () => {
                 disabled={
                   isLoading ||
                   selectedUser?.role === "Admin" ||
-                  selectedUser?.role === "admin" ||
-                  selectedUser?.role === "super_admin"
+                  selectedUser?.role === "admin"
+                
                 }
               >
                 {modalLoading ? (

@@ -4,10 +4,16 @@ import {
     getAllContacts, 
     getContactById, 
     updateContact, 
-    deleteContact 
+    deleteContact,
+    countContacts
 } from "../controllers/contactController.js";
+import { isLogin } from "../middleWares/isLogin.js";
+import { isAdmin } from "../middleWares/isAdmin.js";
 
 const router = Router();
+
+// This route should be before /:id to avoid conflicts
+router.get('/admin/count', isLogin, isAdmin, countContacts);
 
 router.post('/', createContact);
 router.get('/', getAllContacts);

@@ -41,6 +41,7 @@ const DashboardPage = () => {
   const [doctorCount, setDoctorCount] = useState("0");
   const [influencerCount, setInfluencerCount] = useState("0");
   const [customerCount, setCustomerCount] = useState("0");
+  const [contactCount, setContactCount] = useState("0");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -86,13 +87,15 @@ const DashboardPage = () => {
           doctorData,
           influencerData,
           customerData,
+          contactData,
         ] = await Promise.all([
           fetchWithLogging(getApiV1Url("/products/count"), "Products"),
           fetchWithLogging(getApiV1Url("/orders/admin/count"), "Orders"),
           fetchWithLogging(getApiV1Url("/users/count"), "Users"),
-          fetchWithLogging(getApiV1Url("/users/doctor/admin/count"), "Doctors"),
-          fetchWithLogging(getApiV1Url("/users/influencer/admin/count"), "Influencers"),
+          fetchWithLogging(getApiV1Url("/doctor/admin/count"), "Doctors"),
+          fetchWithLogging(getApiV1Url("/influencer/admin/count"), "Influencers"),
           fetchWithLogging(getApiV1Url("/users/customer/admin/count"), "Customers"),
+          fetchWithLogging(getApiV1Url("/contacts/admin/count"), "Contacts"),
         ]);
 
         if (productData.success) setProductCount(productData.count.toString());
@@ -103,6 +106,7 @@ const DashboardPage = () => {
         if (doctorData.success) setDoctorCount(doctorData.count.toString());
         if (influencerData.success) setInfluencerCount(influencerData.count.toString());
         if (customerData.success) setCustomerCount(customerData.count.toString());
+        if (contactData.success) setContactCount(contactData.count.toString());
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
         setError("Failed to load dashboard data");
@@ -188,7 +192,7 @@ const DashboardPage = () => {
     },
     {
       name: "Leads",
-      value: "1,234",
+      value: contactCount,
       icon: TrendingUp,
       change: "+23%",
       changeType: "positive",
