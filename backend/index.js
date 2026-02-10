@@ -112,7 +112,7 @@ app.use('/v1/notes', notesRoute);
 app.use('/v1/sessions', sessionRoute);
 app.use('/v1/popups', popupRoute);
 app.use('/v1/newsletters', newsLetterRoute);
-app.use('/v1/contact', contactRoute);
+app.use('/v1/contacts', contactRoute);
 //doctor
 app.use("/v1/appointments", appointmentRoute);
 app.use('/v1/patients', patientRoute);

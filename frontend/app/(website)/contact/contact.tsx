@@ -35,7 +35,7 @@ const Contact = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch(getApiV1Url("/contact"), {
+      const res = await fetch(getApiV1Url("/contacts"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
