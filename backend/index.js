@@ -29,6 +29,7 @@ import prescriptionRoute from './routes/prescriptionRoute.js';
 import reportRoute from './routes/reportRoute.js';
 import dashboardRoute from './routes/dashboardRoute.js';
 import doctorSettingsRoute from './routes/doctorSettingsRoute.js';
+import doctorRoute from './routes/doctorRoute.js';
 
 //customer routes
 import customerRoute from './routes/customerRoute.js';
@@ -40,6 +41,7 @@ import influencerReferralRoute from './routes/influencerReferralRoute.js';
 import influencerNoteRoute from './routes/influencerNoteRoute.js';
 import influencerReportRoute from './routes/influencerReportRoute.js';
 import influencerSettingsRoute from './routes/influencerSettingsRoute.js';
+import influencerRoute from './routes/influencerRoute.js';
 
 dotenv.config();
 
@@ -114,6 +116,7 @@ app.use('/v1/popups', popupRoute);
 app.use('/v1/newsletters', newsLetterRoute);
 app.use('/v1/contacts', contactRoute);
 //doctor
+app.use('/v1/doctor', doctorRoute);
 app.use("/v1/appointments", appointmentRoute);
 app.use('/v1/patients', patientRoute);
 app.use('/v1/prescriptions', prescriptionRoute);
@@ -127,6 +130,7 @@ app.use('/v1/payment-methods', paymentMethodRoute);
 app.use('/v1/razorpay', razorpayRoute);
 
 //influencer routes
+app.use('/v1/influencer', influencerRoute);
 app.use('/v1/influencer-referrals', influencerReferralRoute);
 app.use('/v1/influencer-notes', influencerNoteRoute);
 app.use('/v1/influencer-reports', influencerReportRoute);
