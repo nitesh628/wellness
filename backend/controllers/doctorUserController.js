@@ -76,3 +76,32 @@ export async function getDoctorById(req, res) {
   }
 }
 
+export async function countDoctors(req, res) {
+  try {
+    const userRole = req.user.role;
+
+    // Check if user is admin
+    const isAdmin = ['super_admin', 'admin'].includes(userRole);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can view doctor counts'
+      });
+    }
+
+    const count = await User.countDocuments({ role: 'Doctor' });
+    console.log('✅ Total doctors count retrieved:', count);
+
+    res.status(200).json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    console.error('❌ Error counting doctors:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to count doctors',
+      error: error.message
+    });
+  }
+}

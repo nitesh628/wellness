@@ -30,35 +30,96 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getApiV1Url } from "@/lib/utils/api";
+import Loader from "@/components/common/dashboard/Loader";
+import Error from "@/components/common/dashboard/Error";
 
 const DashboardPage = () => {
   const router = useRouter();
   const [productCount, setProductCount] = useState("0");
   const [orderCount, setOrderCount] = useState("0");
   const [userCount, setUserCount] = useState("0");
+  const [doctorCount, setDoctorCount] = useState("0");
+  const [influencerCount, setInfluencerCount] = useState("0");
+  const [customerCount, setCustomerCount] = useState("0");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [productRes, orderRes, userRes] = await Promise.all([
-          fetch(getApiV1Url("/products/count")),
-          fetch(getApiV1Url("/orders/count")),
-          fetch(getApiV1Url("/users/count")),
+        setIsLoading(true);
+
+        let token = "";
+        if (typeof window !== "undefined") {
+          token =
+            localStorage.getItem("authToken") ||
+            localStorage.getItem("token") ||
+            localStorage.getItem("accessToken") ||
+            "";
+          token = token.replace(/^"|"$/g, "");
+        }
+
+        const headers = {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        };
+
+        // Helper function to handle fetch errors gracefully
+        const fetchWithLogging = async (url: string, label: string) => {
+          try {
+            const res = await fetch(url, { headers, credentials: "include" });
+            if (!res.ok) {
+              console.error(`${label} API Error: ${res.status} ${res.statusText}`);
+              return { success: false };
+            }
+            return await res.json();
+          } catch (error) {
+            console.error(`${label} Fetch Error:`, error);
+            return { success: false };
+          }
+        };
+
+        const [
+          productData,
+          orderData,
+          userData,
+          doctorData,
+          influencerData,
+          customerData,
+        ] = await Promise.all([
+          fetchWithLogging(getApiV1Url("/products/count"), "Products"),
+          fetchWithLogging(getApiV1Url("/orders/admin/count"), "Orders"),
+          fetchWithLogging(getApiV1Url("/users/count"), "Users"),
+          fetchWithLogging(getApiV1Url("/users/doctor/admin/count"), "Doctors"),
+          fetchWithLogging(getApiV1Url("/users/influencer/admin/count"), "Influencers"),
+          fetchWithLogging(getApiV1Url("/users/customer/admin/count"), "Customers"),
         ]);
 
-        const productData = await productRes.json();
-        const orderData = await orderRes.json();
-        const userData = await userRes.json();
-
         if (productData.success) setProductCount(productData.count.toString());
-        if (orderData.success) setOrderCount(orderData.count.toString());
+        if (orderData.success || orderData.count !== undefined) {
+          setOrderCount((orderData.count || 0).toString());
+        }
         if (userData.success) setUserCount(userData.total.toString());
+        if (doctorData.success) setDoctorCount(doctorData.count.toString());
+        if (influencerData.success) setInfluencerCount(influencerData.count.toString());
+        if (customerData.success) setCustomerCount(customerData.count.toString());
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        setError("Failed to load dashboard data");
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchDashboardData();
   }, []);
+
+  if (isLoading) {
+    return <Loader variant="skeleton" message="Loading dashboard..." />;
+  }
+
+  if (error) {
+    return <Error title="Dashboard Error" message={error} />;
+  }
 
   // Enhanced stats with more detailed information
   const stats = [
@@ -73,7 +134,7 @@ const DashboardPage = () => {
     },
     {
       name: "Doctors",
-      value: "156",
+      value: doctorCount,
       icon: Stethoscope,
       change: "+8%",
       changeType: "positive",
@@ -82,7 +143,7 @@ const DashboardPage = () => {
     },
     {
       name: "Influencers",
-      value: "89",
+      value: influencerCount,
       icon: Megaphone,
       change: "+15%",
       changeType: "positive",
@@ -91,7 +152,7 @@ const DashboardPage = () => {
     },
     {
       name: "Customers",
-      value: "1,890",
+      value: customerCount,
       icon: UserCheck,
       change: "+18%",
       changeType: "positive",

@@ -13,22 +13,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  UserPlus,
-  TrendingUp,
   Clock,
-  FileText,
+  MessageSquare,
+  Calendar,
+  Mail,
 } from "lucide-react";
+import Swal from "sweetalert2";
 import { getApiV1Url } from "@/lib/utils/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -64,212 +58,228 @@ import Loader from "@/components/common/dashboard/Loader";
 import Error from "@/components/common/dashboard/Error";
 import NoData from "@/components/common/dashboard/NoData";
 
-const leadStatuses = ["new", "contacted", "proposal", "losted"];
-const leadPriorities = ["low", "medium", "high"];
-
-interface Lead {
+interface Contact {
   _id: string;
   name: string;
   email: string;
   phone: string;
-  subject: string;
   message: string;
-  status: string;
-  priority: string;
-  estimatedValue: number;
-  notes: string;
-  lastContact: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 const LeadsPage = () => {
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
-    total: 0,
   });
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("new");
-  const [selectedPriority, setSelectedPriority] = useState("low");
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<Contact> | null>(null);
 
-  const fetchLeads = async () => {
+  // Helper to get auth token
+  const getAuthToken = () => {
+    if (typeof window !== "undefined") {
+      let token =
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("accessToken") ||
+        "";
+      return token.replace(/^"|"$/g, "");
+    }
+    return "";
+  };
+
+  const fetchContacts = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const queryParams = new URLSearchParams();
-      queryParams.append("page", pagination.page.toString());
-      queryParams.append("limit", pagination.limit.toString());
+      const token = getAuthToken();
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
 
-      if (searchTerm) queryParams.append("q", searchTerm);
-      // Replicating original logic where 'new' and 'low' acted as default/all
-      if (selectedStatus !== "new")
-        queryParams.append("status", selectedStatus);
-      if (selectedPriority !== "low")
-        queryParams.append("priority", selectedPriority);
-
-      const res = await fetch(getApiV1Url(`/leads?${queryParams.toString()}`));
+      const res = await fetch(getApiV1Url("/contacts"), {
+        headers,
+        credentials: "include",
+      });
       const data = await res.json();
 
       if (data.success) {
-        setLeads(data.data);
-        setPagination((prev) => ({
-          ...prev,
-          total: data.pagination?.total || data.total || 0,
-        }));
+        setContacts(data.data);
       } else {
-        setError(data.message || "Failed to fetch leads");
+        setError(data.message || "Failed to fetch contacts");
       }
     } catch (err) {
-      setError("Failed to fetch leads");
+      setError("Failed to fetch contacts");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLeads();
-  }, [
-    pagination.page,
-    pagination.limit,
-    searchTerm,
-    selectedStatus,
-    selectedPriority,
-  ]);
+    fetchContacts();
+  }, []);
+
+  // Client-side filtering
+  const filteredContacts = contacts.filter((contact) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      contact.name.toLowerCase().includes(searchLower) ||
+      contact.email.toLowerCase().includes(searchLower) ||
+      contact.phone.includes(searchLower) ||
+      contact.message.toLowerCase().includes(searchLower)
+    );
+  });
 
   // Pagination logic
-  const totalPages = Math.ceil(pagination.total / pagination.limit);
+  const totalItems = filteredContacts.length;
+  const totalPages = Math.ceil(totalItems / pagination.limit);
   const startIndex = (pagination.page - 1) * pagination.limit;
+  const paginatedContacts = filteredContacts.slice(
+    startIndex,
+    startIndex + pagination.limit,
+  );
 
   // Handle pagination changes
   const handlePageChange = (newPage: number) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
-  const handleUpdateLeadStatus = async (leadId: string, newStatus: string) => {
+  // Reset page when search changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  }, [searchTerm]);
+
+  const handleUpdateContact = async (
+    contactId: string,
+    updatedData: Partial<Contact>,
+  ) => {
     setModalLoading(true);
-    try {
-      const res = await fetch(getApiV1Url(`/leads/${leadId}`), {
+    try { 
+      const token = getAuthToken();
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(getApiV1Url(`/contacts/${contactId}`), {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: newStatus,
-          lastContact: new Date().toISOString().split("T")[0],
-        }),
+        headers,
+        credentials: "include",
+        body: JSON.stringify(updatedData),
       });
       const data = await res.json();
       if (data.success) {
-        fetchLeads();
+        fetchContacts();
         setShowEditModal(false);
+        Swal.fire({
+          title: "Success!",
+          text: "Contact updated successfully.",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       }
     } catch (error) {
       console.error(error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update contact.",
+        icon: "error",
+      });
     } finally {
       setModalLoading(false);
     }
   };
 
-  const handleDeleteLead = async () => {
-    if (!selectedLead) return;
+  const handleDeleteContact = async () => {
+    if (!selectedContact) return;
     setModalLoading(true);
     try {
-      const res = await fetch(getApiV1Url(`/leads/${selectedLead._id}`), {
+      const token = getAuthToken();
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(getApiV1Url(`/contacts/${selectedContact._id}`), {
         method: "DELETE",
+        headers,
+        credentials: "include",
       });
       const data = await res.json();
       if (data.success) {
-        fetchLeads();
+        fetchContacts();
         setShowDeleteModal(false);
-        setSelectedLead(null);
+        setSelectedContact(null);
+        Swal.fire({
+          title: "Deleted!",
+          text: "The contact has been deleted.",
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        });
       }
     } catch (error) {
       console.error(error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to delete contact.",
+        icon: "error",
+      });
     } finally {
       setModalLoading(false);
     }
   };
 
-  const openViewModal = (lead: Lead) => {
-    setSelectedLead(lead);
+  const openViewModal = (contact: Contact) => {
+    setSelectedContact(contact);
     setShowViewModal(true);
   };
 
-  const openEditModal = (lead: Lead) => {
-    setSelectedLead(lead);
+  const openEditModal = (contact: Contact) => {
+    setSelectedContact(contact);
+    setEditForm({ ...contact });
     setShowEditModal(true);
   };
 
-  const openDeleteModal = (lead: Lead) => {
-    setSelectedLead(lead);
+  const openDeleteModal = (contact: Contact) => {
+    setSelectedContact(contact);
     setShowDeleteModal(true);
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "new":
-        return <UserPlus className="w-4 h-4" />;
-      case "contacted":
-        return <Phone className="w-4 h-4" />;
-      case "proposal":
-        return <FileText className="w-4 h-4" />;
-      case "losted":
-        return <TrendingUp className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "new":
-        return "secondary";
-      case "contacted":
-        return "default";
-      case "proposal":
-        return "warning";
-      case "losted":
-        return "default";
-      default:
-        return "secondary";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "default";
-      case "medium":
-        return "warning";
-      case "low":
-        return "secondary";
-      default:
-        return "secondary";
-    }
   };
 
   return (
     <TooltipProvider>
       <div className="space-y-6">
         {error ? (
-          <Error title="Error loading leads" message={error} />
+          <Error title="Error loading contacts" message={error} />
         ) : (
           <>
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Leads</h1>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Contacts (Leads)
+                </h1>
                 <p className="text-muted-foreground">
-                  Manage sales leads and customer prospects
+                  Manage customer inquiries and contact form submissions
                 </p>
               </div>
             </div>
@@ -281,10 +291,10 @@ const LeadsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Total Leads
+                        Total Contacts
                       </p>
                       <p className="text-2xl font-bold text-foreground">
-                        {pagination.total}
+                        {contacts.length}
                       </p>
                     </div>
                     <Users className="w-8 h-8 text-primary" />
@@ -295,12 +305,23 @@ const LeadsPage = () => {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">New Leads</p>
+                      <p className="text-sm text-muted-foreground">
+                        This Month
+                      </p>
                       <p className="text-2xl font-bold text-foreground">
-                        {leads.filter((l) => l.status === "new").length}
+                        {
+                          contacts.filter((c) => {
+                            const date = new Date(c.createdAt);
+                            const now = new Date();
+                            return (
+                              date.getMonth() === now.getMonth() &&
+                              date.getFullYear() === now.getFullYear()
+                            );
+                          }).length
+                        }
                       </p>
                     </div>
-                    <UserPlus className="w-8 h-8 text-blue-600" />
+                    <Calendar className="w-8 h-8 text-blue-600" />
                   </div>
                 </CardContent>
               </Card>
@@ -309,13 +330,13 @@ const LeadsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Proposal Leads
+                        With Phone
                       </p>
                       <p className="text-2xl font-bold text-foreground">
-                        {leads.filter((l) => l.status === "proposal").length}
+                        {contacts.filter((c) => c.phone).length}
                       </p>
                     </div>
-                    <FileText className="w-8 h-8 text-emerald-500" />
+                    <Phone className="w-8 h-8 text-emerald-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -324,16 +345,13 @@ const LeadsPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Total Pipeline Value
+                        With Email
                       </p>
                       <p className="text-2xl font-bold text-foreground">
-                        ₹
-                        {leads
-                          .reduce((sum, l) => sum + (l.estimatedValue || 0), 0)
-                          .toLocaleString()}
+                        {contacts.filter((c) => c.email).length}
                       </p>
                     </div>
-                    <TrendingUp className="w-8 h-8 text-emerald-500" />
+                    <Mail className="w-8 h-8 text-amber-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -348,47 +366,12 @@ const LeadsPage = () => {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
                       type="text"
-                      placeholder="Search leads..."
+                      placeholder="Search contacts..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
                     />
                   </div>
-
-                  {/* Status Filter */}
-                  <Select
-                    value={selectedStatus}
-                    onValueChange={setSelectedStatus}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadStatuses.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status.charAt(0).toUpperCase() +
-                            status.slice(1).replace("-", " ")}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* Priority Filter */}
-                  <Select
-                    value={selectedPriority}
-                    onValueChange={setSelectedPriority}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {leadPriorities.map((priority) => (
-                        <SelectItem key={priority} value={priority}>
-                          {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
 
                   {/* View Toggle */}
                   <div className="flex border border-input rounded-lg overflow-hidden">
@@ -429,11 +412,11 @@ const LeadsPage = () => {
 
             {/* Content */}
             {isLoading ? (
-              <Loader variant="skeleton" message="Loading leads..." />
-            ) : leads.length === 0 ? (
+              <Loader variant="skeleton" message="Loading contacts..." />
+            ) : filteredContacts.length === 0 ? (
               <NoData
-                message="No leads found"
-                description="No leads match your current filters"
+                message="No contacts found"
+                description="No contacts match your current search"
                 icon={
                   <Users className="w-full h-full text-muted-foreground/60" />
                 }
@@ -443,84 +426,44 @@ const LeadsPage = () => {
               <>
                 {viewMode === "grid" ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {leads.map((lead: Lead) => (
+                    {paginatedContacts.map((contact: Contact) => (
                       <Card
-                        key={lead._id}
+                        key={contact._id}
                         className="overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full"
                       >
                         <CardHeader className="pb-3">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-lg">
-                              {lead.name}
+                              {contact.name}
                             </CardTitle>
-                            <div className="flex gap-2">
-                              <Badge
-                                variant={
-                                  getStatusColor(lead.status) as
-                                    | "default"
-                                    | "secondary"
-                                    | "destructive"
-                                    | "outline"
-                                }
-                              >
-                                {getStatusIcon(lead.status)}
-                                <span className="ml-1">
-                                  {lead.status.charAt(0).toUpperCase() +
-                                    lead.status.slice(1).replace("-", " ")}
-                                </span>
-                              </Badge>
-                              <Badge
-                                variant={
-                                  getPriorityColor(lead.priority) as
-                                    | "default"
-                                    | "secondary"
-                                    | "destructive"
-                                    | "outline"
-                                }
-                              >
-                                {lead.priority.charAt(0).toUpperCase() +
-                                  lead.priority.slice(1)}
-                              </Badge>
-                            </div>
+                            <Badge variant="outline">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {new Date(contact.createdAt).toLocaleDateString()}
+                            </Badge>
                           </div>
                           <CardDescription>
-                            {lead.subject} • {lead.message}
+                            {contact.email}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3 flex-1 flex flex-col">
                           <div className="space-y-3 flex-1">
                             <div className="flex items-center justify-between">
                               <span className="text-sm text-muted-foreground">
-                                Source:
+                                Phone:
                               </span>
                               <span className="text-sm font-medium">
-                                {lead.subject}
+                                {contact.phone || "N/A"}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">
-                                Estimated Value:
-                              </span>
-                              <span className="text-lg font-bold text-foreground">
-                                ₹{lead.estimatedValue.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-muted-foreground">
-                                Last Contact:
-                              </span>
-                              <span className="text-sm font-medium">
-                                {new Date(
-                                  lead.lastContact,
-                                ).toLocaleDateString()}
-                              </span>
+                            <div className="bg-muted/50 p-3 rounded-md text-sm text-muted-foreground line-clamp-3">
+                              {contact.message}
                             </div>
                           </div>
                           <div className="flex gap-2 pt-2 mt-auto">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  onClick={() => openViewModal(lead)}
+                                  onClick={() => openViewModal(contact)}
                                   className="flex-1 gap-2"
                                   size="sm"
                                   variant="outline"
@@ -530,13 +473,13 @@ const LeadsPage = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>View lead details</p>
+                                <p>View details</p>
                               </TooltipContent>
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
-                                  onClick={() => openEditModal(lead)}
+                                  onClick={() => openEditModal(contact)}
                                   className="flex-1 gap-2"
                                   size="sm"
                                 >
@@ -545,7 +488,7 @@ const LeadsPage = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Edit lead status</p>
+                                <p>Edit contact</p>
                               </TooltipContent>
                             </Tooltip>
                           </div>
@@ -558,86 +501,47 @@ const LeadsPage = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Lead</TableHead>
-                          <TableHead>Company</TableHead>
-                          <TableHead>Source</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Priority</TableHead>
-                          <TableHead>Value</TableHead>
-                          <TableHead>Last Contact</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact Info</TableHead>
+                          <TableHead>Message</TableHead>
+                          <TableHead>Date</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {leads.map((lead: Lead) => (
-                          <TableRow key={lead._id}>
+                        {paginatedContacts.map((contact: Contact) => (
+                          <TableRow key={contact._id}>
                             <TableCell>
                               <div>
                                 <p className="font-medium text-foreground">
-                                  {lead.name}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {lead.email}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {lead.phone}
+                                  {contact.name}
                                 </p>
                               </div>
                             </TableCell>
                             <TableCell>
                               <div>
-                                <p className="font-medium text-foreground">
-                                  {lead.subject}
+                                <p className="text-sm text-foreground">
+                                  {contact.email}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                  {lead.message}
+                                  {contact.phone}
                                 </p>
                               </div>
                             </TableCell>
-                            <TableCell>{lead.subject}</TableCell>
                             <TableCell>
-                              <Badge
-                                variant={
-                                  getStatusColor(lead.status) as
-                                    | "default"
-                                    | "secondary"
-                                    | "destructive"
-                                    | "outline"
-                                }
-                              >
-                                {getStatusIcon(lead.status)}
-                                <span className="ml-1">
-                                  {lead.status.charAt(0).toUpperCase() +
-                                    lead.status.slice(1).replace("-", " ")}
-                                </span>
-                              </Badge>
+                              <p className="text-sm text-muted-foreground truncate max-w-[300px]">
+                                {contact.message}
+                              </p>
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                variant={
-                                  getPriorityColor(lead.priority) as
-                                    | "default"
-                                    | "secondary"
-                                    | "destructive"
-                                    | "outline"
-                                }
-                              >
-                                {lead.priority.charAt(0).toUpperCase() +
-                                  lead.priority.slice(1)}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              ₹{lead.estimatedValue.toLocaleString()}
-                            </TableCell>
-                            <TableCell>
-                              {new Date(lead.lastContact).toLocaleDateString()}
+                              {new Date(contact.createdAt).toLocaleDateString()}
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
-                                      onClick={() => openViewModal(lead)}
+                                      onClick={() => openViewModal(contact)}
                                       variant="ghost"
                                       size="icon"
                                     >
@@ -645,13 +549,13 @@ const LeadsPage = () => {
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>View lead</p>
+                                    <p>View details</p>
                                   </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
-                                      onClick={() => openEditModal(lead)}
+                                      onClick={() => openEditModal(contact)}
                                       variant="ghost"
                                       size="icon"
                                     >
@@ -659,13 +563,13 @@ const LeadsPage = () => {
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Edit lead</p>
+                                    <p>Edit contact</p>
                                   </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
-                                      onClick={() => openDeleteModal(lead)}
+                                      onClick={() => openDeleteModal(contact)}
                                       variant="ghost"
                                       size="icon"
                                       className="text-destructive hover:bg-destructive/10"
@@ -674,7 +578,7 @@ const LeadsPage = () => {
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Delete lead</p>
+                                    <p>Delete contact</p>
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
@@ -687,7 +591,7 @@ const LeadsPage = () => {
                 )}
 
                 {/* Pagination */}
-                {!isLoading && leads.length > 0 && totalPages > 1 && (
+                {!isLoading && filteredContacts.length > 0 && totalPages > 1 && (
                   <Card>
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
@@ -695,9 +599,9 @@ const LeadsPage = () => {
                           Showing {startIndex + 1} to{" "}
                           {Math.min(
                             startIndex + pagination.limit,
-                            pagination.total,
+                            totalItems,
                           )}{" "}
-                          of {pagination.total} leads
+                          of {totalItems} contacts
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -756,12 +660,14 @@ const LeadsPage = () => {
             <Dialog open={showViewModal} onOpenChange={setShowViewModal}>
               <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Lead Details - {selectedLead?.name}</DialogTitle>
+                  <DialogTitle>
+                    Contact Details - {selectedContact?.name}
+                  </DialogTitle>
                   <DialogDescription>
-                    Complete lead information and contact details.
+                    Complete contact information and message.
                   </DialogDescription>
                 </DialogHeader>
-                {selectedLead && (
+                {selectedContact && (
                   <div className="space-y-6">
                     {/* Lead Summary */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -773,7 +679,7 @@ const LeadsPage = () => {
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Name:</span>
                             <span className="font-medium">
-                              {selectedLead.name}
+                              {selectedContact.name}
                             </span>
                           </div>
                           <div className="flex justify-between">
@@ -781,7 +687,7 @@ const LeadsPage = () => {
                               Email:
                             </span>
                             <span className="font-medium">
-                              {selectedLead.email}
+                              {selectedContact.email}
                             </span>
                           </div>
                           <div className="flex justify-between">
@@ -789,23 +695,7 @@ const LeadsPage = () => {
                               Phone:
                             </span>
                             <span className="font-medium">
-                              {selectedLead.phone}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Company:
-                            </span>
-                            <span className="font-medium">
-                              {selectedLead.subject}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Position:
-                            </span>
-                            <span className="font-medium">
-                              {selectedLead.message}
+                              {selectedContact.phone || "N/A"}
                             </span>
                           </div>
                         </CardContent>
@@ -813,104 +703,36 @@ const LeadsPage = () => {
 
                       <Card>
                         <CardHeader>
-                          <CardTitle>Lead Information</CardTitle>
+                          <CardTitle>Message Details</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">
-                              Status:
+                              Date:
                             </span>
-                            <Badge
-                              variant={
-                                getStatusColor(selectedLead.status) as
-                                  | "default"
-                                  | "secondary"
-                                  | "destructive"
-                                  | "outline"
-                              }
-                            >
-                              {getStatusIcon(selectedLead.status)}
-                              <span className="ml-1">
-                                {selectedLead.status.charAt(0).toUpperCase() +
-                                  selectedLead.status
-                                    .slice(1)
-                                    .replace("-", " ")}
-                              </span>
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Priority:
-                            </span>
-                            <Badge
-                              variant={
-                                getPriorityColor(selectedLead.priority) as
-                                  | "default"
-                                  | "secondary"
-                                  | "destructive"
-                                  | "outline"
-                              }
-                            >
-                              {selectedLead.priority.charAt(0).toUpperCase() +
-                                selectedLead.priority.slice(1)}
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Estimated Value:
-                            </span>
-                            <span className="font-bold text-lg">
-                              ₹{selectedLead.estimatedValue.toLocaleString()}
+                            <span className="font-medium">
+                              {new Date(
+                                selectedContact.createdAt,
+                              ).toLocaleString()}
                             </span>
                           </div>
                         </CardContent>
                       </Card>
                     </div>
 
-                    {/* Timeline */}
+                    {/* Message Content */}
                     <Card>
                       <CardHeader>
-                        <CardTitle>Timeline</CardTitle>
+                        <CardTitle>Message</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Created:
-                            </span>
-                            <span className="font-medium">
-                              {new Date(
-                                selectedLead.createdAt,
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Last Contact:
-                            </span>
-                            <span className="font-medium">
-                              {new Date(
-                                selectedLead.lastContact,
-                              ).toLocaleDateString()}
-                            </span>
-                          </div>
+                        <div className="bg-muted/30 p-4 rounded-lg">
+                          <p className="whitespace-pre-wrap">
+                            {selectedContact.message}
+                          </p>
                         </div>
                       </CardContent>
                     </Card>
-
-                    {/* Notes */}
-                    {selectedLead.notes && (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Notes</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-muted-foreground">
-                            {selectedLead.notes}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    )}
                   </div>
                 )}
                 <DialogFooter>
@@ -928,71 +750,69 @@ const LeadsPage = () => {
             <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Update Lead Status</DialogTitle>
+                  <DialogTitle>Edit Contact</DialogTitle>
                   <DialogDescription>
-                    Change the status of lead {selectedLead?.name}
+                    Update contact details for {selectedContact?.name}
                   </DialogDescription>
                 </DialogHeader>
-                {selectedLead && (
+                {editForm && (
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="lead-status" className="mb-2 block">
-                        Lead Status
+                      <Label htmlFor="contact-name" className="mb-2 block">
+                        Name
                       </Label>
-                      <Select
-                        value={selectedLead.status}
-                        onValueChange={(value) =>
-                          setSelectedLead({ ...selectedLead, status: value })
+                      <Input
+                        id="contact-name"
+                        value={editForm.name || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            name: e.target.value,
+                          })
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {leadStatuses.slice(1).map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {status.charAt(0).toUpperCase() +
-                                status.slice(1).replace("-", " ")}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="lead-priority" className="mb-2 block">
-                        Priority
+                      <Label htmlFor="contact-email" className="mb-2 block">
+                        Email
                       </Label>
-                      <Select
-                        value={selectedLead.priority}
-                        onValueChange={(value) =>
-                          setSelectedLead({ ...selectedLead, priority: value })
+                      <Input
+                        id="contact-email"
+                        value={editForm.email || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            email: e.target.value,
+                          })
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {leadPriorities.slice(1).map((priority) => (
-                            <SelectItem key={priority} value={priority}>
-                              {priority.charAt(0).toUpperCase() +
-                                priority.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="lead-notes" className="mb-2 block">
-                        Notes
+                      <Label htmlFor="contact-phone" className="mb-2 block">
+                        Phone
+                      </Label>
+                      <Input
+                        id="contact-phone"
+                        value={editForm.phone || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            phone: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contact-message" className="mb-2 block">
+                        Message
                       </Label>
                       <Textarea
-                        id="lead-notes"
-                        placeholder="Add lead notes"
-                        value={selectedLead.notes || ""}
+                        id="contact-message"
+                        value={editForm.message || ""}
                         onChange={(e) =>
-                          setSelectedLead({
-                            ...selectedLead,
-                            notes: e.target.value,
+                          setEditForm({
+                            ...editForm,
+                            message: e.target.value,
                           })
                         }
                         rows={3}
@@ -1010,11 +830,14 @@ const LeadsPage = () => {
                   </Button>
                   <Button
                     onClick={() => {
-                      handleUpdateLeadStatus(
-                        selectedLead!._id,
-                        selectedLead!.status,
-                      );
-                      setShowEditModal(false);
+                      if (selectedContact && editForm) {
+                        handleUpdateContact(selectedContact._id, {
+                          name: editForm.name,
+                          email: editForm.email,
+                          phone: editForm.phone,
+                          message: editForm.message,
+                        });
+                      }
                     }}
                     disabled={modalLoading}
                   >
@@ -1024,7 +847,7 @@ const LeadsPage = () => {
                         Updating...
                       </>
                     ) : (
-                      "Update Lead"
+                      "Update Contact"
                     )}
                   </Button>
                 </DialogFooter>
@@ -1035,10 +858,10 @@ const LeadsPage = () => {
             <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>Delete Lead</DialogTitle>
+                  <DialogTitle>Delete Contact</DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to delete lead {selectedLead?.name}?
-                    This action cannot be undone.
+                    Are you sure you want to delete contact{" "}
+                    {selectedContact?.name}? This action cannot be undone.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -1051,7 +874,7 @@ const LeadsPage = () => {
                   </Button>
                   <Button
                     variant="destructive"
-                    onClick={handleDeleteLead}
+                    onClick={handleDeleteContact}
                     disabled={modalLoading}
                   >
                     {modalLoading ? (
@@ -1060,7 +883,7 @@ const LeadsPage = () => {
                         Deleting...
                       </>
                     ) : (
-                      "Delete Lead"
+                      "Delete Contact"
                     )}
                   </Button>
                 </DialogFooter>

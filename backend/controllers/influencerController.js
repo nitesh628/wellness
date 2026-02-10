@@ -107,3 +107,34 @@ export async function getInfluencerById(req, res) {
     res.status(400).json({ error: error.message });
   }
 }
+
+// Count total influencers
+export async function countInfluencers(req, res) {
+  try {
+    const userRole = req.user.role;
+
+    // Check if user is admin
+    const isAdmin = ['super_admin', 'admin'].includes(userRole);
+    if (!isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admins can view influencer counts'
+      });
+    }
+
+    const count = await User.countDocuments({ role: 'Influencer' });
+    console.log('✅ Total influencers count retrieved:', count);
+
+    res.status(200).json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    console.error('❌ Error counting influencers:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to count influencers',
+      error: error.message
+    });
+  }
+}

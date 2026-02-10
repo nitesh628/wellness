@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { getApiV1Url, getApiV1BaseUrl } from "@/lib/utils/api";
+import Swal from "sweetalert2";
 
 // Create axios instance with interceptors for authentication
 const authenticatedAxios = axios.create({
@@ -144,7 +145,7 @@ interface OrderItem {
 interface Order {
   _id: string;
   orderNumber: string;
-  user: string | { name: string; email: string };
+  user: string | { _id: string; name: string; email: string };
   createdAt: string;
   status: string;
   totalAmount: number;
@@ -152,7 +153,7 @@ interface Order {
   paymentMethod: string;
   items: OrderItem[];
   shippingAddress: any;
-  billingAddress?: string;
+  billingAddress?: any;
   trackingNumber?: string;
   notes?: string;
 }
@@ -416,8 +417,20 @@ const OrdersPage = () => {
       });
       await fetchOrders();
       setShowEditModal(false);
+      Swal.fire({
+        title: "Success!",
+        text: "Order details updated successfully",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     } catch (error) {
       console.error("Failed to update order status:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update order status",
+        icon: "error",
+      });
     }
   };
 
@@ -484,7 +497,20 @@ const OrdersPage = () => {
   const renderAddress = (address: any) => {
     if (!address) return "N/A";
     if (typeof address === "string") return address;
-    return address.address || address.name || JSON.stringify(address);
+
+    if (address.address || address.city || address.state || address.pinCode) {
+      return [
+        address.address,
+        address.landmark,
+        address.city,
+        address.state,
+        address.pinCode,
+      ]
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    return address.name || JSON.stringify(address);
   };
 
   const renderProduct = (item: OrderItem) => {
@@ -1390,7 +1416,9 @@ const OrdersPage = () => {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">User ID:</span>
                         <span className="font-medium">
-                          {renderUser(selectedOrder.user)}
+                          {typeof selectedOrder.user === "string"
+                            ? selectedOrder.user
+                            : selectedOrder.user?._id || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -1406,7 +1434,7 @@ const OrdersPage = () => {
                           Billing Address:
                         </span>
                         <span className="font-medium">
-                          {selectedOrder.billingAddress}
+                          {renderAddress(selectedOrder.billingAddress)}
                         </span>
                       </div>
                     </CardContent>

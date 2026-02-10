@@ -86,3 +86,33 @@ export const downloadMyData = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+export async function countCustomers(req, res) {
+    try {
+        const userRole = req.user.role;
+
+        // Check if user is admin
+        const isAdmin = ['super_admin', 'admin'].includes(userRole);
+        if (!isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only admins can view customer counts'
+            });
+        }
+
+        const count = await User.countDocuments({ role: 'Customer' });
+        console.log('✅ Total customers count retrieved:', count);
+
+        res.status(200).json({
+            success: true,
+            count
+        });
+    } catch (error) {
+        console.error('❌ Error counting customers:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to count customers',
+            error: error.message
+        });
+    }
+}
