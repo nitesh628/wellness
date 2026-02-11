@@ -612,3 +612,28 @@ export async function getUsersWithOrders(req, res) {
     });
   }
 }
+
+export async function getMyOrders(req, res) {
+  try {
+    const userId = req.user._id;
+
+    console.log('📋 Fetching personal orders for user:', userId);
+
+    const orders = await Order.find({ user: userId })
+      .populate({ path: 'items.product', select: 'name price imageUrl' })
+      .sort({ createdAt: -1 }); // Latest first
+
+    console.log(`✅ Found ${orders.length} personal orders`);
+
+    res.status(200).json({
+      success: true,
+      orders
+    });
+  } catch (err) {
+    console.error('❌ Error fetching my orders:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch orders'
+    });
+  }
+}

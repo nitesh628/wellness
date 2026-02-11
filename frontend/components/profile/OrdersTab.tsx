@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import {
   ShoppingBag,
   Eye,
@@ -31,43 +32,102 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  Order,
-  OrderAddress,
-  OrderItem,
-  selectOrders,
-  selectOrderLoading,
-  selectOrderError,
-  selectOrderPagination,
-  setFilters,
-  fetchOrdersData,
-} from "@/lib/redux/features/orderSlice";
-import { selectUser } from "@/lib/redux/features/authSlice";
+
+interface OrderProduct {
+  _id: string;
+  name: string;
+  price: number;
+  imageUrl?: string;
+}
+
+interface OrderItem {
+  product: OrderProduct | string;
+  quantity: number;
+  price: number;
+}
+
+interface OrderAddress {
+  address: string;
+  city: string;
+  state: string;
+  pinCode: string;
+}
+
+interface Order {
+  _id: string;
+  orderNumber: string;
+  status: string;
+  totalAmount: number;
+  paymentStatus: string;
+  createdAt: string;
+  items: OrderItem[];
+  shippingAddress?: OrderAddress | string;
+  trackingNumber?: string;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
 
 const OrdersTab = () => {
   const router = useRouter();
-  const dispatch = useAppDispatch();
-  const currentUser = useAppSelector(selectUser);
-  const allOrders = useAppSelector(selectOrders);
-  const loading = useAppSelector(selectOrderLoading);
-  const error = useAppSelector(selectOrderError);
-  const pagination = useAppSelector(selectOrderPagination);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 1,
+  });
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+
+  const fetchOrders = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      // Safely get token only on the client side
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/v1"}/orders/user/my-orders`,
+        {
+          params: { page, limit: 10 },
+          // Conditionally add the Authorization header if a token exists
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          // Ensures cookies are sent with the request, which can be necessary for auth
+          withCredentials: true,
+        },
+      );
+
+      if (response.data.success) {
+        setOrders(response.data.data);
+        setPagination(response.data.pagination);
+      } else {
+        setError(response.data.message || "Failed to fetch orders");
+      }
+    } catch (err: any) {
+      console.error("Error fetching orders:", err);
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setError("Authentication error. Please log in again.");
+      } else {
+        setError(err.response?.data?.message || "An error occurred while fetching orders.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!currentUser?._id) return;
-    dispatch(setFilters({ user: currentUser._id }));
-    setCurrentPage(1);
-  }, [currentUser?._id, dispatch]);
-
-  useEffect(() => {
-    if (!currentUser?._id) return;
-    dispatch(fetchOrdersData({ page: currentPage, limit: itemsPerPage }));
-  }, [currentUser?._id, currentPage, dispatch]);
+    fetchOrders(currentPage);
+  }, [currentPage]);
 
   const handleViewOrder = (order: Order) => {
     setSelectedOrder(order);
@@ -76,12 +136,6 @@ const OrdersTab = () => {
 
   const handleTrackOrder = (orderNumber: string) => {
     router.push(`/track-order?order=${orderNumber}`);
-  };
-
-  const resolveUserId = (user: Order["user"]) => {
-    if (!user) return "";
-    if (typeof user === "string") return user;
-    return user._id || "";
   };
 
   const renderAddress = (address?: string | OrderAddress) => {
@@ -101,27 +155,11 @@ const OrdersTab = () => {
     return item.product?.name || `Product #${index + 1}`;
   };
 
-  // Filter orders by current user
-  const orders = useMemo(
-    () =>
-      allOrders.filter(
-        (order) => resolveUserId(order.user) === currentUser?._id,
-      ),
-    [allOrders, currentUser?._id],
-  );
-
-  const totalItems = pagination.total || orders.length;
-  const totalPages =
-    pagination.pages ||
-    (pagination.total
-      ? Math.max(1, Math.ceil(pagination.total / itemsPerPage))
-      : 1);
-
-  useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= pagination.pages) {
+      setCurrentPage(newPage);
     }
-  }, [currentPage, totalPages]);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -350,38 +388,34 @@ const OrdersTab = () => {
                 </div>
               )}
 
-              {totalPages > 1 && (
+              {pagination.pages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t">
                   <p className="text-sm text-muted-foreground">
-                    {totalItems > 0
-                      ? `Showing ${(currentPage - 1) * itemsPerPage + 1}-${Math.min(
-                          currentPage * itemsPerPage,
-                          totalItems,
-                        )} of ${totalItems}`
+                    {pagination.total > 0
+                      ? `Showing ${(pagination.page - 1) * pagination.limit + 1}-${Math.min(
+                          pagination.page * pagination.limit,
+                          pagination.total,
+                        )} of ${pagination.total}`
                       : "Showing 0 results"}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setCurrentPage((page) => Math.max(1, page - 1))
-                      }
-                      disabled={currentPage <= 1}
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page <= 1}
                     >
                       <ChevronLeft className="w-4 h-4 mr-1" />
                       Prev
                     </Button>
                     <span className="text-sm text-muted-foreground">
-                      Page {currentPage} of {totalPages}
+                      Page {pagination.page} of {pagination.pages}
                     </span>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setCurrentPage((page) => Math.min(totalPages, page + 1))
-                      }
-                      disabled={currentPage >= totalPages}
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={pagination.page >= pagination.pages}
                     >
                       Next
                       <ChevronRight className="w-4 h-4 ml-1" />
