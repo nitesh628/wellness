@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Calendar, Clock, MapPin, Phone, Video, MessageSquare, Plus, XCircle, Eye } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import { Calendar, Clock, MapPin, Phone, Video, MessageSquare, Plus, XCircle, Eye, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,46 +11,61 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
+interface Doctor {
+  _id: string
+  firstName: string
+  lastName: string
+  specialization: string
+  imageUrl?: string
+}
+
 interface Appointment {
-  id: string
-  doctorName: string
-  doctorSpecialty: string
-  doctorImage: string
-  date: string
-  time: string
-  type: 'in-person' | 'video' | 'phone'
-  status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled'
+  _id: string
+  doctor: Doctor
+  appointmentDate: string
+  appointmentTime: string
+  type: string
+  status: string
   location?: string
   notes?: string
   duration: number
-  price: number
+  fee: number
+  reason?: string
 }
 
-interface AppointmentsTabProps {
-  appointments: Appointment[]
-  onAppointmentChange: (appointments: Appointment[]) => void
-}
-
-const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
-  appointments,
-  onAppointmentChange
-}) => {
+const AppointmentsTab = () => {
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showViewDialog, setShowViewDialog] = useState(false)
   const [viewingAppointment, setViewingAppointment] = useState<Appointment | null>(null)
-  const [newAppointment, setNewAppointment] = useState<Partial<Appointment>>({
-    doctorName: '',
-    doctorSpecialty: '',
-    doctorImage: '',
-    date: '',
-    time: '',
-    type: 'in-person',
-    status: 'scheduled',
-    location: '',
-    notes: '',
-    duration: 30,
-    price: 0
-  })
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true)
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/v1"}/appointments/my-appointments`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          withCredentials: true,
+        }
+      )
+      if (response.data.success) {
+        setAppointments(response.data.appointments)
+      }
+    } catch (err) {
+      console.error("Error fetching appointments:", err)
+      setError("Failed to load appointments")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAppointments()
+  }, [])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -71,39 +87,14 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
     }
   }
 
-  const handleAddAppointment = () => {
-    const appointment: Appointment = {
-      ...newAppointment,
-      id: Date.now().toString()
-    } as Appointment
-    onAppointmentChange([...appointments, appointment])
-    
-    setNewAppointment({
-      doctorName: '',
-      doctorSpecialty: '',
-      doctorImage: '',
-      date: '',
-      time: '',
-      type: 'in-person',
-      status: 'scheduled',
-      location: '',
-      notes: '',
-      duration: 30,
-      price: 0
-    })
-    setShowAddDialog(false)
-  }
-
   const handleViewAppointment = (appointment: Appointment) => {
     setViewingAppointment(appointment)
     setShowViewDialog(true)
   }
 
   const handleCancelAppointment = (appointmentId: string) => {
-    const updatedAppointments = appointments.map(apt => 
-      apt.id === appointmentId ? { ...apt, status: 'cancelled' as Appointment['status'] } : apt
-    )
-    onAppointmentChange(updatedAppointments)
+    // Placeholder for cancel logic
+    console.log("Cancel appointment", appointmentId)
   }
 
   return (
@@ -122,19 +113,32 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
         </Button>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-5 h-5" />
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground mt-2">Loading appointments...</p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-6">
         {appointments.map((appointment) => (
-          <Card key={appointment.id} className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card key={appointment._id} className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardContent className="p-6">
               <div className="flex flex-col lg:flex-row gap-6">
                 {/* Doctor Info */}
                 <div className="flex items-start gap-4">
                   <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {appointment.doctorName.split(' ').map(n => n[0]).join('')}
+                    {appointment.doctor?.firstName?.[0]}{appointment.doctor?.lastName?.[0]}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-foreground">{appointment.doctorName}</h3>
-                    <p className="text-muted-foreground">{appointment.doctorSpecialty}</p>
+                    <h3 className="text-xl font-semibold text-foreground">Dr. {appointment.doctor?.firstName} {appointment.doctor?.lastName}</h3>
+                    <p className="text-muted-foreground">{appointment.doctor?.specialization}</p>
                     <div className="flex items-center gap-4 mt-2">
                       <Badge className={getStatusColor(appointment.status)}>
                         {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
@@ -153,12 +157,12 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">Date:</span>
-                      <span>{new Date(appointment.date).toLocaleDateString()}</span>
+                      <span>{new Date(appointment.appointmentDate).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="w-4 h-4 text-muted-foreground" />
                       <span className="font-medium">Time:</span>
-                      <span>{appointment.time}</span>
+                      <span>{appointment.appointmentTime}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="w-4 h-4 text-muted-foreground" />
@@ -177,7 +181,7 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
                     )}
                     <div className="flex items-center gap-2 text-sm">
                       <span className="font-medium">Price:</span>
-                      <span className="font-semibold text-green-600">₹{appointment.price}</span>
+                      <span className="font-semibold text-green-600">₹{appointment.fee}</span>
                     </div>
                     {appointment.notes && (
                       <div className="flex items-start gap-2 text-sm">
@@ -205,7 +209,7 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleCancelAppointment(appointment.id)}
+                      onClick={() => handleCancelAppointment(appointment._id)}
                       className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                     >
                       <XCircle className="w-4 h-4" />
@@ -230,6 +234,7 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
           </div>
         )}
       </div>
+      )}
 
       {/* Add/Edit Appointment Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -239,130 +244,13 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
             <DialogDescription>Schedule a new medical appointment</DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="doctor-name">Doctor Name</Label>
-                <Input
-                  id="doctor-name"
-                  value={newAppointment.doctorName || ''}
-                  onChange={(e) => setNewAppointment({...newAppointment, doctorName: e.target.value})}
-                  placeholder="Enter doctor name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="specialty">Specialty</Label>
-                <Input
-                  id="specialty"
-                  value={newAppointment.doctorSpecialty || ''}
-                  onChange={(e) => setNewAppointment({...newAppointment, doctorSpecialty: e.target.value})}
-                  placeholder="e.g., Cardiologist"
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="appointment-date">Date</Label>
-                <Input
-                  id="appointment-date"
-                  type="date"
-                  value={newAppointment.date || ''}
-                  onChange={(e) => setNewAppointment({...newAppointment, date: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label htmlFor="appointment-time">Time</Label>
-                <Input
-                  id="appointment-time"
-                  type="time"
-                  value={newAppointment.time || ''}
-                  onChange={(e) => setNewAppointment({...newAppointment, time: e.target.value})}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="appointment-type">Type</Label>
-                <Select value={newAppointment.type} onValueChange={(value: 'in-person' | 'video' | 'phone') => setNewAppointment({...newAppointment, type: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="in-person">In-Person</SelectItem>
-                    <SelectItem value="video">Video Call</SelectItem>
-                    <SelectItem value="phone">Phone Call</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="duration">Duration (minutes)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  value={newAppointment.duration || ''}
-                  onChange={(e) => setNewAppointment({...newAppointment, duration: parseInt(e.target.value)})}
-                  placeholder="30"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={newAppointment.location || ''}
-                onChange={(e) => setNewAppointment({...newAppointment, location: e.target.value})}
-                placeholder="Enter location (for in-person appointments)"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="price">Price (₹)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  value={newAppointment.price || ''}
-                  onChange={(e) => setNewAppointment({...newAppointment, price: parseInt(e.target.value)})}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select value={newAppointment.status} onValueChange={(value: 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled') => setNewAppointment({...newAppointment, status: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="rescheduled">Rescheduled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="notes">Notes</Label>
-              <Input
-                id="notes"
-                value={newAppointment.notes || ''}
-                onChange={(e) => setNewAppointment({...newAppointment, notes: e.target.value})}
-                placeholder="Additional notes or requirements"
-              />
-            </div>
+          <div className="p-4 text-center text-muted-foreground">
+            Booking functionality coming soon. Please contact support to book an appointment.
           </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddAppointment}>
-              Book Appointment
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -380,8 +268,8 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold">{viewingAppointment.doctorName}</h3>
-                  <p className="text-muted-foreground">{viewingAppointment.doctorSpecialty}</p>
+                  <h3 className="text-lg font-semibold">Dr. {viewingAppointment.doctor?.firstName} {viewingAppointment.doctor?.lastName}</h3>
+                  <p className="text-muted-foreground">{viewingAppointment.doctor?.specialization}</p>
                 </div>
                 <Badge className={getStatusColor(viewingAppointment.status)}>
                   {viewingAppointment.status.charAt(0).toUpperCase() + viewingAppointment.status.slice(1)}
@@ -391,11 +279,11 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium">Date:</span>
-                  <span className="ml-2">{new Date(viewingAppointment.date).toLocaleDateString()}</span>
+                  <span className="ml-2">{new Date(viewingAppointment.appointmentDate).toLocaleDateString()}</span>
                 </div>
                 <div>
                   <span className="font-medium">Time:</span>
-                  <span className="ml-2">{viewingAppointment.time}</span>
+                  <span className="ml-2">{viewingAppointment.appointmentTime}</span>
                 </div>
                 <div>
                   <span className="font-medium">Duration:</span>
@@ -412,8 +300,8 @@ const AppointmentsTab: React.FC<AppointmentsTabProps> = ({
                   </div>
                 )}
                 <div>
-                  <span className="font-medium">Price:</span>
-                  <span className="ml-2 font-semibold text-green-600">₹{viewingAppointment.price}</span>
+                  <span className="font-medium">Fee:</span>
+                  <span className="ml-2 font-semibold text-green-600">₹{viewingAppointment.fee}</span>
                 </div>
               </div>
               

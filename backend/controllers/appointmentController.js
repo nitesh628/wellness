@@ -457,4 +457,53 @@ export const exportAppointments = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to export data', error: error.message });
   }
-};   
+};
+
+/**
+ * @desc    Get all appointments for the currently logged-in user (patient)
+ * @route   GET /api/v1/appointments/my-appointments
+ * @access  Private (requires user to be logged in)
+ */
+export async function getMyAppointments(req, res) {
+  try {
+    // The user's ID is attached to the request object by the isLogin middleware
+    const userId = req.user._id;
+
+    console.log(`📋 Fetching appointments for user: ${userId}`);
+
+    // Find all appointments where the 'patient' field matches the logged-in user's ID
+    // This ensures a user can only ever see their own appointments.
+    const appointments = await Appointment.find({ patient: userId })
+      .populate({
+        path: 'doctor',
+        select: 'firstName lastName specialization imageUrl', // Populate doctor details
+      })
+      .sort({ createdAt: -1 }); // Sort by latest first
+
+    // Case: No appointments found for the user
+    if (!appointments || appointments.length === 0) {
+      console.log(`✅ No appointments found for user: ${userId}`);
+      return res.status(200).json({
+        success: true,
+        message: 'You have no scheduled appointments.',
+        appointments: [],
+      });
+    }
+
+    console.log(`✅ Found ${appointments.length} appointments for user: ${userId}`);
+
+    // Case: Appointments found, return them
+    res.status(200).json({
+      success: true,
+      message: 'Appointments retrieved successfully.',
+      appointments: appointments,
+    });
+  } catch (error) {
+    console.error('❌ Error fetching user appointments:', error);
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while fetching your appointments.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+}

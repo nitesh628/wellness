@@ -20,115 +20,10 @@ import {
 } from "@/lib/redux/features/authSlice";
 import { fetchUserDetails, getSessionData } from "@/lib/utils/auth";
 
-interface Appointment {
-  id: string;
-  doctorName: string;
-  doctorSpecialty: string;
-  doctorImage: string;
-  date: string;
-  time: string;
-  type: "in-person" | "video" | "phone";
-  status: "scheduled" | "confirmed" | "completed" | "cancelled" | "rescheduled";
-  location?: string;
-  notes?: string;
-  duration: number;
-  price: number;
-}
-
-interface Medication {
-  id: string;
-  name: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  instructions: string;
-  quantity: number;
-}
-
-interface Prescription {
-  id: string;
-  doctorName: string;
-  doctorSpecialty: string;
-  date: string;
-  status: "active" | "completed" | "expired" | "cancelled";
-  medications: Medication[];
-  notes?: string;
-  followUpDate?: string;
-  totalCost: number;
-}
-
-const dummyAppointments: Appointment[] = [
-  {
-    id: "1",
-    doctorName: "Dr. Sarah Johnson",
-    doctorSpecialty: "Cardiologist",
-    doctorImage: "",
-    date: "2024-03-25",
-    time: "10:00",
-    type: "in-person",
-    status: "scheduled",
-    location: "Apollo Hospital, Mumbai",
-    notes: "Regular checkup",
-    duration: 30,
-    price: 1500,
-  },
-  {
-    id: "2",
-    doctorName: "Dr. Michael Chen",
-    doctorSpecialty: "Dermatologist",
-    doctorImage: "",
-    date: "2024-03-20",
-    time: "14:30",
-    type: "video",
-    status: "completed",
-    location: "",
-    notes: "Skin consultation",
-    duration: 20,
-    price: 800,
-  },
-];
-
-const dummyPrescriptions: Prescription[] = [
-  {
-    id: "1",
-    doctorName: "Dr. Sarah Johnson",
-    doctorSpecialty: "Cardiologist",
-    date: "2024-03-15",
-    status: "active",
-    medications: [
-      {
-        id: "1",
-        name: "Atorvastatin",
-        dosage: "20mg",
-        frequency: "Once daily",
-        duration: "30 days",
-        instructions: "Take with food",
-        quantity: 30,
-      },
-      {
-        id: "2",
-        name: "Metoprolol",
-        dosage: "50mg",
-        frequency: "Twice daily",
-        duration: "30 days",
-        instructions: "Take with water",
-        quantity: 60,
-      },
-    ],
-    notes: "Continue medication as prescribed",
-    followUpDate: "2024-04-15",
-    totalCost: 1200,
-  },
-];
-
 const UserProfile = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectUser);
 
-  const [appointments, setAppointments] =
-    useState<Appointment[]>(dummyAppointments);
-  const [prescriptions, setPrescriptions] =
-    useState<Prescription[]>(dummyPrescriptions);
   const [isEditing, setIsEditing] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
@@ -319,18 +214,12 @@ const UserProfile = () => {
 
           {/* Appointments Tab */}
           <TabsContent value="appointments" className="space-y-6">
-            <AppointmentsTab
-              appointments={appointments}
-              onAppointmentChange={setAppointments}
-            />
+            <AppointmentsTab />
           </TabsContent>
 
           {/* Prescriptions Tab */}
           <TabsContent value="prescriptions" className="space-y-6">
-            <PrescriptionsTab
-              prescriptions={prescriptions}
-              onPrescriptionChange={setPrescriptions}
-            />
+            <PrescriptionsTab />
           </TabsContent>
 
           {/* Security Tab */}

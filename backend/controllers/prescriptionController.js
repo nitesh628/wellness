@@ -250,3 +250,30 @@ export const exportPrescriptions = async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to export', error: error.message });
     }
 };
+
+export const getMyPrescriptions = async (req, res) => {
+    try {
+        const userId = req.user._id;
+
+        const prescriptions = await Prescription.find({ patient: userId })
+            .populate('doctor', 'firstName lastName specialization')
+            .sort({ createdAt: -1 });
+
+        if (!prescriptions || prescriptions.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: "No prescriptions found",
+                prescriptions: []
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Prescriptions fetched successfully",
+            prescriptions
+        });
+    } catch (error) {
+        console.error("Error fetching my prescriptions:", error);
+        res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+};

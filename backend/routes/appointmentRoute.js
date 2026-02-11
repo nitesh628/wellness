@@ -7,7 +7,8 @@ import {
   deleteAppointment,
   getAppointmentStats,
   getTodaysAppointmentsCount,
-  exportAppointments
+  exportAppointments,
+  getMyAppointments,
 } from '../controllers/appointmentController.js';
 import { isLogin } from '../middleWares/isLogin.js';
 
@@ -32,6 +33,8 @@ router.post('/', createAppointment);
 router.get('/export', exportAppointments);
 router.get('/stats', getAppointmentStats);
 router.get('/today/count', getTodaysAppointmentsCount);
+// GET - Appointments for the logged-in user
+router.get('/my-appointments', getMyAppointments);
 
 // GET - All appointments (list)
 router.get('/', getAppointments);
